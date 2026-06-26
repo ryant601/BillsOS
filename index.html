@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<!-- Updated 2026-06-26: corrected modular split with complete month calendar files. -->
+<!-- Updated 2026-06-26: corrected modular split with stable checkmark layer. -->
 <title>Bills Account · June &amp; July 2026</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/styles.css?v=20260626fixed1"/>
+<link rel="stylesheet" href="/styles.css?v=20260626checks1"/>
 <style>
   .loader-panel{background:#fff;border:1px solid rgba(20,35,55,.16);border-radius:18px;padding:16px;margin-top:16px;color:#14202c;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
   .loader-panel.error{border-color:rgba(184,54,44,.42);color:#b8362c}
@@ -18,7 +18,7 @@
 </head>
 <body>
 <div class="wrap">
-<div class="build-stamp" aria-label="BillsOS build version">Build v2026.06.26-fixed.1 · Corrected complete month files</div>
+<div class="build-stamp" aria-label="BillsOS build version">Build v2026.06.26-checks.1 · Calendar + checkmarks</div>
 <div class="toggle"><div class="tabs"><button class="active" id="btn-june"><span>Jun</span><span class="dot dot-bridge"></span></button><button id="btn-july"><span>Jul</span></button><button id="btn-aug"><span>Aug</span></button><button id="btn-sep"><span>Sep</span></button><button id="btn-oct"><span>Oct</span><span class="dot dot-triple"></span></button><button id="btn-nov"><span>Nov</span></button><button id="btn-dec"><span>Dec</span><span class="dot dot-triple"></span></button></div></div>
 <div id="month-panels" aria-live="polite"><div class="loader-panel">Loading calendar files…</div></div>
 </div>
@@ -26,6 +26,54 @@
 (function(){
   var months=['june','july','aug','sep','oct','nov','dec'];
   var mount=document.getElementById('month-panels');
+  var STORE='billsos-completed-events-v1';
+  var completed={};
+
+  function loadDone(){try{completed=JSON.parse(localStorage.getItem(STORE)||'{}')||{};}catch(e){completed={};}}
+  function saveDone(){try{localStorage.setItem(STORE,JSON.stringify(completed));}catch(e){}}
+  function cleanText(s){return String(s||'').replace(/\s+/g,' ').trim();}
+  function eventId(ev){
+    var day=ev.closest('.day');
+    var panel=ev.closest('.month-panel');
+    var month=panel?panel.id.replace('panel-',''):'month';
+    var d=day?day.getAttribute('data-day'):'x';
+    var nm=cleanText((ev.querySelector('.nm')||{}).textContent||'');
+    var amt=cleanText((ev.querySelector('.amt')||{}).textContent||'');
+    return month+'|'+d+'|'+nm+'|'+amt;
+  }
+  function updatePanelProgress(panel){
+    var billEvents=[].slice.call(panel.querySelectorAll('.ev')).filter(function(ev){return !ev.classList.contains('in')&&!ev.classList.contains('note');});
+    var total=billEvents.length;
+    var paid=billEvents.filter(function(ev){return ev.classList.contains('done');}).length;
+    var pc=panel.querySelector('.paidCount');
+    var pt=panel.querySelector('.paidTotal');
+    var bar=panel.querySelector('.paidBar');
+    var st=panel.querySelector('.saveStatus');
+    if(pc)pc.textContent=paid;
+    if(pt)pt.textContent=total;
+    if(bar)bar.style.width=total?Math.round((paid/total)*100)+'%':'0%';
+    if(st){st.textContent='Saved on this device';st.className='saveStatus savestatus ok';}
+  }
+  function setupChecks(){
+    loadDone();
+    document.querySelectorAll('.month-panel').forEach(function(panel){
+      panel.querySelectorAll('.ev').forEach(function(ev){
+        if(ev.classList.contains('in')||ev.classList.contains('note'))return;
+        var id=eventId(ev);
+        if(!ev.querySelector('input[type="checkbox"]')){
+          var cb=document.createElement('input');
+          cb.type='checkbox';
+          cb.setAttribute('aria-label','Mark complete');
+          ev.insertBefore(cb,ev.firstChild);
+        }
+        var box=ev.querySelector('input[type="checkbox"]');
+        box.checked=!!completed[id];
+        ev.classList.toggle('done',box.checked);
+        box.onchange=function(){completed[id]=box.checked?1:0;if(!box.checked)delete completed[id];ev.classList.toggle('done',box.checked);saveDone();updatePanelProgress(panel);};
+      });
+      updatePanelProgress(panel);
+    });
+  }
   function showMonth(m){
     months.forEach(function(x){
       var p=document.getElementById('panel-'+x);
@@ -44,13 +92,14 @@
     try{
       var html=[];
       for(var i=0;i<months.length;i++){
-        var path='/months/'+months[i]+'.html?v=20260626fixed1';
+        var path='/months/'+months[i]+'.html?v=20260626checks1';
         var r=await fetch(path,{cache:'no-store',credentials:'same-origin'});
         if(!r.ok)throw new Error(path+' returned HTTP '+r.status);
         html.push(await r.text());
       }
       mount.innerHTML=html.join('\n');
       months.forEach(function(m){var b=document.getElementById('btn-'+m);if(b)b.addEventListener('click',function(){showMonth(m);});});
+      setupChecks();
       showMonth(startMonth());
     }catch(e){
       mount.innerHTML='<div class="loader-panel error"><b>Calendar failed to load.</b><br>'+String(e.message||e)+'</div>';
