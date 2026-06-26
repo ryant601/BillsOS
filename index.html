@@ -3,20 +3,53 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<!-- Updated 2026-06-26: modular split-file build. -->
+<!-- Updated 2026-06-26: modular split-file build with fallback month loader. -->
 <title>Bills Account · June &amp; July 2026</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="styles.css"/>
+<link rel="stylesheet" href="/styles.css"/>
 </head>
 <body>
 <div class="wrap">
-<div class="build-stamp" aria-label="BillsOS build version">Build v2026.06.26-split.2 · Updated Jun 26, 2026 · Modular GitHub → Render test</div>
+<div class="build-stamp" aria-label="BillsOS build version">Build v2026.06.26-split.3 · Updated Jun 26, 2026 · Modular GitHub → Render test</div>
 <div class="toggle"><div class="tabs"><button class="active" id="btn-june"><span>Jun</span><span class="dot dot-bridge"></span></button><button class="" id="btn-july"><span>Jul</span></button><button class="" id="btn-aug"><span>Aug</span></button><button class="" id="btn-sep"><span>Sep</span></button><button class="" id="btn-oct"><span>Oct</span><span class="dot dot-triple"></span></button><button class="" id="btn-nov"><span>Nov</span></button><button class="" id="btn-dec"><span>Dec</span><span class="dot dot-triple"></span></button></div></div>
-<div id="month-panels" aria-live="polite"></div>
+<div id="month-panels" aria-live="polite"><div class="load-note">Loading calendar…</div></div>
 </div>
-<script src="actions-data.js"></script>
-<script src="app.js"></script>
+<script src="/actions-data.js"></script>
+<script src="/app.js"></script>
+<script>
+(function(){
+  var months=['june','july','aug','sep','oct','nov','dec'];
+  function showMonth(m){
+    months.forEach(function(x){
+      var p=document.getElementById('panel-'+x);
+      var b=document.getElementById('btn-'+x);
+      if(p)p.classList.toggle('show',x===m);
+      if(b)b.classList.toggle('active',x===m);
+    });
+  }
+  async function fallbackLoad(){
+    var mount=document.getElementById('month-panels');
+    if(!mount)return;
+    if(mount.querySelector('.month-panel'))return;
+    try{
+      var html=[];
+      for(var i=0;i<months.length;i++){
+        var path='/months/'+months[i]+'.html';
+        var r=await fetch(path,{cache:'no-store',credentials:'same-origin'});
+        if(!r.ok)throw new Error(path+' returned '+r.status);
+        html.push(await r.text());
+      }
+      mount.innerHTML=html.join('\n');
+      months.forEach(function(m){var b=document.getElementById('btn-'+m);if(b)b.onclick=function(){showMonth(m);};});
+      showMonth('june');
+    }catch(e){
+      mount.innerHTML='<div class="load-note" style="background:#fff;border:1px solid rgba(184,54,44,.35);border-radius:16px;padding:16px;color:#b8362c">Calendar failed to load: '+String(e.message||e)+'</div>';
+    }
+  }
+  setTimeout(fallbackLoad,1200);
+})();
+</script>
 </body>
 </html>
