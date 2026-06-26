@@ -9,24 +9,28 @@
       var style=document.createElement('style');
       style.id='billsos-ui-polish';
       style.textContent=[
-        'body{padding-top:14px!important;padding-bottom:48px!important}',
-        '.wrap{max-width:1120px!important}',
-        '.build-stamp{margin-bottom:6px!important;padding:4px 9px!important;font-size:9.5px!important}',
-        '.bills-sync-pill{display:flex;align-items:center;gap:7px;width:max-content;max-width:100%;margin:0 auto 8px;padding:5px 10px;border:1px solid rgba(20,35,55,.12);border-radius:999px;background:#fff;color:#41505f;font-size:10.5px;box-shadow:0 6px 18px -14px rgba(20,35,55,.28)}',
+        'body{padding-top:12px!important;padding-bottom:44px!important}',
+        '.wrap{max-width:1080px!important}',
+        '.build-stamp{margin-bottom:5px!important;padding:4px 9px!important;font-size:9px!important}',
+        '.bills-sync-pill{display:flex;align-items:center;gap:7px;width:max-content;max-width:100%;margin:0 auto 7px;padding:5px 10px;border:1px solid rgba(20,35,55,.12);border-radius:999px;background:#fff;color:#41505f;font-size:10.5px;box-shadow:0 6px 18px -14px rgba(20,35,55,.28)}',
         '.bills-sync-pill i{width:7px;height:7px;border-radius:99px;background:#a8651a;display:inline-block}',
         '.bills-sync-pill.ok i{background:#0a7d44}.bills-sync-pill.warn i{background:#a8651a}.bills-sync-pill.err i{background:#b8362c}',
-        '.toggle{margin-bottom:12px!important}',
+        '.bills-details-toggle{display:block;width:max-content;margin:0 auto 10px;padding:6px 12px;border:1px solid rgba(20,35,55,.14);border-radius:999px;background:#fff;color:#41505f;font:700 11px Hanken Grotesk,system-ui;cursor:pointer;box-shadow:0 6px 18px -16px rgba(20,35,55,.3)}',
+        '.bills-details-toggle:hover{color:#14202c;background:#f8fafc}',
+        '.toggle{margin-bottom:10px!important}',
         '.tabs{padding:3px!important;border-radius:12px!important}',
         '.tabs button{padding:6px 12px!important;font-size:12px!important;border-radius:9px!important}',
-        '.spark{display:none!important}',
-        '.v2-briefing{display:none!important}',
+        '.spark,.v2-briefing{display:none!important}',
         '.ops-panel,.status-grid,.plan-card{display:none!important}',
-        'header{display:grid!important;grid-template-columns:minmax(240px,1fr) auto!important;align-items:end!important;margin-bottom:10px!important;gap:12px!important}',
-        '.eyebrow{margin-bottom:5px!important;font-size:9px!important;letter-spacing:.2em!important}',
-        'h1{font-size:clamp(32px,4.6vw,56px)!important;line-height:.88!important}',
-        '.tag{margin-top:6px!important;font-size:11.5px!important}',
-        '.chips{gap:6px!important;max-width:560px!important;justify-content:flex-end!important}',
-        '.chip{padding:7px 10px!important;border-radius:12px!important;min-width:86px!important}',
+        '.status-hero{display:none!important}',
+        'body.bills-show-details .month-panel.show .status-hero{display:block!important}',
+        'header{display:grid!important;grid-template-columns:minmax(220px,1fr) auto!important;align-items:end!important;margin-bottom:8px!important;gap:10px!important}',
+        '.eyebrow{margin-bottom:4px!important;font-size:8.5px!important;letter-spacing:.18em!important}',
+        'h1{font-size:clamp(30px,4.2vw,50px)!important;line-height:.88!important}',
+        '.tag{margin-top:5px!important;font-size:11px!important}',
+        '.chips{gap:6px!important;max-width:360px!important;justify-content:flex-end!important}',
+        '.chips .chip:not(.prog):nth-child(-n+4){display:none!important}',
+        '.chip{padding:7px 10px!important;border-radius:12px!important;min-width:96px!important}',
         '.chip .k{font-size:8.5px!important;margin-bottom:3px!important;letter-spacing:.1em!important}',
         '.chip .v,.chip.prog .v{font-size:15px!important}',
         '.chip.prog{min-width:105px!important}',
@@ -63,7 +67,7 @@
         '.timeline-node{padding:8px 9px!important;border-radius:12px!important}',
         '.timeline-node .when{font-size:10px!important}',
         '.timeline-node .what{font-size:11.5px!important}',
-        '.dow-row{margin-top:10px!important;margin-bottom:6px!important}',
+        '.dow-row{margin-top:8px!important;margin-bottom:5px!important}',
         '.grid{gap:8px!important}',
         '.day{padding:9px!important;border-radius:14px!important;min-height:0!important}',
         '.dtop{margin-bottom:6px!important}',
@@ -72,7 +76,7 @@
         '.ev{padding:5px 6px!important;border-radius:9px!important;font-size:11px!important}',
         '.legend{margin-top:10px!important}',
         '@media(max-width:900px){header{grid-template-columns:1fr!important}.chips{justify-content:flex-start!important;max-width:100%!important}.status-hero-top{display:block!important}.conf-card{margin-top:8px!important}.status-metrics{grid-template-columns:1fr 1fr!important}}',
-        '@media(max-width:760px){body{padding:10px 9px 42px!important}.global-briefing,.status-hero{padding:10px!important}.status-metrics{grid-template-columns:1fr!important}.chip{min-width:82px!important}.grid{gap:7px!important}}'
+        '@media(max-width:760px){body{padding:9px 8px 40px!important}.global-briefing,.status-hero{padding:10px!important}.status-metrics{grid-template-columns:1fr!important}.chip{min-width:82px!important}.grid{gap:7px!important}}'
       ].join('\n');
       document.head.appendChild(style);
     }
@@ -85,114 +89,31 @@
       if(stamp&&stamp.parentNode)stamp.parentNode.insertBefore(pill,stamp.nextSibling);
       else document.body.insertBefore(pill,document.body.firstChild);
     }
+    if(!document.getElementById('billsDetailsToggle')){
+      var btn=document.createElement('button');
+      btn.id='billsDetailsToggle';
+      btn.className='bills-details-toggle';
+      btn.type='button';
+      btn.textContent='Show status details';
+      btn.onclick=function(){
+        var on=document.body.classList.toggle('bills-show-details');
+        btn.textContent=on?'Hide status details':'Show status details';
+      };
+      var brief=document.querySelector('.global-briefing');
+      if(brief&&brief.parentNode)brief.parentNode.insertBefore(btn,brief.nextSibling);
+    }
   }
-  function readLocal(){
-    try{return JSON.parse(localStorage.getItem(STORE)||'{}')||{};}catch(e){return {};}
-  }
-  function writeLocal(obj){
-    try{localStorage.setItem(STORE,JSON.stringify(obj||{}));}catch(e){}
-  }
+  function readLocal(){try{return JSON.parse(localStorage.getItem(STORE)||'{}')||{};}catch(e){return {};}}
+  function writeLocal(obj){try{localStorage.setItem(STORE,JSON.stringify(obj||{}));}catch(e){}}
   function cleanText(s){return String(s||'').replace(/\s+/g,' ').trim();}
-  function eventId(ev){
-    var day=ev.closest('.day');
-    var panel=ev.closest('.month-panel');
-    var month=panel?panel.id.replace('panel-',''):'month';
-    var d=day?day.getAttribute('data-day'):'x';
-    var nm=cleanText((ev.querySelector('.nm')||{}).textContent||'');
-    var amt=cleanText((ev.querySelector('.amt')||{}).textContent||'');
-    return month+'|'+d+'|'+nm+'|'+amt;
-  }
-  function setSyncStatus(text,kind){
-    var pill=document.getElementById('billsSyncPill');
-    if(pill){
-      pill.className='bills-sync-pill '+(kind||'warn');
-      var span=pill.querySelector('span');
-      if(span)span.textContent=text;
-    }
-    document.querySelectorAll('.saveStatus,.savestatus').forEach(function(el){
-      el.textContent=text;
-      if(kind==='ok')el.className='saveStatus savestatus ok';
-      if(kind==='warn')el.className='saveStatus savestatus warn';
-      if(kind==='err')el.className='saveStatus savestatus err';
-    });
-  }
-  function currentFromDom(){
-    var out=readLocal();
-    document.querySelectorAll('.month-panel .ev input[type="checkbox"]').forEach(function(box){
-      var ev=box.closest('.ev');
-      if(!ev)return;
-      var id=eventId(ev);
-      if(box.checked)out[id]=1; else delete out[id];
-    });
-    return out;
-  }
-  function applyToDom(completed){
-    document.querySelectorAll('.month-panel .ev input[type="checkbox"]').forEach(function(box){
-      var ev=box.closest('.ev');
-      if(!ev)return;
-      var checked=!!completed[eventId(ev)];
-      if(box.checked!==checked){
-        box.checked=checked;
-        ev.classList.toggle('done',checked);
-        box.dispatchEvent(new Event('change',{bubbles:true}));
-      }else{
-        ev.classList.toggle('done',checked);
-      }
-    });
-  }
-  async function pushCloud(){
-    if(syncing)return;
-    syncing=true;
-    try{
-      var completed=currentFromDom();
-      writeLocal(completed);
-      setSyncStatus('Cloud syncing…','warn');
-      var r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({completed:completed})});
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      var data=await r.json();
-      if(data&&data.completed)writeLocal(data.completed);
-      setSyncStatus('Cloud synced','ok');
-    }catch(e){
-      setSyncStatus('Saved locally · cloud offline','warn');
-    }finally{
-      syncing=false;
-    }
-  }
-  function queuePush(){
-    clearTimeout(saveTimer);
-    saveTimer=setTimeout(pushCloud,350);
-  }
-  async function pullCloud(){
-    try{
-      setSyncStatus('Cloud sync loading…','warn');
-      var r=await fetch(API,{credentials:'same-origin',cache:'no-store'});
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      var data=await r.json();
-      var cloud=(data&&data.completed)||{};
-      var local=readLocal();
-      var merged=Object.assign({},cloud,local);
-      writeLocal(merged);
-      applyToDom(merged);
-      setSyncStatus('Cloud synced','ok');
-      await pushCloud();
-    }catch(e){
-      setSyncStatus('Saved locally · cloud offline','warn');
-    }
-  }
-  function waitForCalendar(){
-    installUiPolish();
-    var tries=0;
-    var t=setInterval(function(){
-      tries++;
-      if(document.querySelector('.month-panel .ev input[type="checkbox"]')){
-        clearInterval(t);
-        pullCloud();
-      }
-      if(tries>80)clearInterval(t);
-    },250);
-  }
-  document.addEventListener('change',function(e){
-    if(e.target&&e.target.matches&&e.target.matches('.month-panel .ev input[type="checkbox"]'))queuePush();
-  },true);
+  function eventId(ev){var day=ev.closest('.day');var panel=ev.closest('.month-panel');var month=panel?panel.id.replace('panel-',''):'month';var d=day?day.getAttribute('data-day'):'x';var nm=cleanText((ev.querySelector('.nm')||{}).textContent||'');var amt=cleanText((ev.querySelector('.amt')||{}).textContent||'');return month+'|'+d+'|'+nm+'|'+amt;}
+  function setSyncStatus(text,kind){var pill=document.getElementById('billsSyncPill');if(pill){pill.className='bills-sync-pill '+(kind||'warn');var span=pill.querySelector('span');if(span)span.textContent=text;}document.querySelectorAll('.saveStatus,.savestatus').forEach(function(el){el.textContent=text;if(kind==='ok')el.className='saveStatus savestatus ok';if(kind==='warn')el.className='saveStatus savestatus warn';if(kind==='err')el.className='saveStatus savestatus err';});}
+  function currentFromDom(){var out=readLocal();document.querySelectorAll('.month-panel .ev input[type="checkbox"]').forEach(function(box){var ev=box.closest('.ev');if(!ev)return;var id=eventId(ev);if(box.checked)out[id]=1;else delete out[id];});return out;}
+  function applyToDom(completed){document.querySelectorAll('.month-panel .ev input[type="checkbox"]').forEach(function(box){var ev=box.closest('.ev');if(!ev)return;var checked=!!completed[eventId(ev)];if(box.checked!==checked){box.checked=checked;ev.classList.toggle('done',checked);box.dispatchEvent(new Event('change',{bubbles:true}));}else{ev.classList.toggle('done',checked);}});}
+  async function pushCloud(){if(syncing)return;syncing=true;try{var completed=currentFromDom();writeLocal(completed);setSyncStatus('Cloud syncing…','warn');var r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({completed:completed})});if(!r.ok)throw new Error('HTTP '+r.status);var data=await r.json();if(data&&data.completed)writeLocal(data.completed);setSyncStatus('Cloud synced','ok');}catch(e){setSyncStatus('Saved locally · cloud offline','warn');}finally{syncing=false;}}
+  function queuePush(){clearTimeout(saveTimer);saveTimer=setTimeout(pushCloud,350);}
+  async function pullCloud(){try{setSyncStatus('Cloud sync loading…','warn');var r=await fetch(API,{credentials:'same-origin',cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);var data=await r.json();var cloud=(data&&data.completed)||{};var local=readLocal();var merged=Object.assign({},cloud,local);writeLocal(merged);applyToDom(merged);setSyncStatus('Cloud synced','ok');await pushCloud();}catch(e){setSyncStatus('Saved locally · cloud offline','warn');}}
+  function waitForCalendar(){installUiPolish();var tries=0;var t=setInterval(function(){tries++;if(document.querySelector('.month-panel .ev input[type="checkbox"]')){clearInterval(t);pullCloud();}if(tries>80)clearInterval(t);},250);}
+  document.addEventListener('change',function(e){if(e.target&&e.target.matches&&e.target.matches('.month-panel .ev input[type="checkbox"]'))queuePush();},true);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',waitForCalendar);else waitForCalendar();
 })();
