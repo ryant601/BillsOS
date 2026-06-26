@@ -1,12 +1,13 @@
 {
- "name": "billsos",
- "version": "1.0.0",
- "private": true,
- "type": "commonjs",
- "scripts": {
-   "start": "node server.js"
- },
- "dependencies": {
-   "express": "^4.19.2"
- }
+  "name": "billsos",
+  "version": "1.0.1",
+  "private": true,
+  "type": "commonjs",
+  "description": "BillsOS Render deploy test from ChatGPT on 2026-06-26",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
 }
