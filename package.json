@@ -1,9 +1,14 @@
 {
   "name": "billsos",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Render deploy test from ChatGPT on 2026-06-26",
+  "billsosBuild": {
+    "version": "v2026.06.26-test.1",
+    "buildDate": "2026-06-26",
+    "buildNote": "ChatGPT to GitHub to Render build metadata test. Dashboard index.html not changed in this test."
+  },
   "scripts": {
     "start": "node server.js"
   },
