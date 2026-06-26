@@ -3,23 +3,44 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<!-- Updated 2026-06-26: corrected modular split with daily briefing, stable checkmarks, and lightweight status cards. -->
+<!-- Updated 2026-06-26: visible daily briefing shell, stable checkmarks, lightweight status cards. -->
 <title>Bills Account · June &amp; July 2026</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/styles.css?v=20260626brief1"/>
+<link rel="stylesheet" href="/styles.css?v=20260626brief2"/>
 <style>
   .loader-panel{background:#fff;border:1px solid rgba(20,35,55,.16);border-radius:18px;padding:16px;margin-top:16px;color:#14202c;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
   .loader-panel.error{border-color:rgba(184,54,44,.42);color:#b8362c}
   .build-stamp{background:#fff;border:1px solid rgba(20,35,55,.12);border-radius:999px;padding:7px 12px;margin:0 auto 14px;width:max-content;max-width:100%;font-size:11px;color:#41505f;text-align:center}
   .ops-panel,.status-grid,.plan-card{display:none!important}
+  .global-briefing{display:block!important;margin:14px 0 16px;background:#fff;border:1px solid rgba(20,35,55,.12);border-radius:22px;padding:18px;box-shadow:0 10px 30px rgba(20,35,55,.06)}
+  .global-briefing .brief-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+  .global-briefing h2{margin:0;font-size:22px;letter-spacing:-.02em;color:#14202c}
+  .global-briefing .brief-sub{font-size:13px;color:#41505f;margin-top:5px;max-width:720px}
+  .global-briefing .brief-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+  .global-briefing .brief-box{border:1px solid rgba(20,35,55,.12);border-radius:16px;padding:14px;background:rgba(248,250,252,.72)}
+  .global-briefing .brief-box h3{margin:0 0 10px;font-size:14px;color:#14202c}
+  .global-briefing .brief-item{display:flex;justify-content:space-between;gap:12px;border-top:1px solid rgba(20,35,55,.08);padding:9px 0;font-size:13px;color:#14202c}
+  .global-briefing .brief-item:first-of-type{border-top:0}
+  .global-briefing .brief-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+  .global-briefing .brief-kpi{border:1px solid rgba(20,35,55,.1);border-radius:14px;padding:10px;background:#fff}
+  .global-briefing .brief-kpi span{display:block;font-size:11px;color:#5f6b7a;text-transform:uppercase;letter-spacing:.04em}
+  .global-briefing .brief-kpi b{display:block;margin-top:4px;font-size:16px;color:#14202c}
+  @media(max-width:760px){.global-briefing .brief-grid{grid-template-columns:1fr}.global-briefing .brief-head{display:block}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<div class="build-stamp" aria-label="BillsOS build version">Build v2026.06.26-brief.1 · Calendar + checkmarks + status + daily briefing</div>
+<div class="build-stamp" aria-label="BillsOS build version">Build v2026.06.26-brief.2 · Calendar + checkmarks + status + visible briefing</div>
 <div class="toggle"><div class="tabs"><button class="active" id="btn-june"><span>Jun</span><span class="dot dot-bridge"></span></button><button id="btn-july"><span>Jul</span></button><button id="btn-aug"><span>Aug</span></button><button id="btn-sep"><span>Sep</span></button><button id="btn-oct"><span>Oct</span><span class="dot dot-triple"></span></button><button id="btn-nov"><span>Nov</span></button><button id="btn-dec"><span>Dec</span><span class="dot dot-triple"></span></button></div></div>
+<section class="global-briefing" aria-label="Daily financial briefing">
+  <div class="brief-head"><div><h2 id="dailyBriefingTitle">Daily financial briefing</h2><div class="brief-sub" id="dailyBriefingSub">Loading today’s account briefing…</div></div></div>
+  <div class="brief-grid">
+    <div class="brief-box"><h3>Today’s checklist</h3><div class="brief-sub" id="todayChecklistSub">Checking today…</div><div id="todayChecklistList"><div class="brief-item"><span>Loading…</span><span></span></div></div></div>
+    <div class="brief-box"><h3 id="tomorrowActionsTitle">Tomorrow</h3><div class="brief-kpis"><div class="brief-kpi"><span>Next paycheck</span><b id="nextPaycheckMetric">—</b></div><div class="brief-kpi"><span>Spending funded</span><b id="spendingFundedMetric">—</b></div></div><div id="tomorrowActionsList"><div class="brief-item"><span>Loading…</span><span></span></div></div></div>
+  </div>
+</section>
 <div id="month-panels" aria-live="polite"><div class="loader-panel">Loading calendar files…</div></div>
 </div>
 <script>
@@ -29,7 +50,6 @@
   var mount=document.getElementById('month-panels');
   var STORE='billsos-completed-events-v1';
   var completed={};
-
   function loadDone(){try{completed=JSON.parse(localStorage.getItem(STORE)||'{}')||{};}catch(e){completed={};}}
   function saveDone(){try{localStorage.setItem(STORE,JSON.stringify(completed));}catch(e){}}
   function cleanText(s){return String(s||'').replace(/\s+/g,' ').trim();}
@@ -39,169 +59,17 @@
   function longDate(d){return d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});}
   function isoFromDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
   function todayIso(){var d=new Date();d.setHours(0,0,0,0);return isoFromDate(d);}
-  function eventId(ev){
-    var day=ev.closest('.day');
-    var panel=ev.closest('.month-panel');
-    var month=panel?panel.id.replace('panel-',''):'month';
-    var d=day?day.getAttribute('data-day'):'x';
-    var nm=cleanText((ev.querySelector('.nm')||{}).textContent||'');
-    var amt=cleanText((ev.querySelector('.amt')||{}).textContent||'');
-    return month+'|'+d+'|'+nm+'|'+amt;
-  }
-  function updatePanelProgress(panel){
-    var billEvents=[].slice.call(panel.querySelectorAll('.ev')).filter(function(ev){return !ev.classList.contains('in')&&!ev.classList.contains('note');});
-    var total=billEvents.length;
-    var paid=billEvents.filter(function(ev){return ev.classList.contains('done');}).length;
-    var pc=panel.querySelector('.paidCount');
-    var pt=panel.querySelector('.paidTotal');
-    var bar=panel.querySelector('.paidBar');
-    var st=panel.querySelector('.saveStatus');
-    if(pc)pc.textContent=paid;
-    if(pt)pt.textContent=total;
-    if(bar)bar.style.width=total?Math.round((paid/total)*100)+'%':'0%';
-    if(st){st.textContent='Saved on this device';st.className='saveStatus savestatus ok';}
-  }
-  function setupChecks(){
-    loadDone();
-    document.querySelectorAll('.month-panel').forEach(function(panel){
-      panel.querySelectorAll('.ev').forEach(function(ev){
-        if(ev.classList.contains('in')||ev.classList.contains('note'))return;
-        var id=eventId(ev);
-        if(!ev.querySelector('input[type="checkbox"]')){
-          var cb=document.createElement('input');
-          cb.type='checkbox';
-          cb.setAttribute('aria-label','Mark complete');
-          ev.insertBefore(cb,ev.firstChild);
-        }
-        var box=ev.querySelector('input[type="checkbox"]');
-        box.checked=!!completed[id];
-        ev.classList.toggle('done',box.checked);
-        box.onchange=function(){completed[id]=box.checked?1:0;if(!box.checked)delete completed[id];ev.classList.toggle('done',box.checked);saveDone();updatePanelProgress(panel);renderStatusCards();renderDailyBriefing();};
-      });
-      updatePanelProgress(panel);
-    });
-  }
-  function allBalances(){
-    var out=[];
-    months.forEach(function(m){
-      var panel=document.getElementById('panel-'+m); if(!panel)return;
-      panel.querySelectorAll('.day[data-day]').forEach(function(day){
-        var e=day.querySelector('.eod b'); if(!e)return;
-        var bal=parseMoney(e.textContent); if(bal==null)return;
-        var d=String(day.getAttribute('data-day')).padStart(2,'0');
-        out.push({iso:'2026-'+String(monthNums[m]+1).padStart(2,'0')+'-'+d,balance:bal});
-      });
-    });
-    return out.sort(function(a,b){return a.iso.localeCompare(b.iso);});
-  }
-  function allEvents(){
-    var out=[];
-    months.forEach(function(m){
-      var panel=document.getElementById('panel-'+m); if(!panel)return;
-      panel.querySelectorAll('.day[data-day] .ev').forEach(function(ev){
-        var day=ev.closest('.day');
-        var name=cleanText((ev.querySelector('.nm')||{}).textContent||'');
-        var amtText=cleanText((ev.querySelector('.amt')||{}).textContent||'');
-        var d=String(day.getAttribute('data-day')).padStart(2,'0');
-        out.push({iso:'2026-'+String(monthNums[m]+1).padStart(2,'0')+'-'+d,name:name,amount:parseMoney(amtText),amountText:amtText,cls:ev.className,done:ev.classList.contains('done')});
-      });
-    });
-    return out.sort(function(a,b){return a.iso.localeCompare(b.iso);});
-  }
+  function eventId(ev){var day=ev.closest('.day');var panel=ev.closest('.month-panel');var month=panel?panel.id.replace('panel-',''):'month';var d=day?day.getAttribute('data-day'):'x';var nm=cleanText((ev.querySelector('.nm')||{}).textContent||'');var amt=cleanText((ev.querySelector('.amt')||{}).textContent||'');return month+'|'+d+'|'+nm+'|'+amt;}
+  function updatePanelProgress(panel){var billEvents=[].slice.call(panel.querySelectorAll('.ev')).filter(function(ev){return !ev.classList.contains('in')&&!ev.classList.contains('note');});var total=billEvents.length;var paid=billEvents.filter(function(ev){return ev.classList.contains('done');}).length;var pc=panel.querySelector('.paidCount');var pt=panel.querySelector('.paidTotal');var bar=panel.querySelector('.paidBar');var st=panel.querySelector('.saveStatus');if(pc)pc.textContent=paid;if(pt)pt.textContent=total;if(bar)bar.style.width=total?Math.round((paid/total)*100)+'%':'0%';if(st){st.textContent='Saved on this device';st.className='saveStatus savestatus ok';}}
+  function setupChecks(){loadDone();document.querySelectorAll('.month-panel').forEach(function(panel){panel.querySelectorAll('.ev').forEach(function(ev){if(ev.classList.contains('in')||ev.classList.contains('note'))return;var id=eventId(ev);if(!ev.querySelector('input[type="checkbox"]')){var cb=document.createElement('input');cb.type='checkbox';cb.setAttribute('aria-label','Mark complete');ev.insertBefore(cb,ev.firstChild);}var box=ev.querySelector('input[type="checkbox"]');box.checked=!!completed[id];ev.classList.toggle('done',box.checked);box.onchange=function(){completed[id]=box.checked?1:0;if(!box.checked)delete completed[id];ev.classList.toggle('done',box.checked);saveDone();updatePanelProgress(panel);renderStatusCards();renderDailyBriefing();};});updatePanelProgress(panel);});}
+  function allBalances(){var out=[];months.forEach(function(m){var panel=document.getElementById('panel-'+m);if(!panel)return;panel.querySelectorAll('.day[data-day]').forEach(function(day){var e=day.querySelector('.eod b');if(!e)return;var bal=parseMoney(e.textContent);if(bal==null)return;var d=String(day.getAttribute('data-day')).padStart(2,'0');out.push({iso:'2026-'+String(monthNums[m]+1).padStart(2,'0')+'-'+d,balance:bal});});});return out.sort(function(a,b){return a.iso.localeCompare(b.iso);});}
+  function allEvents(){var out=[];months.forEach(function(m){var panel=document.getElementById('panel-'+m);if(!panel)return;panel.querySelectorAll('.day[data-day] .ev').forEach(function(ev){var day=ev.closest('.day');var name=cleanText((ev.querySelector('.nm')||{}).textContent||'');var amtText=cleanText((ev.querySelector('.amt')||{}).textContent||'');var d=String(day.getAttribute('data-day')).padStart(2,'0');out.push({iso:'2026-'+String(monthNums[m]+1).padStart(2,'0')+'-'+d,name:name,amount:parseMoney(amtText),amountText:amtText,cls:ev.className,done:ev.classList.contains('done')});});});return out.sort(function(a,b){return a.iso.localeCompare(b.iso);});}
   function setText(id,text){var el=document.getElementById(id);if(el)el.textContent=text;}
-  function renderStatusCards(){
-    var today=todayIso();
-    var balances=allBalances().filter(function(x){return x.iso>=today;});
-    var events=allEvents().filter(function(x){return x.iso>=today;});
-    var firstBad=balances.find(function(x){return x.balance<0;});
-    var covered=firstBad?balances[Math.max(0,balances.indexOf(firstBad)-1)]:balances[balances.length-1];
-    var low=balances.reduce(function(m,x){return m==null||x.balance<m?x.balance:m;},null);
-    var pay=events.find(function(e){return e.cls.indexOf(' in')>-1 && /Ryan|Alissa|Unilever|HUMC|pay/i.test(e.name);});
-    var spend=events.find(function(e){return /Fund living|spending/i.test(e.name);});
-    var sweep=events.find(function(e){return /sweep/i.test(e.name);});
-    var nextActions=events.filter(function(e){return e.cls.indexOf('note')<0 && e.cls.indexOf(' in')<0 && !e.done;});
-    var score=95;
-    if(firstBad)score=65; else if(low!=null&&low<500)score=82; else if(low!=null&&low<1000)score=88;
-    setText('overallStatusPill',firstBad?'🟠 Status: Review Needed':'🟢 Status: On Track');
-    setText('statusHeroTitle',firstBad?'Review upcoming bills account coverage':'Bills account is on track');
-    setText('statusHeroSub',(nextActions.length?nextActions.length+' open bill action(s)':'No open bill actions')+' in the visible calendar window.');
-    setText('confidenceScore',score+'%');
-    var bar=document.getElementById('confidenceBar'); if(bar)bar.style.width=score+'%';
-    setText('confidenceNote',firstBad?'A projected negative balance appears in the visible months.':'No projected negative balance in the visible months.');
-    setText('coveredThroughMetric',covered?fmtDate(covered.iso):'—');
-    setText('coveredThroughNote',firstBad?'Coverage turns negative after this date.':'No negative projected balance in visible months.');
-    setText('heroNextPaycheck',pay?fmtDate(pay.iso):'—');
-    setText('heroNextPaycheckNote',pay?(pay.name+' · '+(pay.amountText||money(pay.amount))):'No upcoming paycheck found.');
-    setText('heroSpendingFunded',spend?fmtDate(spend.iso):'—');
-    setText('heroSpendingFundedNote',spend?(spend.name+' · '+(spend.amountText||money(spend.amount))):'No upcoming spending transfer found.');
-    setText('heroNextSweep',sweep?fmtDate(sweep.iso):'None');
-    setText('heroNextActions',String(nextActions.length));
-    setText('heroNextActionsNote',nextActions[0]?('Next: '+nextActions[0].name+' · '+fmtDate(nextActions[0].iso)):'No open upcoming bill actions.');
-    var tl=document.getElementById('nextTimelineList');
-    if(tl){
-      tl.innerHTML=nextActions.slice(0,4).map(function(e){return '<div class="timeline-node"><div class="when">'+fmtDate(e.iso)+'</div><div class="what">'+e.name+'</div><div class="meta">'+(e.amountText||money(e.amount))+'</div></div>';}).join('') || '<div class="timeline-node"><div class="when">No upcoming</div><div class="what">No open bill actions found.</div></div>';
-    }
-  }
-  function renderDailyBriefing(){
-    var now=new Date();
-    var today=isoFromDate(now);
-    var tomorrowDate=new Date(now); tomorrowDate.setDate(tomorrowDate.getDate()+1);
-    var tomorrow=isoFromDate(tomorrowDate);
-    var h=now.getHours();
-    var greeting=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
-    var events=allEvents();
-    var todayItems=events.filter(function(e){return e.iso===today && e.cls.indexOf('note')<0 && e.cls.indexOf(' in')<0 && !e.done;});
-    var tomorrowItems=events.filter(function(e){return e.iso===tomorrow && e.cls.indexOf('note')<0 && e.cls.indexOf(' in')<0 && !e.done;});
-    setText('dailyBriefingTitle',greeting+', Ryan');
-    setText('dailyBriefingSub','Today is '+longDate(now)+'. Briefing uses this device local date and the loaded calendar.');
-    setText('todayChecklistSub',fmtDate(today)+' checklist · '+(todayItems.length?todayItems.length+' open item(s)':'nothing open today'));
-    var todayList=document.getElementById('todayChecklistList');
-    if(todayList){
-      todayList.innerHTML=todayItems.map(function(e){return '<div class="action"><span class="box"></span><span>'+e.name+' · '+(e.amountText||money(e.amount))+'</span></div>';}).join('') || '<div class="action done"><span class="box"></span><span>Nothing open today.</span></div>';
-    }
-    setText('tomorrowActionsTitle','Tomorrow · '+fmtDate(tomorrow));
-    var tomorrowList=document.getElementById('tomorrowActionsList');
-    if(tomorrowList){
-      tomorrowList.innerHTML=tomorrowItems.map(function(e){return '<div class="v2-item"><span>'+e.name+'</span><span>'+fmtDate(e.iso)+' · '+(e.amountText||money(e.amount))+'</span></div>';}).join('') || '<div class="v2-item"><span>No expected open bill actions</span><span>'+fmtDate(tomorrow)+'</span></div>';
-    }
-    var np=events.find(function(e){return e.iso>=today && e.cls.indexOf(' in')>-1 && /Ryan|Alissa|Unilever|HUMC|pay/i.test(e.name);});
-    var sf=events.find(function(e){return e.iso>=today && /Fund living|spending/i.test(e.name);});
-    setText('nextPaycheckMetric',np?fmtDate(np.iso):'—');
-    setText('spendingFundedMetric',sf?fmtDate(sf.iso):'—');
-  }
-  function showMonth(m){
-    months.forEach(function(x){
-      var p=document.getElementById('panel-'+x);
-      var b=document.getElementById('btn-'+x);
-      if(p){p.classList.toggle('show',x===m);p.style.display=x===m?'block':'none';}
-      if(b)b.classList.toggle('active',x===m);
-    });
-    try{localStorage.setItem('bills-last-view-static',m);}catch(e){}
-  }
-  function startMonth(){
-    try{var saved=localStorage.getItem('bills-last-view-static');if(saved&&months.indexOf(saved)>-1)return saved;}catch(e){}
-    var map={5:'june',6:'july',7:'aug',8:'sep',9:'oct',10:'nov',11:'dec'};
-    return map[new Date().getMonth()]||'june';
-  }
-  async function loadCalendar(){
-    try{
-      var html=[];
-      for(var i=0;i<months.length;i++){
-        var path='/months/'+months[i]+'.html?v=20260626brief1';
-        var r=await fetch(path,{cache:'no-store',credentials:'same-origin'});
-        if(!r.ok)throw new Error(path+' returned HTTP '+r.status);
-        html.push(await r.text());
-      }
-      mount.innerHTML=html.join('\n');
-      months.forEach(function(m){var b=document.getElementById('btn-'+m);if(b)b.addEventListener('click',function(){showMonth(m);});});
-      setupChecks();
-      renderStatusCards();
-      renderDailyBriefing();
-      showMonth(startMonth());
-    }catch(e){
-      mount.innerHTML='<div class="loader-panel error"><b>Calendar failed to load.</b><br>'+String(e.message||e)+'</div>';
-    }
-  }
+  function renderStatusCards(){var today=todayIso();var balances=allBalances().filter(function(x){return x.iso>=today;});var events=allEvents().filter(function(x){return x.iso>=today;});var firstBad=balances.find(function(x){return x.balance<0;});var covered=firstBad?balances[Math.max(0,balances.indexOf(firstBad)-1)]:balances[balances.length-1];var low=balances.reduce(function(m,x){return m==null||x.balance<m?x.balance:m;},null);var pay=events.find(function(e){return e.cls.indexOf(' in')>-1&&/Ryan|Alissa|Unilever|HUMC|pay/i.test(e.name);});var spend=events.find(function(e){return /Fund living|spending/i.test(e.name);});var sweep=events.find(function(e){return /sweep/i.test(e.name);});var nextActions=events.filter(function(e){return e.cls.indexOf('note')<0&&e.cls.indexOf(' in')<0&&!e.done;});var score=95;if(firstBad)score=65;else if(low!=null&&low<500)score=82;else if(low!=null&&low<1000)score=88;setText('overallStatusPill',firstBad?'🟠 Status: Review Needed':'🟢 Status: On Track');setText('statusHeroTitle',firstBad?'Review upcoming bills account coverage':'Bills account is on track');setText('statusHeroSub',(nextActions.length?nextActions.length+' open bill action(s)':'No open bill actions')+' in the visible calendar window.');setText('confidenceScore',score+'%');var bar=document.getElementById('confidenceBar');if(bar)bar.style.width=score+'%';setText('confidenceNote',firstBad?'A projected negative balance appears in the visible months.':'No projected negative balance in the visible months.');setText('coveredThroughMetric',covered?fmtDate(covered.iso):'—');setText('coveredThroughNote',firstBad?'Coverage turns negative after this date.':'No negative projected balance in visible months.');setText('heroNextPaycheck',pay?fmtDate(pay.iso):'—');setText('heroNextPaycheckNote',pay?(pay.name+' · '+(pay.amountText||money(pay.amount))):'No upcoming paycheck found.');setText('heroSpendingFunded',spend?fmtDate(spend.iso):'—');setText('heroSpendingFundedNote',spend?(spend.name+' · '+(spend.amountText||money(spend.amount))):'No upcoming spending transfer found.');setText('heroNextSweep',sweep?fmtDate(sweep.iso):'None');setText('heroNextActions',String(nextActions.length));setText('heroNextActionsNote',nextActions[0]?('Next: '+nextActions[0].name+' · '+fmtDate(nextActions[0].iso)):'No open upcoming bill actions.');var tl=document.getElementById('nextTimelineList');if(tl){tl.innerHTML=nextActions.slice(0,4).map(function(e){return '<div class="timeline-node"><div class="when">'+fmtDate(e.iso)+'</div><div class="what">'+e.name+'</div><div class="meta">'+(e.amountText||money(e.amount))+'</div></div>';}).join('')||'<div class="timeline-node"><div class="when">No upcoming</div><div class="what">No open bill actions found.</div></div>';}}
+  function renderDailyBriefing(){var now=new Date();var today=isoFromDate(now);var tomorrowDate=new Date(now);tomorrowDate.setDate(tomorrowDate.getDate()+1);var tomorrow=isoFromDate(tomorrowDate);var h=now.getHours();var greeting=h<12?'Good morning':h<17?'Good afternoon':'Good evening';var events=allEvents();var todayItems=events.filter(function(e){return e.iso===today&&e.cls.indexOf('note')<0&&e.cls.indexOf(' in')<0&&!e.done;});var tomorrowItems=events.filter(function(e){return e.iso===tomorrow&&e.cls.indexOf('note')<0&&e.cls.indexOf(' in')<0&&!e.done;});setText('dailyBriefingTitle',greeting+', Ryan');setText('dailyBriefingSub','Today is '+longDate(now)+'. Briefing uses this device local date and the loaded calendar.');setText('todayChecklistSub',fmtDate(today)+' checklist · '+(todayItems.length?todayItems.length+' open item(s)':'nothing open today'));var todayList=document.getElementById('todayChecklistList');if(todayList){todayList.innerHTML=todayItems.map(function(e){return '<div class="brief-item"><span>'+e.name+'</span><span>'+(e.amountText||money(e.amount))+'</span></div>';}).join('')||'<div class="brief-item"><span>Nothing open today.</span><span>✓</span></div>';}setText('tomorrowActionsTitle','Tomorrow · '+fmtDate(tomorrow));var tomorrowList=document.getElementById('tomorrowActionsList');if(tomorrowList){tomorrowList.innerHTML=tomorrowItems.map(function(e){return '<div class="brief-item"><span>'+e.name+'</span><span>'+(e.amountText||money(e.amount))+'</span></div>';}).join('')||'<div class="brief-item"><span>No expected open bill actions</span><span>'+fmtDate(tomorrow)+'</span></div>';}var np=events.find(function(e){return e.iso>=today&&e.cls.indexOf(' in')>-1&&/Ryan|Alissa|Unilever|HUMC|pay/i.test(e.name);});var sf=events.find(function(e){return e.iso>=today&&/Fund living|spending/i.test(e.name);});setText('nextPaycheckMetric',np?fmtDate(np.iso):'—');setText('spendingFundedMetric',sf?fmtDate(sf.iso):'—');}
+  function showMonth(m){months.forEach(function(x){var p=document.getElementById('panel-'+x);var b=document.getElementById('btn-'+x);if(p){p.classList.toggle('show',x===m);p.style.display=x===m?'block':'none';}if(b)b.classList.toggle('active',x===m);});try{localStorage.setItem('bills-last-view-static',m);}catch(e){}}
+  function startMonth(){try{var saved=localStorage.getItem('bills-last-view-static');if(saved&&months.indexOf(saved)>-1)return saved;}catch(e){}var map={5:'june',6:'july',7:'aug',8:'sep',9:'oct',10:'nov',11:'dec'};return map[new Date().getMonth()]||'june';}
+  async function loadCalendar(){try{var html=[];for(var i=0;i<months.length;i++){var path='/months/'+months[i]+'.html?v=20260626brief2';var r=await fetch(path,{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error(path+' returned HTTP '+r.status);html.push(await r.text());}mount.innerHTML=html.join('\n');months.forEach(function(m){var b=document.getElementById('btn-'+m);if(b)b.addEventListener('click',function(){showMonth(m);});});setupChecks();renderStatusCards();renderDailyBriefing();showMonth(startMonth());}catch(e){mount.innerHTML='<div class="loader-panel error"><b>Calendar failed to load.</b><br>'+String(e.message||e)+'</div>';}}
   loadCalendar();
 })();
 </script>
