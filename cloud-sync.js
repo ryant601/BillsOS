@@ -18,6 +18,7 @@
         '.toggle{margin-bottom:12px!important}',
         '.tabs{padding:3px!important;border-radius:12px!important}',
         '.tabs button{padding:6px 12px!important;font-size:12px!important;border-radius:9px!important}',
+        '.spark{display:none!important}',
         '.v2-briefing{display:none!important}',
         '.ops-panel,.status-grid,.plan-card{display:none!important}',
         'header{display:grid!important;grid-template-columns:minmax(240px,1fr) auto!important;align-items:end!important;margin-bottom:10px!important;gap:12px!important}',
@@ -62,10 +63,6 @@
         '.timeline-node{padding:8px 9px!important;border-radius:12px!important}',
         '.timeline-node .when{font-size:10px!important}',
         '.timeline-node .what{font-size:11.5px!important}',
-        '.spark{margin-bottom:10px!important;padding:12px 14px 2px!important;border-radius:16px!important}',
-        '.spark-head h2{font-size:14px!important}',
-        '.spark-head p{font-size:10.8px!important;margin:2px 0 0!important;max-width:62ch!important}',
-        '.sparksvg{max-height:145px!important}',
         '.dow-row{margin-top:10px!important;margin-bottom:6px!important}',
         '.grid{gap:8px!important}',
         '.day{padding:9px!important;border-radius:14px!important;min-height:0!important}',
@@ -75,7 +72,7 @@
         '.ev{padding:5px 6px!important;border-radius:9px!important;font-size:11px!important}',
         '.legend{margin-top:10px!important}',
         '@media(max-width:900px){header{grid-template-columns:1fr!important}.chips{justify-content:flex-start!important;max-width:100%!important}.status-hero-top{display:block!important}.conf-card{margin-top:8px!important}.status-metrics{grid-template-columns:1fr 1fr!important}}',
-        '@media(max-width:760px){body{padding:10px 9px 42px!important}.global-briefing,.status-hero,.spark{padding:10px!important}.status-metrics{grid-template-columns:1fr!important}.sparksvg{max-height:130px!important}.chip{min-width:82px!important}.grid{gap:7px!important}}'
+        '@media(max-width:760px){body{padding:10px 9px 42px!important}.global-briefing,.status-hero{padding:10px!important}.status-metrics{grid-template-columns:1fr!important}.chip{min-width:82px!important}.grid{gap:7px!important}}'
       ].join('\n');
       document.head.appendChild(style);
     }
