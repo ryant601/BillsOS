@@ -3,30 +3,29 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<!-- Updated 2026-06-26: modular split-file build with visible calendar-first layout. -->
+<!-- Updated 2026-06-26: corrected modular split with complete month calendar files. -->
 <title>Bills Account · June &amp; July 2026</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/styles.css?v=20260626split6"/>
+<link rel="stylesheet" href="/styles.css?v=20260626fixed1"/>
 <style>
   .loader-panel{background:#fff;border:1px solid rgba(20,35,55,.16);border-radius:18px;padding:16px;margin-top:16px;color:#14202c;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
   .loader-panel.error{border-color:rgba(184,54,44,.42);color:#b8362c}
-  .build-stamp{background:#fff;border:1px solid rgba(20,35,55,.12);border-radius:999px;padding:7px 12px;margin:0 auto 14px;width:max-content;max-width:100%;font-size:11px;color:#41505f}
+  .build-stamp{background:#fff;border:1px solid rgba(20,35,55,.12);border-radius:999px;padding:7px 12px;margin:0 auto 14px;width:max-content;max-width:100%;font-size:11px;color:#41505f;text-align:center}
   .status-hero,.ops-panel,.v2-briefing,.status-grid,.plan-card{display:none!important}
 </style>
 </head>
 <body>
 <div class="wrap">
-<div class="build-stamp" aria-label="BillsOS build version">Build v2026.06.26-split.6 · Updated Jun 26, 2026 · Calendar visible mode</div>
-<div class="toggle"><div class="tabs"><button class="active" id="btn-june"><span>Jun</span><span class="dot dot-bridge"></span></button><button class="" id="btn-july"><span>Jul</span></button><button class="" id="btn-aug"><span>Aug</span></button><button class="" id="btn-sep"><span>Sep</span></button><button class="" id="btn-oct"><span>Oct</span><span class="dot dot-triple"></span></button><button class="" id="btn-nov"><span>Nov</span></button><button class="" id="btn-dec"><span>Dec</span><span class="dot dot-triple"></span></button></div></div>
+<div class="build-stamp" aria-label="BillsOS build version">Build v2026.06.26-fixed.1 · Corrected complete month files</div>
+<div class="toggle"><div class="tabs"><button class="active" id="btn-june"><span>Jun</span><span class="dot dot-bridge"></span></button><button id="btn-july"><span>Jul</span></button><button id="btn-aug"><span>Aug</span></button><button id="btn-sep"><span>Sep</span></button><button id="btn-oct"><span>Oct</span><span class="dot dot-triple"></span></button><button id="btn-nov"><span>Nov</span></button><button id="btn-dec"><span>Dec</span><span class="dot dot-triple"></span></button></div></div>
 <div id="month-panels" aria-live="polite"><div class="loader-panel">Loading calendar files…</div></div>
 </div>
 <script>
 (function(){
   var months=['june','july','aug','sep','oct','nov','dec'];
   var mount=document.getElementById('month-panels');
-
   function showMonth(m){
     months.forEach(function(x){
       var p=document.getElementById('panel-'+x);
@@ -36,18 +35,16 @@
     });
     try{localStorage.setItem('bills-last-view-static',m);}catch(e){}
   }
-
   function startMonth(){
     try{var saved=localStorage.getItem('bills-last-view-static');if(saved&&months.indexOf(saved)>-1)return saved;}catch(e){}
     var map={5:'june',6:'july',7:'aug',8:'sep',9:'oct',10:'nov',11:'dec'};
     return map[new Date().getMonth()]||'june';
   }
-
   async function loadCalendar(){
     try{
       var html=[];
       for(var i=0;i<months.length;i++){
-        var path='/months/'+months[i]+'.html?v=20260626split6';
+        var path='/months/'+months[i]+'.html?v=20260626fixed1';
         var r=await fetch(path,{cache:'no-store',credentials:'same-origin'});
         if(!r.ok)throw new Error(path+' returned HTTP '+r.status);
         html.push(await r.text());
@@ -56,10 +53,9 @@
       months.forEach(function(m){var b=document.getElementById('btn-'+m);if(b)b.addEventListener('click',function(){showMonth(m);});});
       showMonth(startMonth());
     }catch(e){
-      mount.innerHTML='<div class="loader-panel error"><b>Calendar failed to load.</b><br>'+String(e.message||e)+'<br><br>Check that the months folder contains june.html, july.html, aug.html, sep.html, oct.html, nov.html, and dec.html.</div>';
+      mount.innerHTML='<div class="loader-panel error"><b>Calendar failed to load.</b><br>'+String(e.message||e)+'</div>';
     }
   }
-
   loadCalendar();
 })();
 </script>
