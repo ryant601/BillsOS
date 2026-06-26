@@ -33,3 +33,82 @@
 <div class="timeline-list" id="nextTimelineList"><div class="timeline-node"><div class="when">Loading</div><div class="what">Checking upcoming activity…</div></div></div>
 </div>
 </section>
+<div aria-label="Financial command center" class="ops-panel">
+<div class="ops-card"><h3>Today’s financial checklist</h3><p class="sub" id="todayChecklistSub">Uses this device’s local date. Today is calculated in the browser, not hardcoded.</p><div class="action-list" id="todayChecklistList"><div class="action done"><span class="box"></span><span>Loading today’s actions…</span></div></div></div>
+<div class="ops-card"><h3>Bills health</h3><div class="mini-metrics"><div class="mini"><span class="k">Bills covered through</span><span class="v">Jun 30</span></div><div class="mini"><span class="k">Next paycheck</span><span class="v in" id="nextPaycheckMetric">Calculating…</span></div><div class="mini"><span class="k">Spending funded</span><span class="v in">Jun 26</span></div><div class="mini"><span class="k">Savings sweep</span><span class="v gold">Skipped</span></div></div></div>
+<div class="ops-card ops-reminder"><h3>Reminder behavior</h3><p class="sub">Every bill-type item can generate reminders. Manual items say pay/transfer; autopays say verify posted.</p><span class="pill">Apple Shortcut import · V2.4 two-week funding plan</span></div>
+</div>
+<div aria-label="Daily financial briefing" class="v2-briefing">
+<h2 id="dailyBriefingTitle">Daily financial briefing</h2>
+<div class="brief-sub" id="dailyBriefingSub">V2.4 two-week funding plan uses your browser’s local date for Today, Tomorrow, exports, and reminder timing.</div>
+<div class="v2-grid">
+<div class="v2-box">
+<h3 id="tomorrowActionsTitle">Tomorrow’s expected actions</h3>
+<div class="v2-list" id="tomorrowActionsList"><div class="v2-item"><span>Loading…</span><span></span></div></div>
+</div>
+<div class="v2-box">
+<h3>Reminder model</h3>
+<div class="v2-callout"><b>Night before:</b> 7:00 PM awareness reminder.<br/><b>Morning of:</b> 8:00 AM action reminder.<br/><br/>Manual bills say <b>Pay</b>. Autopay bills say <b>Verify posted</b>. Paychecks say <b>Verify deposited</b>. Spending transfers say <b>Fund spending account</b>.</div>
+</div>
+</div>
+</div>
+<div class="spark"><div class="spark-head"><h2>Running balance</h2><p>June ends at $3,671 after the actual 6/26 Ryan paycheck and the one-time QS-RT payment. The forward plan now keeps everyday spending funding intact, keeps Greco through September only, and uses seasonal utility assumptions so summer gas savings are not overstated as permanent cash flow.</p></div>
+<svg aria-label="Running balance" class="sparksvg" preserveaspectratio="xMidYMid meet" viewbox="0 0 1000 240">
+<defs>
+<lineargradient id="ag-June" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0f9d58" stop-opacity="0.22"></stop><stop offset="100%" stop-color="#0f9d58" stop-opacity="0"></stop></lineargradient>
+<lineargradient id="lg-June" x1="0" x2="1" y1="0" y2="0"><stop offset="0%" stop-color="#0c7d46"></stop><stop offset="55%" stop-color="#0f9d58"></stop><stop offset="100%" stop-color="#28b56e"></stop></lineargradient>
+<filter id="glow"><fegaussianblur result="b" stddeviation="3"></fegaussianblur><femerge><femergenode in="b"></femergenode><femergenode in="SourceGraphic"></femergenode></femerge></filter>
+</defs>
+<line class="warnline" x1="0" x2="1000" y1="178.2" y2="178.2"></line>
+<text class="warnlbl" x="6" y="172.2">$1,000 floor</text>
+<path d="M 26.0,200.0 L 26.0,197.8 L 78.7,197.8 L 131.3,197.8 L 184.0,197.8 L 236.7,197.8 L 289.3,197.8 L 342.0,197.8 L 394.7,197.8 L 447.3,197.8 L 500.0,198.5 L 552.7,198.5 L 605.3,198.5 L 658.0,198.5 L 710.7,198.5 L 763.3,138.9 L 816.0,144.8 L 868.7,146.6 L 921.3,65.2 L 974.0,82.9 L 974.0,200.0 Z" fill="url(#ag-June)"></path>
+<polyline class="balpath" fill="none" points="26.0,197.8 78.7,197.8 131.3,197.8 184.0,197.8 236.7,197.8 289.3,197.8 342.0,197.8 394.7,197.8 447.3,197.8 500.0,198.5 552.7,198.5 605.3,198.5 658.0,198.5 710.7,198.5 763.3,138.9 816.0,144.8 868.7,146.6 921.3,65.2 974.0,82.9" stroke="url(#lg-June)"></polyline>
+<circle cx="921.3" cy="65.2" fill="#0f9d58" filter="url(#glow)" r="4.5"></circle><text class="mk" fill="#0f9d58" text-anchor="middle" x="921.3" y="53.2">peak $5,738</text><circle cx="658.0" cy="198.5" fill="#a8651a" filter="url(#glow)" r="4.5"></circle><text class="mk" fill="#a8651a" text-anchor="middle" x="658.0" y="218.5">low $0 (Jun 24)</text><circle cx="974.0" cy="82.9" fill="#8a5e12" filter="url(#glow)" r="4.5"></circle><text class="mk" fill="#8a5e12" text-anchor="end" x="966.0" y="70.9">Jul opens $3,671</text>
+</svg>
+</div>
+<div aria-label="Bills account status" class="status-grid">
+<div class="status-card"><span class="k">Payday relief</span><span class="v in">Jun 26</span><span class="note">Alissa and actual Ryan paycheck posted; living/spending account funded.</span></div>
+<div class="status-card"><span class="k">Spending account</span><span class="v in">+$1,500</span><span class="note">Not savings — this is everyday spending money.</span></div>
+<div class="status-card"><span class="k">Bills covered through</span><span class="v">Jun 30</span><span class="note">Remaining June bills stay covered after funding spending.</span></div>
+<div class="status-card"><span class="k">Savings sweep</span><span class="v gold">Skipped</span><span class="note">Savings happens only on sweep days, not this transfer.</span></div>
+</div><div class="plan-card" id="hopeful-plan-card"><h3>Hopeful path: why the sweeps improve</h3><p>This plan keeps everyday spending funded with exactly two $1,500 replenishments per month. The improvement comes from ending seasonal costs, modeling utilities realistically, and sweeping only when the upcoming bill calendar still leaves a safe cushion.</p><div class="plan-grid"><div class="plan-tile"><span class="k">Greco ends after</span><span class="v">September</span><span class="n">+~$254/month capacity starting October</span></div><div class="plan-tile"><span class="k">Everyday funding</span><span class="v">Exactly 2 / month</span><span class="n">$1,500 replenished twice monthly; no third transfer in extra-paycheck months</span></div><div class="plan-tile"><span class="k">Best visible month</span><span class="v gold">October + December</span><span class="n">Extra paycheck months create the largest visible sweeps</span></div></div></div>
+<div class="dow-row"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+<div class="grid">
+<div class="day is-blank"></div>
+<div class="day is-past" data-day="1"><span class="dnum">1</span><span class="pastlbl">cleared ✓</span></div>
+<div class="day is-past" data-day="2"><span class="dnum">2</span><span class="pastlbl">cleared ✓</span></div>
+<div class="day is-past" data-day="3"><span class="dnum">3</span><span class="pastlbl">cleared ✓</span></div>
+<div class="day is-past" data-day="4"><span class="dnum">4</span><span class="pastlbl">cleared ✓</span></div>
+<div class="day is-past" data-day="5"><span class="dnum">5</span><span class="pastlbl">cleared ✓</span></div>
+<div class="day is-past" data-day="6"><span class="dnum">6</span><span class="pastlbl">cleared ✓</span></div>
+<div class="day is-past" data-day="7"><span class="dnum">7</span><span class="pastlbl">cleared ✓</span></div>
+<div class="day is-past" data-day="8"><span class="dnum">8</span><span class="pastlbl">cleared ✓</span></div>
+<div class="day is-past" data-day="9"><span class="dnum">9</span><span class="pastlbl">cleared ✓</span></div>
+<div class="day is-past" data-day="10"><span class="dnum">10</span><span class="pastlbl">cleared ✓</span></div>
+<div class="day is-past" data-day="11"><span class="dnum">11</span><span class="pastlbl">cleared ✓</span></div>
+<div class="day" data-day="12"><div class="dtop"><span class="dnum">12</span><span class="dow">Fri</span></div><div class="bod"><span>begin day</span><b>$100.00</b></div><div class="events"><div class="ev note"><span class="dot"></span><span class="nm">Bills account seeded — $100</span><span class="amt"></span></div></div><div class="eod"><span>end of day</span><b>$100.00</b></div></div>
+<div class="day" data-day="13"><div class="dtop"><span class="dnum">13</span><span class="dow">Sat</span></div><div class="bod"><span>begin day</span><b>$100.00</b></div><div class="events"><div class="ev note"><span class="dot"></span><span class="nm">GT500 due — paying 6/26 instead</span><span class="amt"></span></div></div><div class="eod"><span>end of day</span><b>$100.00</b></div></div>
+<div class="day" data-day="14"><div class="dtop"><span class="dnum">14</span><span class="dow">Sun</span></div><div class="bod"><span>begin day</span><b>$100.00</b></div><div class="eod"><span>end of day</span><b>$100.00</b></div></div>
+<div class="day" data-day="15"><div class="dtop"><span class="dnum">15</span><span class="dow">Mon</span></div><div class="bod"><span>begin day</span><b>$100.00</b></div><div class="eod"><span>end of day</span><b>$100.00</b></div></div>
+<div class="day" data-day="16"><div class="dtop"><span class="dnum">16</span><span class="dow">Tue</span></div><div class="bod"><span>begin day</span><b>$100.00</b></div><div class="eod"><span>end of day</span><b>$100.00</b></div></div>
+<div class="day" data-day="17"><div class="dtop"><span class="dnum">17</span><span class="dow">Wed</span></div><div class="bod"><span>begin day</span><b>$100.00</b></div><div class="events"><div class="ev note"><span class="dot"></span><span class="nm">Chase — paid 6/1 ✓</span><span class="amt"></span></div><div class="ev out"><span class="dot"></span><span class="nm">Citi Double Cash — overdrawn</span><span class="amt">−178.45</span></div></div><div class="eod"><span>end of day</span><b>$-78.45</b></div></div>
+<div class="day" data-day="18"><div class="dtop"><span class="dnum">18</span><span class="dow">Thu</span></div><div class="bod"><span>begin day</span><b>$-78.45</b></div><div class="events"><div class="ev xfer"><span class="dot"></span><span class="nm">Top-up — overdraft covered</span><span class="amt">+78.45</span></div></div><div class="eod"><span>end of day</span><b>$0.00</b></div></div>
+<div class="day" data-day="19"><div class="dtop"><span class="dnum">19</span><span class="dow">Fri</span></div><div class="bod"><span>begin day</span><b>$0.00</b></div><div class="eod"><span>end of day</span><b>$0.00</b></div></div>
+<div class="day" data-day="20"><div class="dtop"><span class="dnum">20</span><span class="dow">Sat</span></div><div class="bod"><span>begin day</span><b>$0.00</b></div><div class="eod"><span>end of day</span><b>$0.00</b></div></div>
+<div class="day" data-day="21"><div class="dtop"><span class="dnum">21</span><span class="dow">Sun</span></div><div class="bod"><span>begin day</span><b>$0.00</b></div><div class="eod"><span>end of day</span><b>$0.00</b></div></div>
+<div class="day" data-day="22"><div class="dtop"><span class="dnum">22</span><span class="dow">Mon</span></div><div class="bod"><span>begin day</span><b>$0.00</b></div><div class="eod"><span>end of day</span><b>$0.00</b></div></div>
+<div class="day" data-day="23"><div class="dtop"><span class="dnum">23</span><span class="dow">Tue</span></div><div class="bod"><span>begin day</span><b>$0.00</b></div><div class="eod"><span>end of day</span><b>$0.00</b></div></div>
+<div class="day" data-day="24"><div class="dtop"><span class="dnum">24</span><span class="dow">Wed</span></div><div class="bod"><span>begin day</span><b>$0.00</b></div><div class="eod"><span>end of day</span><b>$0.00</b></div></div>
+<div class="day" data-day="25"><div class="dtop"><span class="dnum">25</span><span class="dow">Thu</span></div><div class="bod"><span>begin day</span><b>$0.00</b></div><div class="eod"><span>end of day</span><b>$0.00</b></div></div>
+<div class="day is-pay" data-day="26"><div class="dtop"><span class="dnum">26</span><span class="dow">Fri</span><span class="badge pay">Paydays + funding</span></div><div class="bod"><span>begin day</span><b>$0.00</b></div><div class="events"><div class="ev in"><span class="dot"></span><span class="nm">Alissa — HUMC</span><span class="amt">+3,760.30</span></div><div class="ev in"><span class="dot"></span><span class="nm">Ryan — Unilever actual</span><span class="amt">+4,558.62</span></div><div class="ev out"><span class="dot"></span><span class="nm">Citi Custom Cash</span><span class="flag manual">M</span><span class="amt">−41.82</span></div><div class="ev out"><span class="dot"></span><span class="nm">GT500 (Wells Fargo) — manual</span><span class="amt">−712.98</span></div><div class="ev out"><span class="dot"></span><span class="nm">Landscaping (Greco) — catch-up</span><span class="amt">−254.00</span></div><div class="ev out"><span class="dot"></span><span class="nm">Jewelry Ins (Briteco)</span><span class="flag auto">A</span><span class="amt">−9.68</span></div><div class="ev out"><span class="dot"></span><span class="nm">Starz</span><span class="flag auto">A</span><span class="amt">−4.99</span></div><div class="ev out"><span class="dot"></span><span class="nm">Capital One QS - RT</span><span class="flag manual">M</span><span class="amt">−57.00</span></div><div class="ev xfer"><span class="dot"></span><span class="nm">Fund living / spending acct</span><span class="amt">−1,500.00</span></div></div><div class="eod"><span>end of day</span><b>$5,738.45</b></div></div>
+<div class="day" data-day="27"><div class="dtop"><span class="dnum">27</span><span class="dow">Sat</span></div><div class="bod"><span>begin day</span><b>$5,738.45</b></div><div class="events"><div class="ev out"><span class="dot"></span><span class="nm">HOA Dues</span><span class="flag manual">M</span><span class="amt">−275.00</span></div><div class="ev out"><span class="dot"></span><span class="nm">Amex Blue</span><span class="flag manual">M</span><span class="amt">−100.67</span></div><div class="ev out"><span class="dot"></span><span class="nm">Macy's Card</span><span class="flag manual">M</span><span class="amt">−170.00</span></div></div><div class="eod"><span>end of day</span><b>$5,192.78</b></div></div>
+<div class="day" data-day="28"><div class="dtop"><span class="dnum">28</span><span class="dow">Sun</span></div><div class="bod"><span>begin day</span><b>$5,192.78</b></div><div class="eod"><span>end of day</span><b>$5,192.78</b></div></div>
+<div class="day" data-day="29"><div class="dtop"><span class="dnum">29</span><span class="dow">Mon</span><span class="badge bill">Jeep</span></div><div class="bod"><span>begin day</span><b>$5,192.78</b></div><div class="events"><div class="ev out"><span class="dot"></span><span class="nm">Jeep — remaining half (deferred)</span><span class="amt">−609.46</span></div></div><div class="eod"><span>end of day</span><b>$4,583.32</b></div></div>
+<div class="day is-sweep" data-day="30"><div class="dtop"><span class="dnum">30</span><span class="dow">Tue</span><span class="badge sweep">No sweep</span></div><div class="bod"><span>begin day</span><b>$4,583.32</b></div><div class="events"><div class="ev out"><span class="dot"></span><span class="nm">F150 (Ally)</span><span class="flag manual">M</span><span class="amt">−797.32</span></div><div class="ev out"><span class="dot"></span><span class="nm">Apple Card</span><span class="flag manual">M</span><span class="amt">−115.00</span></div><div class="ev xfer"><span class="dot"></span><span class="nm">Sweep skipped — carry to July</span><span class="amt">—</span></div></div><div class="eod"><span>end of day</span><b>$3,671.00</b></div></div>
+<div class="day is-blank"></div>
+<div class="day is-blank"></div>
+<div class="day is-blank"></div>
+<div class="day is-blank"></div>
+</div>
+<div class="legend"><span class="lg"><i class="swatch in"></i>Income</span><span class="lg"><i class="swatch out"></i>Bill payment</span><span class="lg"><i class="swatch xfer"></i>Living funding / sweep</span><span class="lg">* variable (electric &amp; gas)</span><span class="lg">↻ moved due date</span><span class="lg">? confirm date</span><span class="lg"><span class="flag auto" style="font-size:9px;padding:2px 6px">A</span> autopay</span><span class="lg"><span class="flag manual" style="font-size:9px;padding:2px 6px">M</span> manual</span></div>
+</section>
