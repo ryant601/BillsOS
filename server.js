@@ -10,9 +10,10 @@ const PASS = process.env.BILLS_PASS || "";
 const SECRET = process.env.SESSION_SECRET || PASS || "change-me";
 const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, "data");
 const CHECKMARK_FILE = path.join(DATA_DIR, "checkmarks.json");
+const BILLS_FILE = path.join(DATA_DIR, "bills.json");
 
 app.use(express.urlencoded({ extended: false }));
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "2mb" }));
 
 function makeToken() {
   return crypto
@@ -42,33 +43,59 @@ function ensureDataDir() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-function readCheckmarks() {
+function readJsonFile(filePath, fallback) {
   try {
     ensureDataDir();
-    if (!fs.existsSync(CHECKMARK_FILE)) {
-      return { completed: {}, updatedAt: null };
-    }
-    const parsed = JSON.parse(fs.readFileSync(CHECKMARK_FILE, "utf8"));
-    return {
-      completed: parsed && typeof parsed.completed === "object" && !Array.isArray(parsed.completed) ? parsed.completed : {},
-      updatedAt: parsed.updatedAt || null
-    };
+    if (!fs.existsSync(filePath)) return fallback;
+    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : fallback;
   } catch (_err) {
-    return { completed: {}, updatedAt: null };
+    return fallback;
   }
 }
 
-function writeCheckmarks(completed) {
+function writeJsonFile(filePath, payload) {
   ensureDataDir();
+  const tmp = filePath + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(payload, null, 2));
+  fs.renameSync(tmp, filePath);
+  return payload;
+}
+
+function readCheckmarks() {
+  const parsed = readJsonFile(CHECKMARK_FILE, { completed: {}, updatedAt: null });
+  return {
+    completed: parsed && typeof parsed.completed === "object" && !Array.isArray(parsed.completed) ? parsed.completed : {},
+    updatedAt: parsed.updatedAt || null
+  };
+}
+
+function writeCheckmarks(completed) {
   const clean = {};
   Object.keys(completed || {}).forEach(key => {
     if (completed[key]) clean[key] = 1;
   });
-  const payload = { completed: clean, updatedAt: new Date().toISOString() };
-  const tmp = CHECKMARK_FILE + ".tmp";
-  fs.writeFileSync(tmp, JSON.stringify(payload, null, 2));
-  fs.renameSync(tmp, CHECKMARK_FILE);
-  return payload;
+  return writeJsonFile(CHECKMARK_FILE, { completed: clean, updatedAt: new Date().toISOString() });
+}
+
+function normalizeBillsData(input) {
+  const src = input && typeof input === "object" && !Array.isArray(input) ? input : {};
+  return {
+    bills: Array.isArray(src.bills) ? src.bills : [],
+    oneTimeEvents: Array.isArray(src.oneTimeEvents) ? src.oneTimeEvents : [],
+    income: Array.isArray(src.income) ? src.income : [],
+    updatedAt: src.updatedAt || null
+  };
+}
+
+function readBillsData() {
+  return normalizeBillsData(readJsonFile(BILLS_FILE, { bills: [], oneTimeEvents: [], income: [], updatedAt: null }));
+}
+
+function writeBillsData(data) {
+  const clean = normalizeBillsData(data);
+  clean.updatedAt = new Date().toISOString();
+  return writeJsonFile(BILLS_FILE, clean);
 }
 
 function loginPage(error = "") {
@@ -189,6 +216,24 @@ app.post("/api/checkmarks", (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Could not save checkmarks" });
   }
+});
+
+app.get("/api/bills", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json(readBillsData());
+});
+
+app.post("/api/bills", (req, res) => {
+  try {
+    res.json(writeBillsData(req.body));
+  } catch (err) {
+    res.status(500).json({ error: "Could not save bills control data" });
+  }
+});
+
+app.get("/control", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "control.html"));
 });
 
 app.get("/", (_req, res) => {
