@@ -98,6 +98,21 @@ function writeBillsData(data) {
   return writeJsonFile(BILLS_FILE, clean);
 }
 
+function generatedDashboardHtml() {
+  const generatedPath = path.join(__dirname, "generated-v5.html");
+  let html = fs.readFileSync(generatedPath, "utf8");
+  html = html.replace(
+    "var M=[['july',7,'July'],['aug',8,'August'],['sep',9,'September'],['oct',10,'October'],['nov',11,'November'],['dec',12,'December']]",
+    "var M=[['june',6,'June'],['july',7,'July'],['aug',8,'August'],['sep',9,'September'],['oct',10,'October'],['nov',11,'November'],['dec',12,'December']]"
+  );
+  html = html.replace(
+    "function chain(data){var out={},bal=FIRST_BEGIN;M.forEach(function(mm){var key=Y+'-'+String(mm[1]).padStart(2,'0'),rows=gen(data,mm[1],bal),inc=rows.filter(function(x){return x.amount>0}).reduce(function(s,x){return s+x.amount},0),spend=rows.filter(function(x){return x.amount<0}).reduce(function(s,x){return s+Math.abs(x.amount)},0),end=bal+inc-spend;out[mm[0]]={month:mm,begin:bal,rows:rows,inc:inc,out:spend,end:end};bal=end});return out}",
+    "function chain(data){var out={},bal=FIRST_BEGIN;M.forEach(function(mm){var key=Y+'-'+String(mm[1]).padStart(2,'0'),begin=mm[0]==='june'?0:bal,rows=gen(data,mm[1],begin),inc=rows.filter(function(x){return x.amount>0}).reduce(function(s,x){return s+x.amount},0),spend=rows.filter(function(x){return x.amount<0}).reduce(function(s,x){return s+Math.abs(x.amount)},0),end=begin+inc-spend;out[mm[0]]={month:mm,begin:begin,rows:rows,inc:inc,out:spend,end:end};if(mm[0]!=='june')bal=end});return out}"
+  );
+  html = html.replace("post-sweep balance carry-forward", "post-sweep balance carry-forward · June restored");
+  return html;
+}
+
 function loginPage(error = "") {
   return `
 <!doctype html>
@@ -233,7 +248,7 @@ app.post("/api/bills", (req, res) => {
 
 app.get("/generated", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.sendFile(path.join(__dirname, "generated-v5.html"));
+  res.send(generatedDashboardHtml());
 });
 
 app.get("/legacy", (_req, res) => {
@@ -268,7 +283,7 @@ app.get("/control", (_req, res) => {
 
 app.get("/", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.sendFile(path.join(__dirname, "generated-v5.html"));
+  res.send(generatedDashboardHtml());
 });
 
 app.use(express.static(__dirname));
