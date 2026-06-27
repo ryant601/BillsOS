@@ -231,11 +231,16 @@ app.post("/api/bills", (req, res) => {
   }
 });
 
+app.get("/generated", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "generated.html"));
+});
+
 app.get("/control", (_req, res) => {
   try {
     const controlPath = path.join(__dirname, "control.html");
     let html = fs.readFileSync(controlPath, "utf8");
-    const previewScript = '<script defer src="/control-preview.js?v=20260626preview2"></script>';
+    const previewScript = '<script defer src="/control-preview.js?v=20260626preview5"></script>';
     if (!html.includes("/control-preview.js")) {
       html = html.replace("</body>", `${previewScript}\n</body>`);
     }
@@ -253,6 +258,9 @@ app.get("/", (_req, res) => {
     const syncScript = '<script defer src="/cloud-sync.js?v=20260626cloud2"></script>';
     if (!html.includes("/cloud-sync.js")) {
       html = html.replace("</body>", `${syncScript}\n</body>`);
+    }
+    if (!html.includes('href="/generated"')) {
+      html = html.replace('<div class="wrap">', '<div class="wrap"><div style="text-align:center;margin:0 0 10px"><a href="/generated" style="display:inline-flex;border:1px solid rgba(20,35,55,.14);border-radius:999px;background:#fff;padding:8px 12px;color:#14202c;text-decoration:none;font-weight:800;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;font-size:12px">Generated preview</a></div>');
     }
     res.setHeader("Cache-Control", "no-store");
     res.send(html);
