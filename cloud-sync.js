@@ -15,8 +15,9 @@
         '.bills-sync-pill{display:flex;align-items:center;gap:7px;width:max-content;max-width:100%;margin:0 auto 7px;padding:5px 10px;border:1px solid rgba(20,35,55,.12);border-radius:999px;background:#fff;color:#41505f;font-size:10.5px;box-shadow:0 6px 18px -14px rgba(20,35,55,.28)}',
         '.bills-sync-pill i{width:7px;height:7px;border-radius:99px;background:#a8651a;display:inline-block}',
         '.bills-sync-pill.ok i{background:#0a7d44}.bills-sync-pill.warn i{background:#a8651a}.bills-sync-pill.err i{background:#b8362c}',
-        '.bills-details-toggle{display:block;width:max-content;margin:0 auto 10px;padding:6px 12px;border:1px solid rgba(20,35,55,.14);border-radius:999px;background:#fff;color:#41505f;font:700 11px Hanken Grotesk,system-ui;cursor:pointer;box-shadow:0 6px 18px -16px rgba(20,35,55,.3)}',
-        '.bills-details-toggle:hover{color:#14202c;background:#f8fafc}',
+        '.bills-utility-row{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:0 auto 10px}',
+        '.bills-control-link,.bills-details-toggle{display:inline-flex;align-items:center;width:max-content;margin:0;padding:6px 12px;border:1px solid rgba(20,35,55,.14);border-radius:999px;background:#fff;color:#41505f;font:700 11px Hanken Grotesk,system-ui;cursor:pointer;text-decoration:none;box-shadow:0 6px 18px -16px rgba(20,35,55,.3)}',
+        '.bills-control-link:hover,.bills-details-toggle:hover{color:#14202c;background:#f8fafc}',
         '.toggle{margin-bottom:10px!important}',
         '.tabs{padding:3px!important;border-radius:12px!important}',
         '.tabs button{padding:6px 12px!important;font-size:12px!important;border-radius:9px!important}',
@@ -89,7 +90,14 @@
       if(stamp&&stamp.parentNode)stamp.parentNode.insertBefore(pill,stamp.nextSibling);
       else document.body.insertBefore(pill,document.body.firstChild);
     }
-    if(!document.getElementById('billsDetailsToggle')){
+    if(!document.getElementById('billsUtilityRow')){
+      var row=document.createElement('div');
+      row.id='billsUtilityRow';
+      row.className='bills-utility-row';
+      var control=document.createElement('a');
+      control.className='bills-control-link';
+      control.href='/control';
+      control.textContent='Control Center';
       var btn=document.createElement('button');
       btn.id='billsDetailsToggle';
       btn.className='bills-details-toggle';
@@ -99,8 +107,10 @@
         var on=document.body.classList.toggle('bills-show-details');
         btn.textContent=on?'Hide status details':'Show status details';
       };
+      row.appendChild(control);
+      row.appendChild(btn);
       var brief=document.querySelector('.global-briefing');
-      if(brief&&brief.parentNode)brief.parentNode.insertBefore(btn,brief.nextSibling);
+      if(brief&&brief.parentNode)brief.parentNode.insertBefore(row,brief.nextSibling);
     }
   }
   function readLocal(){try{return JSON.parse(localStorage.getItem(STORE)||'{}')||{};}catch(e){return {};}}
