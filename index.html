@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<!-- Updated 2026-06-27: cleaned dashboard copy and removed generated/debug wording. -->
+<!-- Updated 2026-06-27: added Travelers insurance bill overlay with runtime balance recalculation. -->
 <title>BillsOS · Dashboard</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/styles.css?v=20260627clean1"/>
+<link rel="stylesheet" href="/styles.css?v=20260627trav1"/>
 <style>
   .loader-panel{background:#fff;border:1px solid rgba(20,35,55,.16);border-radius:18px;padding:16px;margin-top:16px;color:#14202c;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
   .loader-panel.error{border-color:rgba(184,54,44,.42);color:#b8362c}
@@ -36,7 +36,7 @@
 </head>
 <body>
 <div class="wrap">
-<div class="build-stamp" aria-label="BillsOS build version">v2026.06.27-clean.1</div>
+<div class="build-stamp" aria-label="BillsOS build version">v2026.06.27-trav.1</div>
 <div class="toggle"><div class="tabs"><button class="active" id="btn-june"><span>Jun</span><span class="dot dot-bridge"></span></button><button id="btn-july"><span>Jul</span></button><button id="btn-aug"><span>Aug</span></button><button id="btn-sep"><span>Sep</span></button><button id="btn-oct"><span>Oct</span><span class="dot dot-triple"></span></button><button id="btn-nov"><span>Nov</span></button><button id="btn-dec"><span>Dec</span><span class="dot dot-triple"></span></button></div></div>
 <section class="global-briefing" aria-label="Daily financial briefing">
   <div class="brief-head"><div><h2 id="dailyBriefingTitle">Today</h2><div class="brief-sub" id="dailyBriefingSub">Loading account view…</div></div></div>
@@ -54,37 +54,83 @@
   var mount=document.getElementById('month-panels');
   var STORE='billsos-completed-events-v1';
   var completed={};
+  var overlays=[{name:'Travelers Insurance',startMonth:'july',day:1,amountByMonth:{july:521},defaultAmount:261,flag:'auto'}];
   function loadDone(){try{completed=JSON.parse(localStorage.getItem(STORE)||'{}')||{};}catch(e){completed={};}}
   function saveDone(){try{localStorage.setItem(STORE,JSON.stringify(completed));}catch(e){}}
   function cleanText(s){return String(s||'').replace(/\s+/g,' ').trim();}
-  function parseMoney(s){var n=Number(String(s||'').replace(/[^0-9.\-]/g,''));return isNaN(n)?null:n;}
+  function parseMoney(s){var n=Number(String(s||'').replace(/−/g,'-').replace(/[^0-9.\-]/g,''));return isNaN(n)?null:n;}
+  function parseSignedMoney(s){var n=parseMoney(s);return n==null?0:n;}
   function money(n){if(n==null||isNaN(n))return '—';return '$'+n.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0});}
+  function money2(n){if(n==null||isNaN(n))return '—';return '$'+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function amtOut(n){return '−'+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
   function fmtDate(iso){var d=new Date(iso+'T12:00:00');return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});}
   function longDate(d){return d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});}
   function isoFromDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
   function todayIso(){var d=new Date();d.setHours(0,0,0,0);return isoFromDate(d);}
   function setText(id,text){var el=document.getElementById(id);if(el)el.textContent=text;}
+  function monthNumber(name){return monthNums[name]+1;}
+  function overlayAmount(item,month){return item.amountByMonth&&item.amountByMonth[month]!=null?item.amountByMonth[month]:item.defaultAmount;}
   function replaceExact(from,to){document.querySelectorAll('body *').forEach(function(el){if(el.children.length)return;var t=cleanText(el.textContent);if(t===from)el.textContent=to;});}
+  function updateChip(panel,label,value){var labels=[].slice.call(panel.querySelectorAll('.chip .k'));var key=labels.find(function(el){return cleanText(el.textContent).toLowerCase()===label.toLowerCase();});if(!key)return;var chip=key.closest('.chip');var val=chip?chip.querySelector('.v'):null;if(val)val.textContent=value;}
+  function injectOverlayBills(){
+    overlays.forEach(function(item){
+      var start=monthNumber(item.startMonth);
+      months.forEach(function(month){
+        if(monthNumber(month)<start)return;
+        var panel=document.getElementById('panel-'+month);if(!panel)return;
+        var day=panel.querySelector('.day[data-day="'+item.day+'"]');if(!day)return;
+        var events=day.querySelector('.events');
+        if(!events){events=document.createElement('div');events.className='events';var eod=day.querySelector('.eod');day.insertBefore(events,eod||null);}
+        var exists=[].slice.call(events.querySelectorAll('.nm')).some(function(el){return cleanText(el.textContent)===item.name;});
+        if(exists)return;
+        var ev=document.createElement('div');ev.className='ev out billsos-overlay';
+        ev.innerHTML='<span class="dot"></span><span class="nm">'+item.name+'</span><span class="flag '+item.flag+'">'+(item.flag==='auto'?'A':'M')+'</span><span class="amt">'+amtOut(overlayAmount(item,month))+'</span>';
+        events.appendChild(ev);
+      });
+    });
+    document.querySelectorAll('.month-panel').forEach(recalculateMonth);
+  }
+  function recalculateMonth(panel){
+    var first=panel.querySelector('.day[data-day] .bod b');if(!first)return;
+    var running=parseMoney(first.textContent);if(running==null)return;
+    var income=0,outflow=0;
+    var balances=[];
+    [].slice.call(panel.querySelectorAll('.day[data-day]')).sort(function(a,b){return Number(a.getAttribute('data-day'))-Number(b.getAttribute('data-day'));}).forEach(function(day){
+      var bod=day.querySelector('.bod b');if(bod)bod.textContent=money2(running);
+      var dayDelta=0;
+      day.querySelectorAll('.ev').forEach(function(ev){
+        if(ev.classList.contains('note'))return;
+        var amt=parseSignedMoney((ev.querySelector('.amt')||{}).textContent||'');
+        if(amt>0)income+=amt;if(amt<0)outflow+=Math.abs(amt);dayDelta+=amt;
+      });
+      running+=dayDelta;
+      var eod=day.querySelector('.eod b');if(eod)eod.textContent=money2(running);
+      balances.push({day:Number(day.getAttribute('data-day')),balance:running});
+    });
+    updateChip(panel,'Starting',money2(parseMoney(first.textContent)));
+    updateChip(panel,'Opening',money2(parseMoney(first.textContent)));
+    updateChip(panel,'Income',money2(income));
+    updateChip(panel,'Money in',money2(income));
+    updateChip(panel,'Outflow',money2(outflow));
+    updateChip(panel,'Money out',money2(outflow));
+    rebuildSpark(panel,balances);
+  }
+  function rebuildSpark(panel,balances){
+    var svg=panel.querySelector('.sparksvg');if(!svg||!balances.length)return;
+    var vals=balances.map(function(x){return x.balance;}).concat([1000]);
+    var min=Math.min.apply(null,vals),max=Math.max.apply(null,vals);if(max===min){max+=1;min-=1;}
+    var padX=26,w=948,padY=26,h=174;
+    function x(i){return padX+(balances.length<=1?0:(i/(balances.length-1))*w);}
+    function y(v){return padY+((max-v)/(max-min))*h;}
+    var pts=balances.map(function(b,i){return x(i).toFixed(1)+','+y(b.balance).toFixed(1);}).join(' ');
+    var area='M '+x(0).toFixed(1)+',200.0 L '+pts.replace(/ /g,' L ')+' L '+x(balances.length-1).toFixed(1)+',200.0 Z';
+    var low=balances.reduce(function(a,b){return b.balance<a.balance?b:a;},balances[0]);
+    var high=balances.reduce(function(a,b){return b.balance>a.balance?b:a;},balances[0]);
+    svg.innerHTML='<defs><linearGradient id="ag-overlay" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0f9d58" stop-opacity="0.22"></stop><stop offset="100%" stop-color="#0f9d58" stop-opacity="0"></stop></linearGradient><linearGradient id="lg-overlay" x1="0" x2="1" y1="0" y2="0"><stop offset="0%" stop-color="#0c7d46"></stop><stop offset="55%" stop-color="#0f9d58"></stop><stop offset="100%" stop-color="#28b56e"></stop></linearGradient></defs><line class="warnline" x1="0" x2="1000" y1="'+y(1000).toFixed(1)+'" y2="'+y(1000).toFixed(1)+'"></line><text class="warnlbl" x="6" y="'+(y(1000)-6).toFixed(1)+'">$1,000 floor</text><path d="'+area+'" fill="url(#ag-overlay)"></path><polyline class="balpath" fill="none" points="'+pts+'" stroke="url(#lg-overlay)"></polyline><circle cx="'+x(high.day-1).toFixed(1)+'" cy="'+y(high.balance).toFixed(1)+'" fill="#0f9d58" r="4.5"></circle><text class="mk" fill="#0f9d58" text-anchor="middle" x="'+x(high.day-1).toFixed(1)+'" y="'+(y(high.balance)-12).toFixed(1)+'">peak '+money(high.balance)+'</text><circle cx="'+x(low.day-1).toFixed(1)+'" cy="'+y(low.balance).toFixed(1)+'" fill="#a8651a" r="4.5"></circle><text class="mk" fill="#a8651a" text-anchor="middle" x="'+x(low.day-1).toFixed(1)+'" y="'+(y(low.balance)+20).toFixed(1)+'">low '+money(low.balance)+'</text>';
+  }
   function cleanDashboardCopy(){
-    replaceExact('Generated Dashboard','Bills Dashboard');
-    replaceExact('July generated briefing','July Summary');
-    replaceExact('Generated Calendar','Calendar');
-    replaceExact('Next actions','Upcoming');
-    replaceExact('Beginning Balance','Starting');
-    replaceExact('Money In','Income');
-    replaceExact('Money Out','Outflow');
-    replaceExact('Ending Balance','Ending');
-    replaceExact('Open Items','Open');
-    replaceExact('Bills Account — Cash-Flow OS','BillsOS');
-    replaceExact('System live','');
-    replaceExact('Opening','Starting');
-    replaceExact('Money in','Income');
-    replaceExact('Money out','Outflow');
-    replaceExact('Bills paid','Complete');
-    replaceExact('Running balance','Balance');
-    document.querySelectorAll('.build-stamp').forEach(function(el){el.style.display='none';});
-    document.querySelectorAll('.spark-head p,.ops-reminder').forEach(function(el){el.style.display='none';});
-    document.querySelectorAll('.month-panel header .eyebrow').forEach(function(el){el.textContent='BillsOS';});
+    replaceExact('Generated Dashboard','Bills Dashboard');replaceExact('July generated briefing','July Summary');replaceExact('Generated Calendar','Calendar');replaceExact('Next actions','Upcoming');replaceExact('Beginning Balance','Starting');replaceExact('Money In','Income');replaceExact('Money Out','Outflow');replaceExact('Ending Balance','Ending');replaceExact('Open Items','Open');replaceExact('Bills Account — Cash-Flow OS','BillsOS');replaceExact('System live','');replaceExact('Opening','Starting');replaceExact('Money in','Income');replaceExact('Money out','Outflow');replaceExact('Bills paid','Complete');replaceExact('Running balance','Balance');
+    document.querySelectorAll('.build-stamp').forEach(function(el){el.style.display='none';});document.querySelectorAll('.spark-head p,.ops-reminder').forEach(function(el){el.style.display='none';});document.querySelectorAll('.month-panel header .eyebrow').forEach(function(el){el.textContent='BillsOS';});
   }
   function eventId(ev){var day=ev.closest('.day');var panel=ev.closest('.month-panel');var month=panel?panel.id.replace('panel-',''):'month';var d=day?day.getAttribute('data-day'):'x';var nm=cleanText((ev.querySelector('.nm')||{}).textContent||'');var amt=cleanText((ev.querySelector('.amt')||{}).textContent||'');return month+'|'+d+'|'+nm+'|'+amt;}
   function updatePanelProgress(panel){var billEvents=[].slice.call(panel.querySelectorAll('.ev')).filter(function(ev){return !ev.classList.contains('in')&&!ev.classList.contains('note');});var total=billEvents.length;var paid=billEvents.filter(function(ev){return ev.classList.contains('done');}).length;var pc=panel.querySelector('.paidCount');var pt=panel.querySelector('.paidTotal');var bar=panel.querySelector('.paidBar');var st=panel.querySelector('.saveStatus');if(pc)pc.textContent=paid;if(pt)pt.textContent=total;if(bar)bar.style.width=total?Math.round((paid/total)*100)+'%':'0%';if(st){st.textContent='Saved';st.className='saveStatus savestatus ok';}}
@@ -95,7 +141,7 @@
   function renderDailyBriefing(){var now=new Date();var today=isoFromDate(now);var tomorrowDate=new Date(now);tomorrowDate.setDate(tomorrowDate.getDate()+1);var tomorrow=isoFromDate(tomorrowDate);var h=now.getHours();var greeting=h<12?'Good morning':h<17?'Good afternoon':'Good evening';var events=allEvents();var todayItems=events.filter(function(e){return e.iso===today&&e.cls.indexOf('note')<0&&e.cls.indexOf(' in')<0&&!e.done;});var tomorrowItems=events.filter(function(e){return e.iso===tomorrow&&e.cls.indexOf('note')<0&&e.cls.indexOf(' in')<0&&!e.done;});setText('dailyBriefingTitle',greeting+', Ryan');setText('dailyBriefingSub',longDate(now));setText('todayChecklistSub',todayItems.length?todayItems.length+' open item(s)':'Nothing open today');var todayList=document.getElementById('todayChecklistList');if(todayList){todayList.innerHTML=todayItems.map(function(e){return '<div class="brief-item"><span>'+e.name+'</span><span>'+(e.amountText||money(e.amount))+'</span></div>';}).join('')||'<div class="brief-item"><span>Nothing open today</span><span>✓</span></div>';}setText('tomorrowActionsTitle','Tomorrow · '+fmtDate(tomorrow));var tomorrowList=document.getElementById('tomorrowActionsList');if(tomorrowList){tomorrowList.innerHTML=tomorrowItems.map(function(e){return '<div class="brief-item"><span>'+e.name+'</span><span>'+(e.amountText||money(e.amount))+'</span></div>';}).join('')||'<div class="brief-item"><span>No open items</span><span>'+fmtDate(tomorrow)+'</span></div>';}var np=events.find(function(e){return e.iso>=today&&e.cls.indexOf(' in')>-1&&/Ryan|Alissa|Unilever|HUMC|pay/i.test(e.name);});var sf=events.find(function(e){return e.iso>=today&&/Fund living|spending/i.test(e.name);});setText('nextPaycheckMetric',np?fmtDate(np.iso):'—');setText('spendingFundedMetric',sf?fmtDate(sf.iso):'—');}
   function showMonth(m){months.forEach(function(x){var p=document.getElementById('panel-'+x);var b=document.getElementById('btn-'+x);if(p){p.classList.toggle('show',x===m);p.style.display=x===m?'block':'none';}if(b)b.classList.toggle('active',x===m);});try{localStorage.setItem('bills-last-view-static',m);}catch(e){}cleanDashboardCopy();}
   function startMonth(){try{var saved=localStorage.getItem('bills-last-view-static');if(saved&&months.indexOf(saved)>-1)return saved;}catch(e){}var map={5:'june',6:'july',7:'aug',8:'sep',9:'oct',10:'nov',11:'dec'};return map[new Date().getMonth()]||'june';}
-  async function loadCalendar(){try{var html=[];for(var i=0;i<months.length;i++){var path='/months/'+months[i]+'.html?v=20260627clean1';var r=await fetch(path,{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error(path+' returned HTTP '+r.status);html.push(await r.text());}mount.innerHTML=html.join('\n');months.forEach(function(m){var b=document.getElementById('btn-'+m);if(b)b.addEventListener('click',function(){showMonth(m);});});setupChecks();renderStatusCards();renderDailyBriefing();cleanDashboardCopy();showMonth(startMonth());}catch(e){mount.innerHTML='<div class="loader-panel error"><b>Calendar failed to load.</b><br>'+String(e.message||e)+'</div>';}}
+  async function loadCalendar(){try{var html=[];for(var i=0;i<months.length;i++){var path='/months/'+months[i]+'.html?v=20260627trav1';var r=await fetch(path,{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error(path+' returned HTTP '+r.status);html.push(await r.text());}mount.innerHTML=html.join('\n');injectOverlayBills();months.forEach(function(m){var b=document.getElementById('btn-'+m);if(b)b.addEventListener('click',function(){showMonth(m);});});setupChecks();renderStatusCards();renderDailyBriefing();cleanDashboardCopy();showMonth(startMonth());}catch(e){mount.innerHTML='<div class="loader-panel error"><b>Calendar failed to load.</b><br>'+String(e.message||e)+'</div>';}}
   loadCalendar();
 })();
 </script>
