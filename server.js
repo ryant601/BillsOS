@@ -235,7 +235,7 @@ app.get("/control", (_req, res) => {
   try {
     const controlPath = path.join(__dirname, "control.html");
     let html = fs.readFileSync(controlPath, "utf8");
-    const previewScript = '<script defer src="/control-preview.js?v=20260626preview1"></script>';
+    const previewScript = '<script defer src="/control-preview.js?v=20260626preview2"></script>';
     if (!html.includes("/control-preview.js")) {
       html = html.replace("</body>", `${previewScript}\n</body>`);
     }
