@@ -232,15 +232,25 @@ app.post("/api/bills", (req, res) => {
 });
 
 app.get("/control", (_req, res) => {
-  res.setHeader("Cache-Control", "no-store");
-  res.sendFile(path.join(__dirname, "control.html"));
+  try {
+    const controlPath = path.join(__dirname, "control.html");
+    let html = fs.readFileSync(controlPath, "utf8");
+    const previewScript = '<script defer src="/control-preview.js?v=20260626preview1"></script>';
+    if (!html.includes("/control-preview.js")) {
+      html = html.replace("</body>", `${previewScript}\n</body>`);
+    }
+    res.setHeader("Cache-Control", "no-store");
+    res.send(html);
+  } catch (_err) {
+    res.sendFile(path.join(__dirname, "control.html"));
+  }
 });
 
 app.get("/", (_req, res) => {
   try {
     const indexPath = path.join(__dirname, "index.html");
     let html = fs.readFileSync(indexPath, "utf8");
-    const syncScript = '<script defer src="/cloud-sync.js?v=20260626cloud1"></script>';
+    const syncScript = '<script defer src="/cloud-sync.js?v=20260626cloud2"></script>';
     if (!html.includes("/cloud-sync.js")) {
       html = html.replace("</body>", `${syncScript}\n</body>`);
     }
