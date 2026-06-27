@@ -45,6 +45,24 @@
   function dateKey(y,m,d){return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
   function daysInMonth(y,m){return new Date(y,m,0).getDate()}
   function itemTypeLabel(t){return ({'credit-card':'Credit card',bill:'Bill',loan:'Loan',utility:'Utility',subscription:'Subscription',transfer:'Transfer',income:'Income',spending:'Spending'}[t]||t||'Item')}
+  function addIncomePreview(i,dim,push){
+    if(i.active===false)return;
+    var amt=Math.abs(Number(i.amount||0));
+    var name=i.name||'Income';
+    var schedule=i.schedule||'manual';
+    if(schedule==='semi-monthly-15-30'){
+      push(Math.min(15,dim),{name:name,amount:amt,kind:'income',type:'Income · 15th',source:'income'});
+      push(Math.min(30,dim),{name:name,amount:amt,kind:'income',type:'Income · 30th',source:'income'});
+    }else if(schedule==='monthly'){
+      push(1,{name:name,amount:amt,kind:'income',type:'Income · monthly placeholder',source:'income'});
+    }else if(schedule==='biweekly'){
+      push(1,{name:name,amount:amt,kind:'income',type:'Income · biweekly placeholder 1',source:'income'});
+      push(Math.min(15,dim),{name:name,amount:amt,kind:'income',type:'Income · biweekly placeholder 2',source:'income'});
+      if(dim>=29)push(29,{name:name,amount:amt,kind:'income',type:'Income · possible third biweekly check',source:'income'});
+    }else{
+      push(1,{name:name,amount:amt,kind:'income',type:'Income · manual placeholder',source:'income'});
+    }
+  }
   window.renderPreview=async function(){
     var out=document.getElementById('previewOutput');
     if(!out)return;
@@ -68,13 +86,7 @@
       var amt=Number(o.amount||0);var kind=o.type==='income'?'income':'out';
       push(d,{name:o.name||'One-time item',amount:kind==='income'?Math.abs(amt):-Math.abs(amt),kind:kind,type:itemTypeLabel(o.type),source:'one'});
     });
-    (data.income||[]).forEach(function(i){
-      if(i.active===false)return;
-      var amt=Math.abs(Number(i.amount||0));
-      if(i.schedule==='semi-monthly-15-30'){push(Math.min(15,dim),{name:i.name||'Income',amount:amt,kind:'income',type:'Income',source:'income'});push(Math.min(30,dim),{name:i.name||'Income',amount:amt,kind:'income',type:'Income',source:'income'});}
-      else if(i.schedule==='monthly'){push(1,{name:i.name||'Income',amount:amt,kind:'income',type:'Income',source:'income'});}
-      else if(i.schedule==='manual'){push(1,{name:i.name||'Income',amount:amt,kind:'income',type:'Income · manual placeholder',source:'income'});}
-    });
+    (data.income||[]).forEach(function(i){addIncomePreview(i,dim,push);});
     all.sort(function(a,b){return a.date.localeCompare(b.date)||b.amount-a.amount});
     var income=all.filter(function(x){return x.amount>0}).reduce(function(s,x){return s+x.amount},0);var outgo=all.filter(function(x){return x.amount<0}).reduce(function(s,x){return s+Math.abs(x.amount)},0);var net=income-outgo;
     var dataCount=(data.bills||[]).length+(data.oneTimeEvents||[]).length+(data.income||[]).length;
