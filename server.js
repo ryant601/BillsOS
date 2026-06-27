@@ -233,7 +233,22 @@ app.post("/api/bills", (req, res) => {
 
 app.get("/generated", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.sendFile(path.join(__dirname, "generated.html"));
+  res.sendFile(path.join(__dirname, "generated-v5.html"));
+});
+
+app.get("/legacy", (_req, res) => {
+  try {
+    const indexPath = path.join(__dirname, "index.html");
+    let html = fs.readFileSync(indexPath, "utf8");
+    const syncScript = '<script defer src="/cloud-sync.js?v=20260626cloud2"></script>';
+    if (!html.includes("/cloud-sync.js")) {
+      html = html.replace("</body>", `${syncScript}\n</body>`);
+    }
+    res.setHeader("Cache-Control", "no-store");
+    res.send(html);
+  } catch (_err) {
+    res.sendFile(path.join(__dirname, "index.html"));
+  }
 });
 
 app.get("/control", (_req, res) => {
@@ -252,21 +267,8 @@ app.get("/control", (_req, res) => {
 });
 
 app.get("/", (_req, res) => {
-  try {
-    const indexPath = path.join(__dirname, "index.html");
-    let html = fs.readFileSync(indexPath, "utf8");
-    const syncScript = '<script defer src="/cloud-sync.js?v=20260626cloud2"></script>';
-    if (!html.includes("/cloud-sync.js")) {
-      html = html.replace("</body>", `${syncScript}\n</body>`);
-    }
-    if (!html.includes('href="/generated"')) {
-      html = html.replace('<div class="wrap">', '<div class="wrap"><div style="text-align:center;margin:0 0 10px"><a href="/generated" style="display:inline-flex;border:1px solid rgba(20,35,55,.14);border-radius:999px;background:#fff;padding:8px 12px;color:#14202c;text-decoration:none;font-weight:800;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;font-size:12px">Generated preview</a></div>');
-    }
-    res.setHeader("Cache-Control", "no-store");
-    res.send(html);
-  } catch (_err) {
-    res.sendFile(path.join(__dirname, "index.html"));
-  }
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "generated-v5.html"));
 });
 
 app.use(express.static(__dirname));
