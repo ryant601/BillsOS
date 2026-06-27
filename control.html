@@ -11,88 +11,13 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
-    <div>
-      <div class="eyebrow">BillsOS</div>
-      <h1>Control Center</h1>
-      <p class="sub">Edit bills, one-time items, and income in a safer place. This is built for normal use — no code editing required.</p>
-      <div id="status" class="status">Loading saved data…</div>
-    </div>
-    <div class="nav">
-      <a class="linkbtn" href="/">← Dashboard</a>
-      <button class="btn" onclick="loadData()">Refresh</button>
-      <button class="btn primary" onclick="saveData()">Save changes</button>
-    </div>
-  </div>
-
+  <div class="top"><div><div class="eyebrow">BillsOS</div><h1>Control Center</h1><p class="sub">Edit bills, one-time items, and income in a safer place. This is built for normal use — no code editing required.</p><div id="status" class="status">Loading saved data…</div></div><div class="nav"><a class="linkbtn" href="/">← Dashboard</a><button class="btn" onclick="loadData()">Refresh</button><button class="btn primary" onclick="saveData()">Save changes</button></div></div>
   <div class="banner"><b>Phase 1:</b> this page saves your editable bill data to persistent storage. It does not drive the live calendar yet. Next phase will generate a preview from this data, then we can switch the dashboard once it matches.</div>
-
-  <div class="tabs">
-    <button class="tab active" data-tab="bills" onclick="showTab('bills')">Bills</button>
-    <button class="tab" data-tab="oneTime" onclick="showTab('oneTime')">One-time items</button>
-    <button class="tab" data-tab="income" onclick="showTab('income')">Income</button>
-    <button class="tab" data-tab="backup" onclick="showTab('backup')">Backup / Restore</button>
-  </div>
-
-  <section id="panel-bills" class="panel active">
-    <div class="card">
-      <div class="cardhead"><h2>Add or edit a bill</h2><button class="btn small" onclick="clearBillForm()">Clear form</button></div>
-      <input type="hidden" id="billId">
-      <div class="grid">
-        <div class="field wide"><label>Bill name</label><input id="billName" placeholder="Mortgage, Citi Custom Cash, Electric"></div>
-        <div class="field small"><label>Amount</label><input id="billAmount" type="number" step="0.01" placeholder="125.00"></div>
-        <div class="field small"><label>Due day</label><input id="billDueDay" type="number" min="1" max="31" placeholder="22"></div>
-        <div class="field"><label>Type</label><select id="billType"><option value="bill">Bill</option><option value="credit-card">Credit card</option><option value="loan">Loan</option><option value="utility">Utility</option><option value="subscription">Subscription</option><option value="transfer">Transfer</option></select></div>
-        <div class="field"><label>Frequency</label><select id="billFrequency"><option value="monthly">Monthly</option><option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div>
-        <div class="field"><label>Start month</label><input id="billStart" type="month"></div>
-        <div class="field"><label>End month</label><input id="billEnd" type="month"></div>
-        <div class="field"><label>Active</label><select id="billActive"><option value="true">Yes</option><option value="false">No / paused</option></select></div>
-        <div class="field full"><label>Notes</label><textarea id="billNotes" placeholder="Optional notes"></textarea></div>
-      </div>
-      <div class="actions"><button class="btn primary" onclick="saveBillFromForm()">Save bill row</button><button class="btn" onclick="duplicateBillForm()">Duplicate form</button></div>
-    </div>
-    <div class="card"><div class="cardhead"><h2>Saved bills</h2><span class="mut" id="billCount">0 bills</span></div><div id="billsTable"></div></div>
-  </section>
-
-  <section id="panel-oneTime" class="panel">
-    <div class="card">
-      <div class="cardhead"><h2>Add one-time item</h2><button class="btn small" onclick="clearOneTimeForm()">Clear form</button></div>
-      <input type="hidden" id="oneId">
-      <div class="grid">
-        <div class="field wide"><label>Name</label><input id="oneName" placeholder="Extra payment, annual fee, reimbursement"></div>
-        <div class="field"><label>Date</label><input id="oneDate" type="date"></div>
-        <div class="field small"><label>Amount</label><input id="oneAmount" type="number" step="0.01"></div>
-        <div class="field"><label>Type</label><select id="oneType"><option value="bill">Bill/payment</option><option value="income">Income</option><option value="transfer">Transfer</option><option value="spending">Spending</option></select></div>
-        <div class="field full"><label>Notes</label><textarea id="oneNotes"></textarea></div>
-      </div>
-      <div class="actions"><button class="btn primary" onclick="saveOneFromForm()">Save one-time item</button></div>
-    </div>
-    <div class="card"><div class="cardhead"><h2>Saved one-time items</h2><span class="mut" id="oneCount">0 items</span></div><div id="oneTable"></div></div>
-  </section>
-
-  <section id="panel-income" class="panel">
-    <div class="card">
-      <div class="cardhead"><h2>Add income source</h2><button class="btn small" onclick="clearIncomeForm()">Clear form</button></div>
-      <input type="hidden" id="incomeId">
-      <div class="grid">
-        <div class="field wide"><label>Name</label><input id="incomeName" placeholder="Ryan paycheck, Alissa paycheck"></div>
-        <div class="field small"><label>Amount</label><input id="incomeAmount" type="number" step="0.01"></div>
-        <div class="field"><label>Schedule</label><select id="incomeSchedule"><option value="semi-monthly-15-30">Semi-monthly 15th/30th</option><option value="biweekly">Biweekly</option><option value="monthly">Monthly</option><option value="manual">Manual / varies</option></select></div>
-        <div class="field"><label>Active</label><select id="incomeActive"><option value="true">Yes</option><option value="false">No</option></select></div>
-        <div class="field full"><label>Notes</label><textarea id="incomeNotes"></textarea></div>
-      </div>
-      <div class="actions"><button class="btn primary" onclick="saveIncomeFromForm()">Save income source</button></div>
-    </div>
-    <div class="card"><div class="cardhead"><h2>Saved income</h2><span class="mut" id="incomeCount">0 sources</span></div><div id="incomeTable"></div></div>
-  </section>
-
-  <section id="panel-backup" class="panel">
-    <div class="two">
-      <div class="card"><h2>Export backup</h2><p class="mut">Download a copy before larger edits.</p><div class="actions"><button class="btn primary" onclick="downloadBackup()">Download backup JSON</button></div></div>
-      <div class="card"><h2>Restore from backup</h2><p class="mut">Paste a backup JSON file here, then click restore. This replaces the saved control data after you save.</p><textarea id="restoreText" placeholder="Paste backup JSON here"></textarea><div class="actions"><button class="btn danger" onclick="restoreBackup()">Restore pasted backup</button></div></div>
-    </div>
-    <div class="card"><div class="cardhead"><h2>Current raw data</h2><button class="btn small" onclick="renderAll()">Refresh preview</button></div><pre id="rawData" class="code"></pre></div>
-  </section>
+  <div class="tabs"><button class="tab active" data-tab="bills" onclick="showTab('bills')">Bills</button><button class="tab" data-tab="oneTime" onclick="showTab('oneTime')">One-time items</button><button class="tab" data-tab="income" onclick="showTab('income')">Income</button><button class="tab" data-tab="backup" onclick="showTab('backup')">Backup / Restore</button></div>
+  <section id="panel-bills" class="panel active"><div class="card"><div class="cardhead"><h2>Add or edit a bill</h2><button class="btn small" onclick="clearBillForm()">Clear form</button></div><input type="hidden" id="billId"><div class="grid"><div class="field wide"><label>Bill name</label><input id="billName" placeholder="Mortgage, Citi Custom Cash, Electric"></div><div class="field small"><label>Amount</label><input id="billAmount" type="number" step="0.01" placeholder="125.00"></div><div class="field small"><label>Due day</label><input id="billDueDay" type="number" min="1" max="31" placeholder="22"></div><div class="field"><label>Type</label><select id="billType"><option value="bill">Bill</option><option value="credit-card">Credit card</option><option value="loan">Loan</option><option value="utility">Utility</option><option value="subscription">Subscription</option><option value="transfer">Transfer</option></select></div><div class="field"><label>Frequency</label><select id="billFrequency"><option value="monthly">Monthly</option><option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div><div class="field"><label>Start month</label><input id="billStart" type="month"></div><div class="field"><label>End month</label><input id="billEnd" type="month"></div><div class="field"><label>Active</label><select id="billActive"><option value="true">Yes</option><option value="false">No / paused</option></select></div><div class="field full"><label>Notes</label><textarea id="billNotes" placeholder="Optional notes"></textarea></div></div><div class="actions"><button class="btn primary" onclick="saveBillFromForm()">Save bill row</button><button class="btn" onclick="duplicateBillForm()">Duplicate form</button></div></div><div class="card"><div class="cardhead"><h2>Saved bills</h2><span class="mut" id="billCount">0 bills</span></div><div id="billsTable"></div></div></section>
+  <section id="panel-oneTime" class="panel"><div class="card"><div class="cardhead"><h2>Add one-time item</h2><button class="btn small" onclick="clearOneTimeForm()">Clear form</button></div><input type="hidden" id="oneId"><div class="grid"><div class="field wide"><label>Name</label><input id="oneName" placeholder="Extra payment, annual fee, reimbursement"></div><div class="field"><label>Date</label><input id="oneDate" type="date"></div><div class="field small"><label>Amount</label><input id="oneAmount" type="number" step="0.01"></div><div class="field"><label>Type</label><select id="oneType"><option value="bill">Bill/payment</option><option value="income">Income</option><option value="transfer">Transfer</option><option value="spending">Spending</option></select></div><div class="field full"><label>Notes</label><textarea id="oneNotes"></textarea></div></div><div class="actions"><button class="btn primary" onclick="saveOneFromForm()">Save one-time item</button></div></div><div class="card"><div class="cardhead"><h2>Saved one-time items</h2><span class="mut" id="oneCount">0 items</span></div><div id="oneTable"></div></div></section>
+  <section id="panel-income" class="panel"><div class="card"><div class="cardhead"><h2>Add income source</h2><button class="btn small" onclick="clearIncomeForm()">Clear form</button></div><input type="hidden" id="incomeId"><div class="grid"><div class="field wide"><label>Name</label><input id="incomeName" placeholder="Ryan paycheck, Alissa paycheck"></div><div class="field small"><label>Amount</label><input id="incomeAmount" type="number" step="0.01"></div><div class="field"><label>Schedule</label><select id="incomeSchedule"><option value="semi-monthly-15-30">Semi-monthly 15th/30th</option><option value="biweekly">Biweekly</option><option value="monthly">Monthly</option><option value="manual">Manual / varies</option></select></div><div class="field"><label>Active</label><select id="incomeActive"><option value="true">Yes</option><option value="false">No</option></select></div><div class="field full"><label>Notes</label><textarea id="incomeNotes"></textarea></div></div><div class="actions"><button class="btn primary" onclick="saveIncomeFromForm()">Save income source</button></div></div><div class="card"><div class="cardhead"><h2>Saved income</h2><span class="mut" id="incomeCount">0 sources</span></div><div id="incomeTable"></div></div></section>
+  <section id="panel-backup" class="panel"><div class="two"><div class="card"><h2>Export backup</h2><p class="mut">Download a copy before larger edits.</p><div class="actions"><button class="btn primary" onclick="downloadBackup()">Download backup JSON</button></div></div><div class="card"><h2>Restore from backup</h2><p class="mut">Paste a backup JSON file here, then click restore. This replaces the saved control data after you save.</p><textarea id="restoreText" placeholder="Paste backup JSON here"></textarea><div class="actions"><button class="btn danger" onclick="restoreBackup()">Restore pasted backup</button></div></div></div><div class="card"><div class="cardhead"><h2>Current raw data</h2><button class="btn small" onclick="renderAll()">Refresh preview</button></div><pre id="rawData" class="code"></pre></div></section>
 </div>
 <script>
 let state={bills:[],oneTimeEvents:[],income:[],updatedAt:null};
@@ -103,7 +28,7 @@ function showTab(id){document.querySelectorAll('.tab').forEach(b=>b.classList.to
 async function loadData(){try{setStatus('Loading saved data…','warn');const r=await fetch('/api/bills',{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const data=await r.json();state={bills:Array.isArray(data.bills)?data.bills:[],oneTimeEvents:Array.isArray(data.oneTimeEvents)?data.oneTimeEvents:[],income:Array.isArray(data.income)?data.income:[],updatedAt:data.updatedAt||null};renderAll();setStatus('Loaded saved data'+(state.updatedAt?' · last saved '+new Date(state.updatedAt).toLocaleString():''),'ok')}catch(e){setStatus('Could not load saved data. Try Refresh.','warn')}}
 async function saveData(){try{setStatus('Saving changes…','warn');const r=await fetch('/api/bills',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(state)});if(!r.ok)throw new Error('HTTP '+r.status);const data=await r.json();state.updatedAt=data.updatedAt||new Date().toISOString();renderAll();setStatus('Saved to BillsOS cloud storage · '+new Date(state.updatedAt).toLocaleString(),'ok')}catch(e){setStatus('Save failed. Nothing was changed on the server.','warn')}}
 function renderAll(){renderBills();renderOne();renderIncome();renderRaw()}
-function renderRaw(){document.getElementById('rawData').textContent=JSON.stringify(state,null,2)}
+function renderRaw(){const raw=document.getElementById('rawData');if(raw)raw.textContent=JSON.stringify(state,null,2)}
 function clearBillForm(){['billId','billName','billAmount','billDueDay','billStart','billEnd','billNotes'].forEach(id=>document.getElementById(id).value='');document.getElementById('billType').value='bill';document.getElementById('billFrequency').value='monthly';document.getElementById('billActive').value='true'}
 function saveBillFromForm(){const id=document.getElementById('billId').value||uid('bill');const row={id,name:document.getElementById('billName').value.trim(),amount:Number(document.getElementById('billAmount').value||0),dueDay:Number(document.getElementById('billDueDay').value||0),type:document.getElementById('billType').value,frequency:document.getElementById('billFrequency').value,startMonth:document.getElementById('billStart').value||null,endMonth:document.getElementById('billEnd').value||null,active:document.getElementById('billActive').value==='true',notes:document.getElementById('billNotes').value.trim()};if(!row.name){setStatus('Bill name is required.','warn');return}const i=state.bills.findIndex(x=>x.id===id);if(i>=0)state.bills[i]=row;else state.bills.push(row);clearBillForm();renderAll();setStatus('Bill row updated. Click Save changes to store it.','warn')}
 function editBill(id){const b=state.bills.find(x=>x.id===id);if(!b)return;document.getElementById('billId').value=b.id;document.getElementById('billName').value=b.name||'';document.getElementById('billAmount').value=b.amount||'';document.getElementById('billDueDay').value=b.dueDay||'';document.getElementById('billType').value=b.type||'bill';document.getElementById('billFrequency').value=b.frequency||'monthly';document.getElementById('billStart').value=b.startMonth||'';document.getElementById('billEnd').value=b.endMonth||'';document.getElementById('billActive').value=String(b.active!==false);document.getElementById('billNotes').value=b.notes||'';window.scrollTo({top:0,behavior:'smooth'})}
@@ -125,5 +50,6 @@ function restoreBackup(){try{const parsed=JSON.parse(document.getElementById('re
 function esc(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 loadData();
 </script>
+<script defer src="/control-preview.js?v=20260626preview3"></script>
 </body>
 </html>
