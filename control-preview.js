@@ -1,6 +1,7 @@
 (function(){
   function money(v){var n=Number(v||0);return n?n.toLocaleString(undefined,{style:'currency',currency:'USD'}):'$0.00'}
   function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function getData(){try{return typeof state!=='undefined'&&state?state:{bills:[],oneTimeEvents:[],income:[]};}catch(e){return {bills:[],oneTimeEvents:[],income:[]};}}
   function css(){
     if(document.getElementById('previewCss'))return;
     var s=document.createElement('style');
@@ -33,13 +34,14 @@
   function daysInMonth(y,m){return new Date(y,m,0).getDate()}
   function itemTypeLabel(t){return ({'credit-card':'Credit card',bill:'Bill',loan:'Loan',utility:'Utility',subscription:'Subscription',transfer:'Transfer',income:'Income',spending:'Spending'}[t]||t||'Item')}
   window.renderPreview=function(){
+    var data=getData();
     var out=document.getElementById('previewOutput');
     if(!out)return;
     var val=(document.getElementById('previewMonth')||{}).value;
     if(!val){out.innerHTML='<div class="empty">Choose a month.</div>';return;}
     var parts=val.split('-');var y=Number(parts[0]);var m=Number(parts[1]);var dim=daysInMonth(y,m);var byDay={};var all=[];
     function push(day,obj){if(day<1||day>dim)return;var key=dateKey(y,m,day);(byDay[key]||(byDay[key]=[])).push(obj);all.push(Object.assign({date:key,day:day},obj));}
-    (window.state&&state.bills||[]).forEach(function(b){
+    (data.bills||[]).forEach(function(b){
       if(b.active===false)return;
       if(b.frequency&&b.frequency!=='monthly')return;
       if(b.startMonth&&b.startMonth>val)return;
@@ -47,27 +49,29 @@
       var day=Math.min(Number(b.dueDay||1),dim);
       push(day,{name:b.name||'Bill',amount:-Math.abs(Number(b.amount||0)),kind:'out',type:itemTypeLabel(b.type),source:'bill'});
     });
-    (window.state&&state.oneTimeEvents||[]).forEach(function(o){
+    (data.oneTimeEvents||[]).forEach(function(o){
       if(!o.date||o.date.slice(0,7)!==val)return;
       var d=Number(o.date.slice(8,10));
       var amt=Number(o.amount||0);var kind=o.type==='income'?'income':'out';
       push(d,{name:o.name||'One-time item',amount:kind==='income'?Math.abs(amt):-Math.abs(amt),kind:kind,type:itemTypeLabel(o.type),source:'one'});
     });
-    (window.state&&state.income||[]).forEach(function(i){
+    (data.income||[]).forEach(function(i){
       if(i.active===false)return;
       var amt=Math.abs(Number(i.amount||0));
       if(i.schedule==='semi-monthly-15-30'){push(Math.min(15,dim),{name:i.name||'Income',amount:amt,kind:'income',type:'Income',source:'income'});push(Math.min(30,dim),{name:i.name||'Income',amount:amt,kind:'income',type:'Income',source:'income'});}
       else if(i.schedule==='monthly'){push(1,{name:i.name||'Income',amount:amt,kind:'income',type:'Income',source:'income'});}
     });
     all.sort(function(a,b){return a.date.localeCompare(b.date)||b.amount-a.amount});
-    var income=all.filter(x=>x.amount>0).reduce((s,x)=>s+x.amount,0);var outgo=all.filter(x=>x.amount<0).reduce((s,x)=>s+Math.abs(x.amount),0);var net=income-outgo;
+    var income=all.filter(function(x){return x.amount>0}).reduce(function(s,x){return s+x.amount},0);var outgo=all.filter(function(x){return x.amount<0}).reduce(function(s,x){return s+Math.abs(x.amount)},0);var net=income-outgo;
     var html='<div class="preview-summary"><div class="preview-kpi"><span>Money in</span><b>'+money(income)+'</b></div><div class="preview-kpi"><span>Money out</span><b>'+money(outgo)+'</b></div><div class="preview-kpi"><span>Net</span><b>'+money(net)+'</b></div><div class="preview-kpi"><span>Items</span><b>'+all.length+'</b></div></div>';
     var first=new Date(y,m-1,1).getDay();html+='<div class="preview-calendar">';for(var b=0;b<first;b++)html+='<div class="preview-cell blank"></div>';for(var d=1;d<=dim;d++){var key=dateKey(y,m,d);html+='<div class="preview-cell"><div class="num">'+d+'</div>'+((byDay[key]||[]).slice(0,4).map(function(x){return '<div class="preview-chip '+x.kind+'">'+esc(x.name)+' · '+money(Math.abs(x.amount))+'</div>'}).join(''))+'</div>';}html+='</div>';
     html+='<div class="card" style="box-shadow:none;margin-top:12px"><div class="cardhead"><h2>Preview item list</h2><span class="mut">'+all.length+' generated items</span></div>';
-    if(!all.length)html+='<div class="empty">No items generated for this month yet.</div>';else html+='<div class="preview-list">'+all.map(function(x){return '<div class="preview-day preview-item '+x.kind+'"><div><div class="name">'+esc(x.name)+'</div><div class="meta">'+esc(x.date)+' · '+esc(x.type)+'</div></div><div class="amt"><b>'+money(Math.abs(x.amount))+'</b></div></div>'}).join('')+'</div>';
+    if(!all.length)html+='<div class="empty">No items generated for this month yet. Check that you clicked Save changes, the item is active, and the preview month matches the due date/month.</div>';else html+='<div class="preview-list">'+all.map(function(x){return '<div class="preview-day preview-item '+x.kind+'"><div><div class="name">'+esc(x.name)+'</div><div class="meta">'+esc(x.date)+' · '+esc(x.type)+'</div></div><div class="amt"><b>'+money(Math.abs(x.amount))+'</b></div></div>'}).join('')+'</div>';
     html+='</div>';out.innerHTML=html;
   };
   var oldShow=window.showTab;
   window.showTab=function(id){oldShow(id);if(id==='preview')setTimeout(renderPreview,0);};
+  var oldRender=window.renderAll;
+  if(typeof oldRender==='function')window.renderAll=function(){oldRender();setTimeout(renderPreview,0);};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addTab);else addTab();
 })();
