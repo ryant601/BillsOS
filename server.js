@@ -113,10 +113,20 @@ function generatedDashboardHtml() {
     "(data.bills||[]).forEach(function(b){",
     "if(m>=7)push(1,'Travelers Insurance',m===7?-521:-261,'out','insurance');(data.bills||[]).forEach(function(b){"
   );
-  html = html.replace("post-sweep balance carry-forward", "post-sweep balance carry-forward · June restored · Travelers added");
+  html = html.replace("Generated preview v5 · post-sweep balance carry-forward", "BillsOS · Updated Jun 27");
+  html = html.replace("Generated preview v5", "BillsOS");
+  html = html.replace("post-sweep balance carry-forward", "Updated Jun 27");
+  html = html.replace("Balances now carry forward month-to-month. July starts at $3,671; each following month begins with the prior month’s post-sweep ending balance.", "Month-to-month cash flow view.");
   html = html.replace("Generated Dashboard", "Bills Dashboard");
+  html = html.replace("Monthly briefing", "Summary");
+  html = html.replace("generated briefing", "Summary");
   html = html.replace("Next actions", "Upcoming");
   html = html.replace("Generated calendar", "Calendar");
+  html = html.replace("Beginning balance", "Starting");
+  html = html.replace("Money in", "Income");
+  html = html.replace("Money out", "Outflow");
+  html = html.replace("Ending balance", "Ending");
+  html = html.replace("Open items", "Open");
   return html;
 }
 
