@@ -111,7 +111,15 @@ function generatedDashboardHtml() {
   );
   html = html.replace(
     "(data.bills||[]).forEach(function(b){",
-    "if(m>=7)push(1,'Travelers Insurance',m===7?-521:-261,'out','insurance');(data.bills||[]).forEach(function(b){"
+    "if(m>=7)push(1,'Travelers Insurance',m===7?-521:-261,'out','auto');(data.bills||[]).forEach(function(b){"
+  );
+  html = html.replace(
+    "push(Math.min(Number(b.dueDay||1),dim),b.name||'Bill',-Math.abs(Number(b.amount||0)),'out',b.type)});",
+    "push(Math.min(Number(b.dueDay||1),dim),b.name||'Bill',-Math.abs(Number(b.amount||0)),'out',b.payMethod||b.paymentMethod||b.type)});"
+  );
+  html = html.replace(
+    "next.innerHTML=openRows.slice(0,5).map(function(e){return '<div><span>'+esc(e.name)+' · '+e.date.slice(5)+'</span><b>'+money(Math.abs(e.amount))+'</b></div>'}).join('')||'<div><span>No open generated items.</span><b>✓</b></div>';",
+    "var groups=[['manual','Pay manually',openRows.filter(function(e){return e.type!=='auto'&&e.type!=='rule'})],['auto','Confirm autopay',openRows.filter(function(e){return e.type==='auto'})],['transfer','Transfers',openRows.filter(function(e){return e.type==='rule'&&!/sweep/i.test(e.name)})],['review','Review',openRows.filter(function(e){return e.type==='rule'&&/sweep/i.test(e.name)})]];next.innerHTML=groups.map(function(g){if(!g[2].length)return '';return '<div><span><b>'+g[1]+'</b></span><b>'+g[2].length+'</b></div>'+g[2].slice(0,3).map(function(e){return '<div><span>'+esc(e.name)+' · '+e.date.slice(5)+'</span><b>'+money(Math.abs(e.amount))+'</b></div>'}).join('')}).join('')||'<div><span>No open items.</span><b>✓</b></div>';"
   );
   html = html.replace("Generated preview v5 · post-sweep balance carry-forward", "BillsOS · Updated Jun 27");
   html = html.replace("Generated preview v5", "BillsOS");
@@ -120,7 +128,8 @@ function generatedDashboardHtml() {
   html = html.replace("Generated Dashboard", "Bills Dashboard");
   html = html.replace("Monthly briefing", "Summary");
   html = html.replace("generated briefing", "Summary");
-  html = html.replace("Next actions", "Upcoming");
+  html = html.replace("Upcoming", "Needs Attention");
+  html = html.replace("Next actions", "Needs Attention");
   html = html.replace("Generated calendar", "Calendar");
   html = html.replace("Beginning balance", "Starting");
   html = html.replace("Money in", "Income");
@@ -287,7 +296,7 @@ app.get("/control", (_req, res) => {
   try {
     const controlPath = path.join(__dirname, "control.html");
     let html = fs.readFileSync(controlPath, "utf8");
-    const previewScript = '<script defer src="/control-preview.js?v=20260626preview5"></script>';
+    const previewScript = '<script defer src="/control-preview.js?v=20260627paymethod1"></script>';
     if (!html.includes("/control-preview.js")) {
       html = html.replace("</body>", `${previewScript}\n</body>`);
     }
