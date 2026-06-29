@@ -100,18 +100,7 @@ function writeBillsData(data) {
 
 function generatedDashboardHtml() {
   const generatedPath = path.join(__dirname, "generated-v5.html");
-  let html = fs.readFileSync(generatedPath, "utf8");
-
-  html = html.replace(
-    "return e.name+' — '+money(Math.abs(e.amount))+' — '+friendlyDate(e.date)",
-    "return JSON.stringify({alert:e.date+' 09:00',title:e.name,amount:money(Math.abs(e.amount))})"
-  );
-  html = html.replace(
-    "items.length+' reminder(s) ready with 9 AM alert time.'",
-    "items.length+' JSON reminder(s) ready.'"
-  );
-
-  return html;
+  return fs.readFileSync(generatedPath, "utf8");
 }
 
 function loginPage(error = "") {
