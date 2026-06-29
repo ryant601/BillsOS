@@ -6,6 +6,14 @@
 .grid{margin-top:12px!important}
 .tabs{margin:12px 0!important}
 
+#billsosActionLog .billsosActionHead h2{
+  font-size:0!important;
+}
+#billsosActionLog .billsosActionHead h2:before{
+  content:"Recently completed actions";
+  font-size:18px!important;
+}
+
 .kpis .kpi:nth-child(4){
   background:linear-gradient(180deg,rgba(255,248,235,.98),rgba(244,224,202,.86))!important;
   border-color:rgba(143,93,58,.24)!important;
