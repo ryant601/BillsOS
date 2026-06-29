@@ -14,6 +14,42 @@
   font-size:18px!important;
 }
 
+.cal{
+  align-items:start!important;
+}
+.day{
+  min-height:148px!important;
+  height:168px!important;
+  overflow:hidden!important;
+}
+.day.blank{
+  height:168px!important;
+}
+.day .events{
+  overflow:auto!important;
+  padding-right:2px!important;
+  scrollbar-width:thin;
+}
+.day .events::-webkit-scrollbar{width:5px}
+.day .events::-webkit-scrollbar-thumb{background:rgba(84,60,34,.22);border-radius:999px}
+.day .ev{
+  min-height:34px!important;
+}
+.day.has-more:after{
+  content:"More";
+  position:absolute;
+  right:10px;
+  bottom:24px;
+  padding:2px 7px;
+  border-radius:999px;
+  background:rgba(255,252,247,.9);
+  border:1px solid rgba(84,60,34,.10);
+  color:var(--billsos-muted,#7d6f62);
+  font-size:10px;
+  font-weight:800;
+  pointer-events:none;
+}
+
 .kpis .kpi:nth-child(4){
   background:linear-gradient(180deg,rgba(255,248,235,.98),rgba(244,224,202,.86))!important;
   border-color:rgba(143,93,58,.24)!important;
@@ -72,10 +108,13 @@ html[data-billsos-theme="dark"] .day.today{border-color:rgba(240,180,126,.52)!im
 html[data-billsos-theme="dark"] .day.today .topline span:first-child:after{background:rgba(240,180,126,.18);color:#f0b47e}
 html[data-billsos-theme="dark"] .day.low{background:linear-gradient(180deg,rgba(24,20,18,.84),rgba(55,41,20,.82))!important;border-color:rgba(230,189,115,.42)!important}
 html[data-billsos-theme="dark"] .day.negative{background:linear-gradient(180deg,rgba(24,20,18,.84),rgba(62,27,25,.86))!important;border-color:rgba(240,160,146,.48)!important}
+html[data-billsos-theme="dark"] .day.has-more:after{background:rgba(24,20,18,.92);border-color:rgba(255,239,220,.13)}
 
 @media(max-width:700px){
   .hero{padding:18px!important}
   .hero h1{font-size:34px!important}
+  .day{height:154px!important;min-height:140px!important}
+  .day.blank{height:154px!important}
   .tabs{position:sticky;top:0;z-index:5;padding:8px 0;background:linear-gradient(180deg,rgba(247,239,228,.94),rgba(247,239,228,.78));backdrop-filter:blur(12px)}
   html[data-billsos-theme="dark"] .tabs{background:linear-gradient(180deg,rgba(18,15,13,.96),rgba(18,15,13,.74))}
 }
