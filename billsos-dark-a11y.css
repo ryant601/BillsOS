@@ -18,6 +18,38 @@ html[data-billsos-theme="dark"] .billsosActionEmpty{
   color:var(--billsos-muted)!important;
 }
 
+html[data-billsos-theme="dark"] .tabs{
+  background:linear-gradient(180deg,rgba(18,15,13,.96),rgba(18,15,13,.78))!important;
+  border-radius:999px!important;
+  padding:8px!important;
+  border:1px solid rgba(255,239,220,.12)!important;
+  box-shadow:0 12px 34px rgba(0,0,0,.20)!important;
+}
+html[data-billsos-theme="dark"] .tabs button,
+html[data-billsos-theme="dark"] .tab{
+  background:rgba(46,37,31,.96)!important;
+  border:1px solid rgba(255,239,220,.24)!important;
+  color:#fff7ec!important;
+  box-shadow:none!important;
+}
+html[data-billsos-theme="dark"] .tabs button.active,
+html[data-billsos-theme="dark"] .tab.active{
+  background:linear-gradient(135deg,#f0b47e,#8f5d3a)!important;
+  color:#1d120c!important;
+  border-color:rgba(255,239,220,.34)!important;
+  box-shadow:0 10px 24px rgba(240,180,126,.18)!important;
+}
+html[data-billsos-theme="dark"] .tabs button:hover,
+html[data-billsos-theme="dark"] .tab:hover{
+  background:rgba(70,50,36,.98)!important;
+  color:#fff7ec!important;
+}
+html[data-billsos-theme="dark"] .tabs button.active:hover,
+html[data-billsos-theme="dark"] .tab.active:hover{
+  background:linear-gradient(135deg,#ffd0a0,#a86b3c)!important;
+  color:#1d120c!important;
+}
+
 html[data-billsos-theme="dark"] .hero,
 html[data-billsos-theme="dark"] .card,
 html[data-billsos-theme="dark"] .calPanel,
