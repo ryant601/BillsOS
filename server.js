@@ -159,11 +159,11 @@ function generatedDashboardHtml() {
   );
   html = html.replace(
     "return e.name+' — '+money(Math.abs(e.amount))+' — '+friendlyDate(e.date)",
-    "return friendlyDate(e.date)+' — '+e.name+' — '+money(Math.abs(e.amount))"
+    "return e.date+' 09:00 || '+e.name+' || '+money(Math.abs(e.amount))"
   );
   html = html.replace(
     "items.length+' reminder(s) ready with 9 AM alert time.'",
-    "items.length+' reminder(s) ready with date first.'"
+    "items.length+' structured reminder(s) ready.'"
   );
   html = html.replace("Generated preview v5 · post-sweep balance carry-forward", "BillsOS · Updated Jun 27");
   html = html.replace("Generated preview v5", "BillsOS");
