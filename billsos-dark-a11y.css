@@ -1,0 +1,165 @@
+html[data-billsos-theme="dark"]{
+  --billsos-ink:#fff7ec;
+  --billsos-muted:#d6c8b9;
+  --billsos-line:rgba(255,239,220,.22);
+  --billsos-focus:rgba(240,180,126,.36);
+}
+
+html[data-billsos-theme="dark"] body,
+html[data-billsos-theme="dark"] .sub,
+html[data-billsos-theme="dark"] .mut,
+html[data-billsos-theme="dark"] .status,
+html[data-billsos-theme="dark"] .topline,
+html[data-billsos-theme="dark"] .endline,
+html[data-billsos-theme="dark"] .progress,
+html[data-billsos-theme="dark"] .week div,
+html[data-billsos-theme="dark"] .billsosActionRow span,
+html[data-billsos-theme="dark"] .billsosActionEmpty{
+  color:var(--billsos-muted)!important;
+}
+
+html[data-billsos-theme="dark"] .hero,
+html[data-billsos-theme="dark"] .card,
+html[data-billsos-theme="dark"] .calPanel,
+html[data-billsos-theme="dark"] .day,
+html[data-billsos-theme="dark"] .kpi{
+  border-color:var(--billsos-line)!important;
+}
+
+html[data-billsos-theme="dark"] .eyebrow,
+html[data-billsos-theme="dark"] .progress b,
+html[data-billsos-theme="dark"] .topline b,
+html[data-billsos-theme="dark"] .endline b,
+html[data-billsos-theme="dark"] .next b,
+html[data-billsos-theme="dark"] .billsosActionRow b{
+  color:var(--billsos-ink)!important;
+}
+
+html[data-billsos-theme="dark"] .ev{
+  background:rgba(55,43,35,.94)!important;
+  border-color:rgba(255,239,220,.18)!important;
+  color:#fff3e6!important;
+}
+html[data-billsos-theme="dark"] .ev.in{
+  background:rgba(20,64,43,.94)!important;
+  color:#c8f7dd!important;
+  border-color:rgba(155,216,184,.28)!important;
+}
+html[data-billsos-theme="dark"] .ev.out{
+  background:rgba(79,34,29,.94)!important;
+  color:#ffd0c8!important;
+  border-color:rgba(240,160,146,.30)!important;
+}
+html[data-billsos-theme="dark"] .ev.system{
+  background:rgba(75,52,22,.94)!important;
+  color:#ffe1a2!important;
+  border-color:rgba(230,189,115,.30)!important;
+}
+html[data-billsos-theme="dark"] .ev.done{
+  opacity:.72!important;
+  filter:none!important;
+}
+html[data-billsos-theme="dark"] .ev.done span,
+html[data-billsos-theme="dark"] .ev.done b{
+  color:rgba(255,247,236,.72)!important;
+}
+html[data-billsos-theme="dark"] .tag{
+  color:#f0b47e!important;
+}
+
+html[data-billsos-theme="dark"] input,
+html[data-billsos-theme="dark"] select,
+html[data-billsos-theme="dark"] textarea,
+html[data-billsos-theme="dark"] button{
+  color:var(--billsos-ink)!important;
+}
+html[data-billsos-theme="dark"] input[type="checkbox"]{
+  accent-color:#f0b47e;
+}
+html[data-billsos-theme="dark"] input:focus,
+html[data-billsos-theme="dark"] select:focus,
+html[data-billsos-theme="dark"] textarea:focus,
+html[data-billsos-theme="dark"] button:focus-visible,
+html[data-billsos-theme="dark"] a:focus-visible{
+  outline:2px solid #f0b47e!important;
+  outline-offset:2px!important;
+  box-shadow:0 0 0 4px var(--billsos-focus)!important;
+}
+
+html[data-billsos-theme="dark"] .moveBtn,
+html[data-billsos-theme="dark"] .weekToggleBtn,
+html[data-billsos-theme="dark"] .billsosActionClear,
+html[data-billsos-theme="dark"] .sheetGrid button,
+html[data-billsos-theme="dark"] .sheetGrid input{
+  background:rgba(46,37,31,.96)!important;
+  border-color:rgba(255,239,220,.24)!important;
+  color:#fff7ec!important;
+}
+html[data-billsos-theme="dark"] .moveBtn:hover,
+html[data-billsos-theme="dark"] .weekToggleBtn:hover,
+html[data-billsos-theme="dark"] .billsosActionClear:hover,
+html[data-billsos-theme="dark"] .sheetGrid button:hover{
+  background:rgba(70,50,36,.98)!important;
+}
+html[data-billsos-theme="dark"] .sheetGrid button.primary{
+  background:linear-gradient(135deg,#f0b47e,#8f5d3a)!important;
+  color:#1d120c!important;
+}
+html[data-billsos-theme="dark"] .sheetGrid button.warn{
+  color:#ffd0c8!important;
+  border-color:rgba(240,160,146,.32)!important;
+}
+html[data-billsos-theme="dark"] .sheetGrid button.undo{
+  background:rgba(64,45,30,.96)!important;
+}
+html[data-billsos-theme="dark"] .sheet{
+  background:rgba(8,6,5,.68)!important;
+}
+html[data-billsos-theme="dark"] .sheetCard{
+  background:linear-gradient(180deg,rgba(34,27,23,.98),rgba(22,18,16,.98))!important;
+  border-color:var(--billsos-line)!important;
+}
+html[data-billsos-theme="dark"] .sheetCard p{
+  color:var(--billsos-muted)!important;
+}
+
+html[data-billsos-theme="dark"] .bar{
+  background:rgba(255,239,220,.16)!important;
+}
+html[data-billsos-theme="dark"] .bar i{
+  background:linear-gradient(90deg,#f0b47e,#9bd8b8)!important;
+}
+html[data-billsos-theme="dark"] .pill,
+html[data-billsos-theme="dark"] .banner{
+  background:rgba(38,31,26,.90)!important;
+  border-color:var(--billsos-line)!important;
+  color:var(--billsos-muted)!important;
+}
+html[data-billsos-theme="dark"] .day.has-more:after,
+html[data-billsos-theme="dark"] .day.today .topline span:first-child:after{
+  background:rgba(60,43,31,.96)!important;
+  border-color:rgba(240,180,126,.26)!important;
+  color:#ffd8ad!important;
+}
+html[data-billsos-theme="dark"] .weekToggleRow span{
+  color:var(--billsos-muted)!important;
+}
+
+html[data-billsos-theme="dark"] .tablewrap,
+html[data-billsos-theme="dark"] table,
+html[data-billsos-theme="dark"] th,
+html[data-billsos-theme="dark"] td{
+  border-color:rgba(255,239,220,.16)!important;
+}
+html[data-billsos-theme="dark"] th{
+  background:rgba(38,31,26,.94)!important;
+  color:var(--billsos-muted)!important;
+}
+html[data-billsos-theme="dark"] td{
+  color:var(--billsos-ink)!important;
+}
+
+html[data-billsos-theme="dark"] ::selection{
+  background:rgba(240,180,126,.35);
+  color:#fff7ec;
+}
