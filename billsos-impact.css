@@ -68,6 +68,33 @@
 .day .ev{
   min-height:34px!important;
 }
+.day .ev:has(.moveBtn){
+  grid-template-columns:18px minmax(0,1fr) auto 26px!important;
+  align-items:start!important;
+}
+.day .ev span{
+  min-width:0!important;
+}
+.day .ev b{
+  white-space:nowrap!important;
+  align-self:start!important;
+}
+.moveBtn{
+  width:24px!important;
+  height:24px!important;
+  min-width:24px!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  align-self:start!important;
+  justify-self:end!important;
+  line-height:1!important;
+  border-radius:999px!important;
+  transform:none!important;
+}
+.moveBtn:hover{
+  background:rgba(244,224,202,.95)!important;
+}
 .day.has-more:after{
   content:"More";
   position:absolute;
@@ -145,6 +172,7 @@ html[data-billsos-theme="dark"] .day.has-more:after{background:rgba(24,20,18,.92
 html[data-billsos-theme="dark"] .weekToggleRow:before{background:rgba(255,239,220,.12)}
 html[data-billsos-theme="dark"] .weekToggleBtn{background:rgba(38,31,26,.82);border-color:rgba(255,239,220,.13);color:#f7efe5}
 html[data-billsos-theme="dark"] .weekToggleBtn:hover{background:rgba(61,43,28,.96)}
+html[data-billsos-theme="dark"] .moveBtn:hover{background:rgba(61,43,28,.96)!important}
 
 @media(max-width:700px){
   .hero{padding:18px!important}
