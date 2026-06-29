@@ -13,7 +13,7 @@
   function themeLabel(){return currentTheme()==='dark'?'☀️':'🌙'}
   function loadCss(id,href){if(document.getElementById(id))return;var l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href=href;document.head.appendChild(l)}
   function loadJs(id,src){if(document.getElementById(id))return;var s=document.createElement('script');s.id=id;s.src=src;s.defer=true;document.head.appendChild(s)}
-  function loadDesign(){loadCss('billsosDesignCss','/billsos-design.css?v=20260629manrope1');loadCss('billsosImpactCss','/billsos-impact.css?v=20260629week1');loadJs('billsosWeekToggleJs','/billsos-week-toggle.js?v=20260629week1')}
+  function loadDesign(){loadCss('billsosDesignCss','/billsos-design.css?v=20260629manrope1');loadCss('billsosImpactCss','/billsos-impact.css?v=20260629move1');loadJs('billsosWeekToggleJs','/billsos-week-toggle.js?v=20260629week2')}
 
   function applyTheme(){var dark=currentTheme()==='dark';document.documentElement.setAttribute('data-billsos-theme',dark?'dark':'light');var btn=document.getElementById('billsosThemeToggle');if(btn){btn.innerHTML='<span class="themeIcon">'+themeLabel()+'</span><span class="themeText">'+(dark?'Light':'Dark')+'</span>';btn.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode')}}
   function toggleTheme(){localStorage.setItem(THEME_KEY,currentTheme()==='dark'?'light':'dark');applyTheme()}
