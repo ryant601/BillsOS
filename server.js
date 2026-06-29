@@ -100,7 +100,64 @@ function writeBillsData(data) {
 
 function generatedDashboardHtml() {
   const generatedPath = path.join(__dirname, "generated-v5.html");
-  return fs.readFileSync(generatedPath, "utf8");
+  let html = fs.readFileSync(generatedPath, "utf8");
+
+  html = html.replace(
+    "</style></head>",
+    ".moveBtn{border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.7);border-radius:9px;padding:1px 7px;font-weight:900;color:inherit}.tag{display:block;font-size:10px;color:var(--mut);font-weight:800;margin-top:2px}.sheet{position:fixed;inset:0;background:rgba(20,24,28,.38);display:none;align-items:flex-end;justify-content:center;padding:16px;z-index:20}.sheet.on{display:flex}.sheetCard{width:min(460px,100%);background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 22px 70px rgba(0,0,0,.22)}.sheetCard h3{margin:0 0 4px;font-size:22px}.sheetCard p{margin:0 0 12px;color:var(--mut)}.sheetGrid{display:grid;gap:8px}.sheetGrid button,.sheetGrid input{width:100%;border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px;text-align:left;font-weight:900;color:var(--ink);font:inherit}.sheetGrid button.primary{background:var(--primary);color:#fff}.sheetGrid button.warn{color:var(--outflow)}</style></head>"
+  );
+
+  html = html.replace(
+    "<div id=\"mount\"><div class=\"card\">Loading generated data...</div></div></div>",
+    "<div id=\"mount\"><div class=\"card\">Loading generated data...</div></div></div><div class=\"sheet\" id=\"paySheet\"><div class=\"sheetCard\"><h3 id=\"sheetTitle\">Payment</h3><p id=\"sheetMeta\">—</p><div class=\"sheetGrid\"><button class=\"primary\" id=\"paidToday\">Mark paid today</button><button id=\"paidYesterday\">Paid yesterday</button><input id=\"moveDate\" type=\"date\"><button id=\"moveChosen\">Move to selected date</button><button class=\"warn\" id=\"clearMove\">Clear paid/moved status</button><button id=\"closeSheet\">Cancel</button></div></div></div>"
+  );
+
+  html = html.replace(
+    "done={},FIRST_BEGIN=3671,currentRows=[];",
+    "done={},adjust={},FIRST_BEGIN=3671,currentRows=[],eventMap={},lastData=null,selectedKey=null;"
+  );
+
+  html = html.replace(
+    "function esc(s){return String(s||'').replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}",
+    "function esc(s){return String(s||'').replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}function rowKey(e){return (e.originalDate||e.date)+'|'+e.name+'|'+e.amount}function itemKey(e){return e.originalKey||rowKey(e)}function todayIso(offset){var d=new Date();d.setDate(d.getDate()+(offset||0));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}function saveAdjust(){localStorage.setItem('billsos-pay-adjust-v1',JSON.stringify(adjust))}function saveDone(){localStorage.setItem('billsos-generated-done-v5',JSON.stringify(done))}"
+  );
+
+  html = html.replace(
+    "function chain(data){var out={},bal=FIRST_BEGIN;M.forEach(function(mm){var begin=mm[0]==='june'?0:bal,rows=gen(data,mm[1],begin),",
+    "function effectiveRows(rows,m){var val=Y+'-'+String(m).padStart(2,'0');return rows.map(function(row){var e=Object.assign({},row),k=rowKey(e),a=adjust[k];e.originalKey=k;e.originalDate=e.date;e.originalDay=e.day;if(a&&a.date){e.date=a.date;e.day=Number(a.date.slice(8,10));e.adjusted=a}return e}).filter(function(e){return e.date.slice(0,7)===val}).sort(function(a,b){return a.date.localeCompare(b.date)||b.amount-a.amount})}function chain(data){var out={},bal=FIRST_BEGIN;M.forEach(function(mm){var begin=mm[0]==='june'?0:bal,rows=effectiveRows(gen(data,mm[1],begin),mm[1]),"
+  );
+
+  html = html.replace(
+    "function render(data){var model=chain(data),",
+    "function render(data){lastData=data;var model=chain(data),"
+  );
+
+  html = html.replace(
+    "currentRows=rows;rows.forEach(function(r){(by[r.day]||(by[r.day]=[])).push(r)});var openRows=rows.filter(function(x){return x.amount<0&&!done[id(x)]});",
+    "currentRows=rows;eventMap={};rows.forEach(function(r){eventMap[itemKey(r)]=r;(by[r.day]||(by[r.day]=[])).push(r)});var openRows=rows.filter(function(x){return x.amount<0&&!done[itemKey(x)]});"
+  );
+
+  html = html.replace(
+    "var eid=id(e),ck=done[eid]?' checked':'';return '<label class=\"ev '+e.cls+(done[eid]?' done':'')+'\"><input type=\"checkbox\" data-id=\"'+esc(eid)+'\"'+ck+'><span>'+esc(e.name)+'</span><b>'+money(Math.abs(e.amount))+'</b></label>'",
+    "var eid=itemKey(e),ck=done[eid]?' checked':'',tag=e.adjusted?'<small class=\"tag\">'+(done[eid]?'Paid':'Moved')+' from '+e.originalDate.slice(5)+'</small>':'';return '<label class=\"ev '+e.cls+(done[eid]?' done':'')+'\"><input type=\"checkbox\" data-id=\"'+esc(eid)+'\"'+ck+'><span>'+esc(e.name)+tag+'</span><b>'+money(Math.abs(e.amount))+'</b>'+(e.amount<0?'<button class=\"moveBtn\" type=\"button\" data-key=\"'+esc(eid)+'\">⋯</button>':'')+'</label>'"
+  );
+
+  html = html.replace(
+    "localStorage.setItem('billsos-generated-done-v5',JSON.stringify(done));render(data)}})}",
+    "saveDone();render(data)}});document.querySelectorAll('.moveBtn').forEach(function(btn){btn.onclick=function(ev){ev.preventDefault();ev.stopPropagation();openSheet(this.dataset.key)}})}"
+  );
+
+  html = html.replace(
+    "function tabs(){",
+    "function monthNum(){var found=M.find(function(x){return x[0]===active});return found?found[1]:7}function setAdjustedDate(k,date,paid){var e=eventMap[k],month=Y+'-'+String(monthNum()).padStart(2,'0');if(!e||!date)return;if(String(date).slice(0,7)!==month){sheetMeta.textContent='Choose a date in the visible month.';return}adjust[k]={date:date,originalDate:e.originalDate||e.date,status:paid?'paid':'moved',updatedAt:new Date().toISOString()};if(paid)done[k]=1;saveAdjust();saveDone();closeSheet();render(lastData)}function openSheet(k){selectedKey=k;var e=eventMap[k];if(!e)return;sheetTitle.textContent=e.name;sheetMeta.textContent=money(Math.abs(e.amount))+' · Due '+(e.originalDate||e.date).slice(5)+(e.adjusted?' · Now '+e.date.slice(5):'');moveDate.value=e.date;paySheet.classList.add('on')}function closeSheet(){paySheet.classList.remove('on');selectedKey=null}paidToday.onclick=function(){setAdjustedDate(selectedKey,todayIso(0),true)};paidYesterday.onclick=function(){setAdjustedDate(selectedKey,todayIso(-1),true)};moveChosen.onclick=function(){setAdjustedDate(selectedKey,moveDate.value,false)};clearMove.onclick=function(){if(selectedKey){delete adjust[selectedKey];delete done[selectedKey];saveAdjust();saveDone();closeSheet();render(lastData)}};closeSheet.onclick=closeSheet;paySheet.onclick=function(e){if(e.target===paySheet)closeSheet()};function tabs(){"
+  );
+
+  html = html.replace(
+    "done=JSON.parse(localStorage.getItem('billsos-generated-done-v5')||'{}')||{};var r=await fetch",
+    "done=JSON.parse(localStorage.getItem('billsos-generated-done-v5')||'{}')||{};adjust=JSON.parse(localStorage.getItem('billsos-pay-adjust-v1')||'{}')||{};var r=await fetch"
+  );
+
+  return html;
 }
 
 function loginPage(error = "") {
