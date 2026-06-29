@@ -157,6 +157,14 @@ function generatedDashboardHtml() {
     "next.innerHTML=openRows.slice(0,5).map(function(e){return '<div><span>'+esc(e.name)+' · '+e.date.slice(5)+'</span><b>'+money(Math.abs(e.amount))+'</b></div>'}).join('')||'<div><span>No open generated items.</span><b>✓</b></div>';",
     "var groups=[['manual','Pay manually',openRows.filter(function(e){return e.type!=='auto'&&e.type!=='rule'})],['auto','Confirm autopay',openRows.filter(function(e){return e.type==='auto'})],['transfer','Transfers',openRows.filter(function(e){return e.type==='rule'&&!/sweep/i.test(e.name)})],['review','Review',openRows.filter(function(e){return e.type==='rule'&&/sweep/i.test(e.name)})]];next.innerHTML=groups.map(function(g){if(!g[2].length)return '';return '<div><span><b>'+g[1]+'</b></span><b>'+g[2].length+'</b></div>'+g[2].slice(0,3).map(function(e){return '<div><span>'+esc(e.name)+' · '+e.date.slice(5)+'</span><b>'+money(Math.abs(e.amount))+'</b></div>'}).join('')}).join('')||'<div><span>No open items.</span><b>✓</b></div>';"
   );
+  html = html.replace(
+    "return e.name+' — '+money(Math.abs(e.amount))+' — '+friendlyDate(e.date)",
+    "return friendlyDate(e.date)+' — '+e.name+' — '+money(Math.abs(e.amount))"
+  );
+  html = html.replace(
+    "items.length+' reminder(s) ready with 9 AM alert time.'",
+    "items.length+' reminder(s) ready with date first.'"
+  );
   html = html.replace("Generated preview v5 · post-sweep balance carry-forward", "BillsOS · Updated Jun 27");
   html = html.replace("Generated preview v5", "BillsOS");
   html = html.replace("post-sweep balance carry-forward", "Updated Jun 27");
@@ -183,52 +191,14 @@ function loginPage(error = "") {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BillsOS Login</title>
 <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0f172a;
-      color: white;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-    }
-    .card {
-      width: min(92vw, 380px);
-      background: #111827;
-      border: 1px solid #334155;
-      border-radius: 18px;
-      padding: 24px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.35);
-    }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: white; min-height: 100vh; display: grid; place-items: center; }
+    .card { width: min(92vw, 380px); background: #111827; border: 1px solid #334155; border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
     h1 { margin: 0 0 8px; font-size: 24px; }
     p { margin: 0 0 18px; color: #cbd5e1; }
     label { display: block; margin: 14px 0 6px; color: #cbd5e1; }
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #475569;
-      background: #020617;
-      color: white;
-      font-size: 16px;
-    }
-    button {
-      width: 100%;
-      margin-top: 18px;
-      padding: 12px;
-      border: 0;
-      border-radius: 10px;
-      background: #38bdf8;
-      color: #082f49;
-      font-weight: 700;
-      font-size: 16px;
-    }
-    .error {
-      margin-top: 12px;
-      color: #fecaca;
-      font-size: 14px;
-    }
+    input { width: 100%; box-sizing: border-box; padding: 12px; border-radius: 10px; border: 1px solid #475569; background: #020617; color: white; font-size: 16px; }
+    button { width: 100%; margin-top: 18px; padding: 12px; border: 0; border-radius: 10px; background: #38bdf8; color: #082f49; font-weight: 700; font-size: 16px; }
+    .error { margin-top: 12px; color: #fecaca; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -255,20 +225,14 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
   if (username === USER && password === PASS) {
-    res.setHeader(
-      "Set-Cookie",
-      `billsos_auth=${makeToken()}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`
-    );
+    res.setHeader("Set-Cookie", `billsos_auth=${makeToken()}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`);
     return res.redirect("/");
   }
   res.status(401).send(loginPage("Invalid username or password."));
 });
 
 app.get("/logout", (req, res) => {
-  res.setHeader(
-    "Set-Cookie",
-    "billsos_auth=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0"
-  );
+  res.setHeader("Set-Cookie", "billsos_auth=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0");
   res.redirect("/login");
 });
 
@@ -301,11 +265,8 @@ app.get("/api/bills", (_req, res) => {
 });
 
 app.post("/api/bills", (req, res) => {
-  try {
-    res.json(writeBillsData(req.body));
-  } catch (err) {
-    res.status(500).json({ error: "Could not save bills control data" });
-  }
+  try { res.json(writeBillsData(req.body)); }
+  catch (err) { res.status(500).json({ error: "Could not save bills control data" }); }
 });
 
 app.get("/generated", (_req, res) => {
@@ -318,14 +279,10 @@ app.get("/legacy", (_req, res) => {
     const indexPath = path.join(__dirname, "index.html");
     let html = fs.readFileSync(indexPath, "utf8");
     const syncScript = '<script defer src="/cloud-sync.js?v=20260626cloud2"></script>';
-    if (!html.includes("/cloud-sync.js")) {
-      html = html.replace("</body>", `${syncScript}\n</body>`);
-    }
+    if (!html.includes("/cloud-sync.js")) html = html.replace("</body>", `${syncScript}\n</body>`);
     res.setHeader("Cache-Control", "no-store");
     res.send(html);
-  } catch (_err) {
-    res.sendFile(path.join(__dirname, "index.html"));
-  }
+  } catch (_err) { res.sendFile(path.join(__dirname, "index.html")); }
 });
 
 app.get("/control", (_req, res) => {
@@ -334,17 +291,11 @@ app.get("/control", (_req, res) => {
     let html = fs.readFileSync(controlPath, "utf8");
     const themeLink = '<link rel="stylesheet" href="/control-theme.css?v=20260627controltheme1">';
     const previewScript = '<script defer src="/control-preview.js?v=20260627paymethod1"></script>';
-    if (!html.includes("/control-theme.css")) {
-      html = html.replace("</head>", `${themeLink}\n</head>`);
-    }
-    if (!html.includes("/control-preview.js")) {
-      html = html.replace("</body>", `${previewScript}\n</body>`);
-    }
+    if (!html.includes("/control-theme.css")) html = html.replace("</head>", `${themeLink}\n</head>`);
+    if (!html.includes("/control-preview.js")) html = html.replace("</body>", `${previewScript}\n</body>`);
     res.setHeader("Cache-Control", "no-store");
     res.send(html);
-  } catch (_err) {
-    res.sendFile(path.join(__dirname, "control.html"));
-  }
+  } catch (_err) { res.sendFile(path.join(__dirname, "control.html")); }
 });
 
 app.get("/", (_req, res) => {
