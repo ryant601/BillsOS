@@ -150,10 +150,6 @@ function generatedDashboardHtml() {
     "function chain(data){var out={},bal=FIRST_BEGIN;M.forEach(function(mm){var key=Y+'-'+String(mm[1]).padStart(2,'0'),begin=mm[0]==='june'?0:bal,rows=gen(data,mm[1],begin),inc=rows.filter(function(x){return x.amount>0}).reduce(function(s,x){return s+x.amount},0),spend=rows.filter(function(x){return x.amount<0}).reduce(function(s,x){return s+Math.abs(x.amount)},0),end=begin+inc-spend;out[mm[0]]={month:mm,begin:begin,rows:rows,inc:inc,out:spend,end:end};if(mm[0]!=='june')bal=end});return out}"
   );
   html = html.replace(
-    "(data.bills||[]).forEach(function(b){",
-    "if(m>=7)push(1,'Travelers Insurance',m===7?-521:-261,'out','auto');(data.bills||[]).forEach(function(b){"
-  );
-  html = html.replace(
     "push(Math.min(Number(b.dueDay||1),dim),b.name||'Bill',-Math.abs(Number(b.amount||0)),'out',b.type)});",
     "push(Math.min(Number(b.dueDay||1),dim),b.name||'Bill',-Math.abs(Number(b.amount||0)),'out',b.payMethod||b.paymentMethod||b.type)});"
   );
