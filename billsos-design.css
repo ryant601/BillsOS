@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
 :root{
   --billsos-warm-bg:#f7efe4;
   --billsos-warm-bg-2:#efe1d0;
@@ -25,7 +27,13 @@ body{
     radial-gradient(circle at 92% 8%, rgba(235,205,174,.55) 0, rgba(235,205,174,0) 30%),
     linear-gradient(135deg,var(--billsos-warm-bg) 0%,var(--billsos-warm-bg-2) 100%)!important;
   color:var(--billsos-ink)!important;
-  letter-spacing:-.01em;
+  font-family:Manrope, Inter, system-ui, -apple-system, BlinkMacSystemFont,"Segoe UI",sans-serif!important;
+  letter-spacing:-.015em;
+  font-variant-numeric:tabular-nums;
+}
+
+button,input,select,textarea{
+  font-family:Manrope, Inter, system-ui, -apple-system, BlinkMacSystemFont,"Segoe UI",sans-serif!important;
 }
 
 .wrap{max-width:1240px!important}
@@ -57,13 +65,14 @@ body{
 }
 .hero h1{
   color:#201915!important;
-  font-weight:860!important;
-  letter-spacing:-.065em!important;
+  font-weight:800!important;
+  letter-spacing:-.07em!important;
 }
 .sub,.mut,.status,.topline,.endline{color:var(--billsos-muted)!important}
 .eyebrow{
   color:var(--billsos-accent)!important;
   letter-spacing:.18em!important;
+  font-weight:800!important;
 }
 
 .nav{
@@ -77,6 +86,7 @@ body{
   background:rgba(255,251,244,.76)!important;
   color:var(--billsos-ink)!important;
   box-shadow:0 6px 18px rgba(68,47,25,.07)!important;
+  font-weight:700!important;
   transition:transform .16s ease,box-shadow .16s ease,background .16s ease,border-color .16s ease!important;
 }
 .nav a,.linkbtn,.btn,.billsosThemeToggle{
@@ -116,17 +126,19 @@ body{
 .kpi span{
   color:var(--billsos-muted)!important;
   font-size:10px!important;
+  font-weight:800!important;
 }
 .kpi b{
   color:var(--billsos-ink)!important;
   font-size:clamp(20px,2.5vw,30px)!important;
-  letter-spacing:-.05em!important;
+  font-weight:800!important;
+  letter-spacing:-.045em!important;
 }
 
 .card h2,.calPanel h2{
   color:var(--billsos-ink)!important;
   letter-spacing:-.045em!important;
-  font-weight:830!important;
+  font-weight:800!important;
 }
 
 .day{
@@ -144,6 +156,7 @@ body{
   border:1px solid rgba(84,60,34,.07)!important;
   background:rgba(241,234,224,.88)!important;
   color:#33271e!important;
+  font-weight:600!important;
 }
 .ev.in{
   background:rgba(224,241,231,.96)!important;
@@ -180,6 +193,7 @@ input:focus,select:focus,textarea:focus{
 th{
   color:var(--billsos-muted)!important;
   background:rgba(247,239,228,.72)!important;
+  font-weight:800!important;
 }
 td{border-color:rgba(84,60,34,.08)!important}
 
