@@ -1,0 +1,10 @@
+(function(){
+  var KEY='billsos-hidden-weeks-v1';
+  function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){return {}}}
+  function save(v){localStorage.setItem(KEY,JSON.stringify(v||{}))}
+  function monthKey(){var h=document.querySelector('.monthHead h2');return h?(h.textContent||'').trim():'calendar'}
+  function setHidden(cal,week,hidden){cal.querySelectorAll('[data-billsos-week="'+week+'"]').forEach(function(day){day.classList.toggle('week-hidden',hidden)});var btn=cal.querySelector('[data-billsos-week-toggle="'+week+'"]');if(btn){btn.textContent=hidden?'Show week':'Hide week';btn.setAttribute('aria-expanded',hidden?'false':'true')}}
+  function weekLabel(days){var nums=[];days.forEach(function(d){var b=d.querySelector('.topline span:first-child b');if(b)nums.push(Number(b.textContent))});nums=nums.filter(Boolean);if(!nums.length)return 'Week';return nums.length===1?'Week of '+nums[0]:'Week '+nums[0]+'–'+nums[nums.length-1]}
+  function apply(){var cal=document.querySelector('.cal');if(!cal||cal.dataset.weekControls==='1')return;var children=[].slice.call(cal.children).filter(function(x){return x.classList&&x.classList.contains('day')});if(!children.length)return;cal.dataset.weekControls='1';var key=monthKey(),state=read(),hiddenMap=state[key]||{};for(var i=0,week=0;i<children.length;i+=7,week++){var group=children.slice(i,i+7);group.forEach(function(day){day.dataset.billsosWeek=week});var row=document.createElement('div');row.className='weekToggleRow';var label=document.createElement('span');label.textContent=weekLabel(group);var btn=document.createElement('button');btn.type='button';btn.className='weekToggleBtn';btn.dataset.billsosWeekToggle=week;row.appendChild(label);row.appendChild(btn);cal.insertBefore(row,group[0]);btn.onclick=function(){var w=this.dataset.billsosWeekToggle,all=read();all[key]=all[key]||{};all[key][w]=!all[key][w];save(all);setHidden(cal,w,!!all[key][w])};setHidden(cal,week,!!hiddenMap[week])}}
+  document.addEventListener('DOMContentLoaded',function(){setInterval(apply,600)});
+})();
