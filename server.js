@@ -128,6 +128,11 @@ function generatedDashboardHtml() {
   );
 
   html = html.replace(
+    "if(sw.enabled!==false){if(t&&Number(t.amount)>0){",
+    "if(sw.enabled!==false&&val!=='2026-06'){if(t&&Number(t.amount)>0){"
+  );
+
+  html = html.replace(
     "function render(data){var model=chain(data),",
     "function render(data){lastData=data;var model=chain(data),"
   );
