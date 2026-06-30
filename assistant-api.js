@@ -73,10 +73,14 @@ function normalizeDashboardProjection(html) {
 
 function injectBridge(html) {
   let out = normalizeDashboardProjection(html);
-  if (typeof out !== "string" || out.includes("assistant-ai-bridge.js")) return out;
-  const bridge = '<script defer src="/assistant-ai-bridge.js?v=20260630bridge4"></script>';
-  if (out.includes("</body>")) return out.replace("</body>", `${bridge}\n</body>`);
-  return out + bridge;
+  if (typeof out !== "string") return out;
+  const scripts = [
+    '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260630assistant5"></script>',
+    '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260630bridge5"></script>'
+  ].filter(script => !out.includes(script.match(/id="([^"]+)"/)[1])).join("\n");
+  if (!scripts) return out;
+  if (out.includes("</body>")) return out.replace("</body>", `${scripts}\n</body>`);
+  return out + scripts;
 }
 
 async function callOpenAI({ question, deterministicAnswer, billsContext }) {
@@ -144,7 +148,8 @@ module.exports = function registerAssistantApi(app, options) {
     res.json({
       configured: !!OPENAI_API_KEY,
       model: OPENAI_MODEL,
-      bridge: "assistant-ai-bridge-20260630-4",
+      assistant: "assistant-ui-20260630-5",
+      bridge: "assistant-ai-bridge-20260630-5",
       projectionGuard: "enabled"
     });
   });
