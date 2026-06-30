@@ -38,7 +38,7 @@ function injectBridge(html) {
   const scripts = [
     '<script id="billsosCashflowEngine" defer src="/cashflow-engine.js?v=20260630engine1"></script>',
     '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260630assistant7"></script>',
-    '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260630bridge6"></script>'
+    '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260630bridge7"></script>'
   ].filter(script => !out.includes(script.match(/id="([^"]+)"/)[1])).join("\n");
   if (!scripts) return out;
   if (out.includes("</body>")) return out.replace("</body>", `${scripts}\n</body>`);
@@ -201,7 +201,7 @@ module.exports = function registerAssistantApi(app, options) {
 
   app.get("/api/assistant/status", (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
-    res.json({ configured: !!OPENAI_API_KEY, model: OPENAI_MODEL, engine: cashflow.BUILD, intent: INTENT_BUILD, assistant: "assistant-ui-20260630-7", bridge: "assistant-ai-bridge-20260630-6", projectionGuard: "enabled" });
+    res.json({ configured: !!OPENAI_API_KEY, model: OPENAI_MODEL, engine: cashflow.BUILD, intent: INTENT_BUILD, assistant: "assistant-ui-20260630-7", bridge: "assistant-ai-bridge-20260630-7", projectionGuard: "enabled" });
   });
 
   app.get("/api/assistant/test", async (_req, res) => {
