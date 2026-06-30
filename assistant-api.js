@@ -64,7 +64,7 @@ function injectBridge(html) {
   if (typeof out !== "string") return out;
   const scripts = [
     '<script id="billsosCashflowEngine" defer src="/cashflow-engine.js?v=20260630engine1"></script>',
-    '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260630assistant8"></script>',
+    '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260630assistant9"></script>',
     '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260630bridge7"></script>'
   ].filter(script => !out.includes(script.match(/id="([^"]+)"/)[1])).join("\n");
   if (!scripts) return out;
@@ -144,7 +144,7 @@ async function parseIntentWithOpenAI(question, data) {
     max_output_tokens: 300,
     instructions: [
       "You parse BillsOS user requests into strict JSON only.",
-      "Do not calculate balances. The visible BillsOS calendar will calculate balances in the browser.",
+      "Do not calculate balances. The rendered BillsOS calendar will calculate balances in the browser.",
       "Return only valid JSON with keys: intent, amount, dateStart, dateEnd, scopeLabel, target, constraints, requiresConfirmation, confidence, clarificationQuestion.",
       "Allowed intent values: payment_timing, affordability, low_balance, upcoming_bills, summary, unknown.",
       "requiresConfirmation must be true only for data-changing requests, such as move, add, delete, mark paid, or change."
@@ -171,9 +171,9 @@ module.exports = function registerAssistantApi(app, options) {
       model: OPENAI_MODEL,
       engine: cashflow.BUILD,
       intent: INTENT_BUILD,
-      assistant: "assistant-ui-20260630-8",
+      assistant: "assistant-ui-20260630-9",
       bridge: "assistant-ai-bridge-20260630-7",
-      assistantSource: "visible-calendar",
+      assistantSource: "rendered-calendar-all-months",
       projectionGuard: "enabled"
     });
   });
