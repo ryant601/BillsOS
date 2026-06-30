@@ -10,65 +10,19 @@ function compactBillsContext(data) {
   const oneTimeEvents = Array.isArray(src.oneTimeEvents) ? src.oneTimeEvents : [];
   return {
     updatedAt: src.updatedAt || null,
-    bills: bills
-      .filter(row => row && row.active !== false)
-      .slice(0, 80)
-      .map(row => ({
-        name: row.name || "Bill",
-        amount: Number(row.amount || 0),
-        dueDay: row.dueDay || null,
-        frequency: row.frequency || "monthly",
-        startMonth: row.startMonth || null,
-        endMonth: row.endMonth || null
-      })),
-    income: income
-      .filter(row => row && row.active !== false)
-      .slice(0, 20)
-      .map(row => ({
-        name: row.name || "Income",
-        amount: Number(row.amount || 0),
-        schedule: row.schedule || "manual"
-      })),
-    oneTimeEvents: oneTimeEvents
-      .filter(row => row && row.id !== "__billsos_system_rules__")
-      .slice(0, 60)
-      .map(row => ({
-        name: row.name || "One-time item",
-        amount: Number(row.amount || 0),
-        date: row.date || null,
-        type: row.type || null,
-        notes: row.notes || ""
-      }))
+    bills: bills.filter(row => row && row.active !== false).slice(0, 80).map(row => ({ name: row.name || "Bill", amount: Number(row.amount || 0), dueDay: row.dueDay || null, frequency: row.frequency || "monthly", startMonth: row.startMonth || null, endMonth: row.endMonth || null })),
+    income: income.filter(row => row && row.active !== false).slice(0, 20).map(row => ({ name: row.name || "Income", amount: Number(row.amount || 0), schedule: row.schedule || "manual" })),
+    oneTimeEvents: oneTimeEvents.filter(row => row && row.id !== "__billsos_system_rules__").slice(0, 60).map(row => ({ name: row.name || "One-time item", amount: Number(row.amount || 0), date: row.date || null, type: row.type || null, notes: row.notes || "" }))
   };
 }
 
 function plainText(value) {
-  return String(value || "")
-    .replace(/<\/?(?:b|p|ul|ol|li)[^>]*>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\s+\n/g, "\n")
-    .replace(/\n\s+/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .replace(/[ \t]{2,}/g, " ")
-    .trim();
+  return String(value || "").replace(/<\/?(?:b|p|ul|ol|li)[^>]*>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+\n/g, "\n").replace(/\n\s+/g, "\n").replace(/\n{3,}/g, "\n\n").replace(/[ \t]{2,}/g, " ").trim();
 }
 
 function normalizeDashboardProjection(html) {
   if (typeof html !== "string") return html;
-  return html
-    .replace(/mm\[0\]==='june'\?0:bal/g, "bal")
-    .replace(
-      /push\(Math\.min\(dim,Math\.max\(1,base\+add\)\),'Spending account funding',-Math\.abs\(Number\(sp\.amount\)\),'out system','rule'\)/g,
-      "var fundDay=Math.min(dim,Math.max(1,base+add)),fundAmt=safeSweepAmount(fundDay,sp.amount);if(fundAmt>0)push(fundDay,'Spending account funding',-fundAmt,'out system','rule')"
-    )
-    .replace(
-      /push\(base,'Spending account funding',-Math\.abs\(Number\(sp\.amount\)\),'out system','rule'\)/g,
-      "var fundDay=base,fundAmt=safeSweepAmount(fundDay,sp.amount);if(fundAmt>0)push(fundDay,'Spending account funding',-fundAmt,'out system','rule')"
-    );
+  return html.replace(/mm\[0\]==='june'\?0:bal/g, "bal").replace(/push\(Math\.min\(dim,Math\.max\(1,base\+add\)\),'Spending account funding',-Math\.abs\(Number\(sp\.amount\)\),'out system','rule'\)/g, "var fundDay=Math.min(dim,Math.max(1,base+add)),fundAmt=safeSweepAmount(fundDay,sp.amount);if(fundAmt>0)push(fundDay,'Spending account funding',-fundAmt,'out system','rule')").replace(/push\(base,'Spending account funding',-Math\.abs\(Number\(sp\.amount\)\),'out system','rule'\)/g, "var fundDay=base,fundAmt=safeSweepAmount(fundDay,sp.amount);if(fundAmt>0)push(fundDay,'Spending account funding',-fundAmt,'out system','rule')");
 }
 
 function injectBridge(html) {
@@ -76,7 +30,7 @@ function injectBridge(html) {
   if (typeof out !== "string") return out;
   const scripts = [
     '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260630assistant5"></script>',
-    '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260630bridge5"></script>'
+    '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260630bridge6"></script>'
   ].filter(script => !out.includes(script.match(/id="([^"]+)"/)[1])).join("\n");
   if (!scripts) return out;
   if (out.includes("</body>")) return out.replace("</body>", `${scripts}\n</body>`);
@@ -86,10 +40,7 @@ function injectBridge(html) {
 async function callOpenAI({ question, deterministicAnswer, billsContext }) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
+    headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: OPENAI_MODEL,
       temperature: 0.2,
@@ -102,34 +53,12 @@ async function callOpenAI({ question, deterministicAnswer, billsContext }) {
         "Answer calmly and concisely. Use short bullets when useful.",
         "If the user asks to change data, say that BillsOS should ask for confirmation before saving."
       ].join("\n"),
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: JSON.stringify({
-                userQuestion: question,
-                deterministicBillsOSResult: deterministicAnswer,
-                billsContext
-              })
-            }
-          ]
-        }
-      ]
+      input: [{ role: "user", content: [{ type: "input_text", text: JSON.stringify({ userQuestion: question, deterministicBillsOSResult: deterministicAnswer, billsContext }) }] }]
     })
   });
-
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message = payload && payload.error && payload.error.message ? payload.error.message : `OpenAI HTTP ${response.status}`;
-    throw new Error(message);
-  }
-  const answer = payload.output_text ||
-    (Array.isArray(payload.output) ? payload.output.map(item => {
-      if (!Array.isArray(item.content)) return "";
-      return item.content.map(part => part.text || "").join(" ");
-    }).join(" ").trim() : "");
+  if (!response.ok) throw new Error(payload && payload.error && payload.error.message ? payload.error.message : `OpenAI HTTP ${response.status}`);
+  const answer = payload.output_text || (Array.isArray(payload.output) ? payload.output.map(item => Array.isArray(item.content) ? item.content.map(part => part.text || "").join(" ") : "").join(" ").trim() : "");
   return answer || deterministicAnswer;
 }
 
@@ -145,13 +74,18 @@ module.exports = function registerAssistantApi(app, options) {
 
   app.get("/api/assistant/status", (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
-    res.json({
-      configured: !!OPENAI_API_KEY,
-      model: OPENAI_MODEL,
-      assistant: "assistant-ui-20260630-5",
-      bridge: "assistant-ai-bridge-20260630-5",
-      projectionGuard: "enabled"
-    });
+    res.json({ configured: !!OPENAI_API_KEY, model: OPENAI_MODEL, assistant: "assistant-ui-20260630-5", bridge: "assistant-ai-bridge-20260630-6", projectionGuard: "enabled" });
+  });
+
+  app.get("/api/assistant/test", async (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    try {
+      if (!OPENAI_API_KEY) return res.status(501).json({ ok: false, configured: false, error: "OPENAI_API_KEY is not configured" });
+      const answer = await callOpenAI({ question: "Test BillsOS assistant connection", deterministicAnswer: "BillsOS calculated a projected low balance of $1,250. Explain this in one sentence.", billsContext: compactBillsContext(typeof readBillsData === "function" ? readBillsData() : {}) });
+      res.json({ ok: true, model: OPENAI_MODEL, answer });
+    } catch (err) {
+      res.status(500).json({ ok: false, configured: !!OPENAI_API_KEY, model: OPENAI_MODEL, error: err && err.message ? err.message : "Assistant test failed" });
+    }
   });
 
   app.post("/api/assistant", async (req, res) => {
@@ -161,22 +95,12 @@ module.exports = function registerAssistantApi(app, options) {
       const deterministicAnswer = plainText((req.body && req.body.deterministicAnswer) || "").slice(0, 4000);
       if (!question) return res.status(400).json({ error: "Question is required" });
       if (!deterministicAnswer) return res.status(400).json({ error: "Deterministic BillsOS result is required" });
-      if (!OPENAI_API_KEY) {
-        return res.status(501).json({
-          mode: "local",
-          enabled: false,
-          error: "OPENAI_API_KEY is not configured"
-        });
-      }
+      if (!OPENAI_API_KEY) return res.status(501).json({ mode: "local", enabled: false, error: "OPENAI_API_KEY is not configured" });
       const billsContext = compactBillsContext(typeof readBillsData === "function" ? readBillsData() : {});
       const answer = await callOpenAI({ question, deterministicAnswer, billsContext });
       res.json({ mode: "openai", enabled: true, model: OPENAI_MODEL, answer });
     } catch (err) {
-      res.status(500).json({
-        mode: "local",
-        enabled: !!OPENAI_API_KEY,
-        error: err && err.message ? err.message : "Assistant request failed"
-      });
+      res.status(500).json({ mode: "local", enabled: !!OPENAI_API_KEY, error: err && err.message ? err.message : "Assistant request failed" });
     }
   });
 };
