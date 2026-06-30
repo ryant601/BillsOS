@@ -1,8 +1,11 @@
 (function(){
   var KEY='billsos-action-log-v1';
   var THEME_KEY='billsos-theme-v1';
+  var CHECKMARK_KEY='billsos-generated-done-v5';
   var META_ID='__billsos_action_log__';
   var syncing=false;
+  var checkmarkSyncing=false;
+  var lastCheckmarkUpdatedAt=null;
 
   function readLocal(){try{var rows=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(rows)?rows:[]}catch(e){return []}}
   function saveLocal(rows){localStorage.setItem(KEY,JSON.stringify((rows||[]).slice(0,30)))}
@@ -18,6 +21,17 @@
   function applyTheme(){var dark=currentTheme()==='dark';document.documentElement.setAttribute('data-billsos-theme',dark?'dark':'light');var btn=document.getElementById('billsosThemeToggle');if(btn){btn.innerHTML='<span class="themeIcon">'+themeLabel()+'</span><span class="themeText">'+(dark?'Light':'Dark')+'</span>';btn.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode')}}
   function toggleTheme(){localStorage.setItem(THEME_KEY,currentTheme()==='dark'?'light':'dark');applyTheme()}
   function addThemeToggle(){if(document.getElementById('billsosThemeToggle'))return;var host=document.querySelector('.nav');if(!host)return;var btn=document.createElement('button');btn.id='billsosThemeToggle';btn.type='button';btn.className='billsosThemeToggle';btn.onclick=toggleTheme;host.appendChild(btn);applyTheme()}
+
+  function readDone(){try{var done=JSON.parse(localStorage.getItem(CHECKMARK_KEY)||'{}');return done&&typeof done==='object'&&!Array.isArray(done)?done:{}}catch(e){return {}}}
+  function saveDone(done){try{localStorage.setItem(CHECKMARK_KEY,JSON.stringify(done||{}))}catch(e){}}
+  function cleanDone(done){var out={};Object.keys(done||{}).forEach(function(k){if(done[k])out[k]=1});return out}
+  function dashboardHasCheckmarks(){return !!document.querySelector('input[type="checkbox"][data-id]')||location.pathname==='/'||location.pathname.indexOf('/generated')===0}
+  function doneFromDom(){var done={};document.querySelectorAll('input[type="checkbox"][data-id]').forEach(function(cb){if(cb.checked)done[cb.dataset.id]=1});return done}
+  function applyDone(done){done=cleanDone(done);saveDone(done);document.querySelectorAll('input[type="checkbox"][data-id]').forEach(function(cb){var checked=!!done[cb.dataset.id];cb.checked=checked;var row=cb.closest('.ev');if(row)row.classList.toggle('done',checked)});enhanceDashboard()}
+  function primeCheckmarks(){if(location.pathname.indexOf('/control')===0)return;try{var xhr=new XMLHttpRequest();xhr.open('GET','/api/checkmarks?prime='+Date.now(),false);xhr.setRequestHeader('Cache-Control','no-store');xhr.send(null);if(xhr.status>=200&&xhr.status<300){var data=JSON.parse(xhr.responseText||'{}');if(data&&data.completed){lastCheckmarkUpdatedAt=data.updatedAt||null;saveDone(cleanDone(data.completed))}}}catch(e){}}
+  async function pullCheckmarks(){if(!dashboardHasCheckmarks())return;try{var r=await fetch('/api/checkmarks?pull='+Date.now(),{cache:'no-store'});if(!r.ok)return;var data=await r.json();if(!data||!data.completed)return;if(data.updatedAt&&data.updatedAt===lastCheckmarkUpdatedAt)return;lastCheckmarkUpdatedAt=data.updatedAt||lastCheckmarkUpdatedAt;applyDone(data.completed)}catch(e){}}
+  async function pushCheckmarks(done){if(checkmarkSyncing)return;checkmarkSyncing=true;done=cleanDone(done||doneFromDom());saveDone(done);try{var r=await fetch('/api/checkmarks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({completed:done})});if(r.ok){var data=await r.json();lastCheckmarkUpdatedAt=data.updatedAt||lastCheckmarkUpdatedAt}}catch(e){}finally{checkmarkSyncing=false}}
+  primeCheckmarks();
 
   function readMeta(row){try{var parsed=JSON.parse(row&&row.notes||'[]');return Array.isArray(parsed)?parsed:[]}catch(e){return []}}
   function hideMetaRows(){document.querySelectorAll('tr').forEach(function(tr){if((tr.textContent||'').indexOf('BillsOS action log')>=0)tr.style.display='none'})}
@@ -35,6 +49,6 @@
   function wrap(name,makeText){var original=window[name];if(typeof original!=='function'||original.__actionWrapped)return;var wrapped=function(){var text='';try{text=makeText()}catch(e){}var result=original.apply(this,arguments);if(text)addLog(text);return result};wrapped.__actionWrapped=true;window[name]=wrapped}
   function wrapControl(){wrap('saveOneFromForm',function(){return 'Added one-time item: '+(val('oneName')||'One-time item')+' — '+fmt(val('oneAmount'))});wrap('saveBillFromForm',function(){return 'Added/updated bill: '+(val('billName')||'Bill')+' — '+fmt(val('billAmount'))});wrap('saveIncomeFromForm',function(){return 'Added/updated income: '+(val('incomeName')||'Income')+' — '+fmt(val('incomeAmount'))});wrap('saveBalanceCorrection',function(){return 'Added balance correction: '+(val('balNote')||'Balance correction')+' — '+fmt(val('balAmount'))})}
 
-  document.addEventListener('change',function(e){var cb=e.target;if(!cb||cb.type!=='checkbox'||!cb.dataset||!cb.dataset.id)return;var label=cb.closest('label'),name=label&&label.querySelector('span')?label.querySelector('span').textContent.trim():'item',amt=label&&label.querySelector('b')?' — '+label.querySelector('b').textContent.trim():'';addLog((cb.checked?'Marked completed: ':'Reopened: ')+name+amt)},true);
-  document.addEventListener('DOMContentLoaded',function(){loadDesign();applyTheme();pullCloud();setTimeout(addThemeToggle,200);setTimeout(addPanel,300);setTimeout(addPanel,1200);setTimeout(wrapControl,500);setTimeout(wrapControl,1500);setTimeout(hideMetaRows,1800);setInterval(enhanceDashboard,500)});
+  document.addEventListener('change',function(e){var cb=e.target;if(!cb||cb.type!=='checkbox'||!cb.dataset||!cb.dataset.id)return;var label=cb.closest('label'),name=label&&label.querySelector('span')?label.querySelector('span').textContent.trim():'item',amt=label&&label.querySelector('b')?' — '+label.querySelector('b').textContent.trim():'';addLog((cb.checked?'Marked completed: ':'Reopened: ')+name+amt);setTimeout(function(){pushCheckmarks(doneFromDom())},0)},true);
+  document.addEventListener('DOMContentLoaded',function(){loadDesign();applyTheme();pullCloud();setTimeout(pullCheckmarks,200);setTimeout(pullCheckmarks,900);setTimeout(addThemeToggle,200);setTimeout(addPanel,300);setTimeout(addPanel,1200);setTimeout(wrapControl,500);setTimeout(wrapControl,1500);setTimeout(hideMetaRows,1800);setInterval(enhanceDashboard,500);setInterval(pullCheckmarks,15000)});
 })();
