@@ -8,7 +8,7 @@
   var lastCheckmarkUpdatedAt=null;
 
   function readLocal(){try{var rows=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(rows)?rows:[]}catch(e){return []}}
-  function saveLocal(rows){localStorage.setItem(KEY,JSON.stringify((rows||[]).slice(0,30))}
+  function saveLocal(rows){localStorage.setItem(KEY,JSON.stringify((rows||[]).slice(0,30)))}
   function clean(s){return String(s||'').replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
   function fmt(v){return Number(v||0).toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0})}
   function val(id){var el=document.getElementById(id);return el?el.value:''}
