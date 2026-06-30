@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var BUILD='assistant-ui-20260630-6';
+  var BUILD='assistant-ui-20260630-7';
   var engine=null,data=null,model=null,loadState='loading';
   window.BillsOSModules=window.BillsOSModules||{};
 
@@ -73,7 +73,27 @@
     document.head.appendChild(style);
   }
   function addMsg(kind,html){var log=document.getElementById('billsosAiLog');if(!log)return null;var node=document.createElement('div');node.className='billsos-msg '+kind;node.innerHTML=kind==='user'?esc(html):html;log.appendChild(node);log.scrollTop=log.scrollHeight;return node;}
-  function ask(question){question=clean(question);if(!question)return;addMsg('user',question);addMsg('',reply(question));}
+  async function ask(question){
+    question=clean(question);if(!question)return;
+    addMsg('user',question);
+    var pending=addMsg('','<b>Checking BillsOS.</b><p>Reading the question and running the cash-flow engine.</p>');
+    try{
+      var response=await fetch('/api/assistant/intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:question})});
+      var payload=await response.json().catch(function(){return {};});
+      if(pending&&pending.parentNode)pending.parentNode.removeChild(pending);
+      if(response.ok&&payload&&payload.answer){
+        var node=addMsg('',payload.answer);
+        window.BillsOSModules.assistantIntent={loaded:true,build:BUILD,mode:payload.mode,intent:payload.intent,error:payload.error||null,at:new Date().toISOString()};
+        return node;
+      }
+      addMsg('',reply(question));
+      window.BillsOSModules.assistantIntent={loaded:false,build:BUILD,error:(payload&&payload.error)||('HTTP '+response.status),at:new Date().toISOString()};
+    }catch(err){
+      if(pending&&pending.parentNode)pending.parentNode.removeChild(pending);
+      addMsg('',reply(question));
+      window.BillsOSModules.assistantIntent={loaded:false,build:BUILD,error:String(err&&err.message||err),at:new Date().toISOString()};
+    }
+  }
   function make(){
     if(document.getElementById('billsosAiFab'))return;
     var sheet=document.createElement('section');
