@@ -1,7 +1,8 @@
 (function(){
   'use strict';
-  var BUILD='month-export-list-20260630-2';
+  var BUILD='month-export-list-20260630-3';
   var printNode=null;
+  var previousTitle=null;
 
   function clean(v){return String(v||'').replace(/\s+/g,' ').trim()}
   function esc(v){return String(v||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -11,6 +12,11 @@
   function eventName(ev){var span=ev.querySelector('span:not(.dot)')||ev.querySelector('.nm')||ev;return clean(span.textContent).replace(/\$[0-9,]+(?:\.\d{1,2})?/g,'').replace(/⋯/g,'').trim()}
   function eventType(ev){var s=(ev.className||'')+' '+(ev.textContent||'');if(/paycheck|income|\bin\b/i.test(s))return 'Income';if(/transfer|funding|sweep|system/i.test(s))return 'Transfer';if(/auto/i.test(s))return 'Autopay';return 'Action'}
   function realDay(day){return day&&day.classList&&!day.classList.contains('blank')}
+  function filenameSafe(v){return clean(v).replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'')||'BillsOS-Monthly-Action-List'}
+  function timestamp(){var d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')}
+  function exportTitle(model){return filenameSafe('BillsOS '+model.title+' Action List '+timestamp())}
+  function preparePrintTitle(model){previousTitle=document.title;document.title=exportTitle(model)}
+  function restorePrintTitle(){if(previousTitle!=null){document.title=previousTitle;previousTitle=null}}
 
   function readMonth(){
     var rows=[],title=monthTitle();
@@ -62,10 +68,11 @@
     btn.type='button';
     btn.className='billsosExportBtn';
     btn.textContent='Export List';
-    btn.onclick=function(){var model=readMonth();if(!model.rows.length){alert('No month actions found to export.');return;}buildPrint(model);setTimeout(function(){window.print()},60)};
+    btn.onclick=function(){var model=readMonth();if(!model.rows.length){alert('No month actions found to export.');return;}buildPrint(model);preparePrintTitle(model);setTimeout(function(){window.print();setTimeout(restorePrintTitle,1200)},60)};
     host.appendChild(btn);
   }
-  function init(){addStyle();addButton();window.BillsOSModules=window.BillsOSModules||{};window.BillsOSModules.monthExport={loaded:true,build:BUILD,mode:'list-all-weeks'}}
+  function init(){addStyle();addButton();window.BillsOSModules=window.BillsOSModules||{};window.BillsOSModules.monthExport={loaded:true,build:BUILD,mode:'list-all-weeks',filename:'month-year-timestamp'}}
+  window.addEventListener('afterprint',restorePrintTitle);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
   setTimeout(addButton,800);
   setTimeout(addButton,1800);
