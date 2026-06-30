@@ -21,7 +21,7 @@
   grid-column:1/-1;
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-start;
   gap:10px;
   min-height:30px;
   margin:4px 0 -2px;
@@ -29,16 +29,16 @@
   font-size:12px;
   font-weight:800;
 }
-.weekToggleRow:before{
+.weekToggleRow:after{
   content:"";
   flex:1;
   height:1px;
   background:rgba(84,60,34,.10);
-  order:1;
+  order:3;
 }
-.weekToggleRow span{order:0;white-space:nowrap}
+.weekToggleRow span{order:2;white-space:nowrap}
 .weekToggleBtn{
-  order:2;
+  order:1;
   border:1px solid rgba(84,60,34,.13);
   border-radius:999px;
   background:rgba(255,252,247,.74);
@@ -169,7 +169,7 @@ html[data-billsos-theme="dark"] .day.today .topline span:first-child:after{backg
 html[data-billsos-theme="dark"] .day.low{background:linear-gradient(180deg,rgba(24,20,18,.84),rgba(55,41,20,.82))!important;border-color:rgba(230,189,115,.42)!important}
 html[data-billsos-theme="dark"] .day.negative{background:linear-gradient(180deg,rgba(24,20,18,.84),rgba(62,27,25,.86))!important;border-color:rgba(240,160,146,.48)!important}
 html[data-billsos-theme="dark"] .day.has-more:after{background:rgba(24,20,18,.92);border-color:rgba(255,239,220,.13)}
-html[data-billsos-theme="dark"] .weekToggleRow:before{background:rgba(255,239,220,.12)}
+html[data-billsos-theme="dark"] .weekToggleRow:after{background:rgba(255,239,220,.12)}
 html[data-billsos-theme="dark"] .weekToggleBtn{background:rgba(38,31,26,.82);border-color:rgba(255,239,220,.13);color:#f7efe5}
 html[data-billsos-theme="dark"] .weekToggleBtn:hover{background:rgba(61,43,28,.96)}
 html[data-billsos-theme="dark"] .moveBtn:hover{background:rgba(61,43,28,.96)!important}
@@ -179,6 +179,8 @@ html[data-billsos-theme="dark"] .moveBtn:hover{background:rgba(61,43,28,.96)!imp
   .hero h1{font-size:34px!important}
   .day{height:154px!important;min-height:140px!important}
   .day.blank{height:154px!important}
+  .weekToggleRow{justify-content:flex-start!important;margin:6px 0 0!important;padding-left:2px!important;padding-right:54px!important}
+  .weekToggleBtn{padding:7px 11px!important;min-height:32px!important}
   .tabs{position:sticky;top:0;z-index:5;padding:8px 0;background:linear-gradient(180deg,rgba(247,239,228,.94),rgba(247,239,228,.78));backdrop-filter:blur(12px)}
   html[data-billsos-theme="dark"] .tabs{background:linear-gradient(180deg,rgba(18,15,13,.96),rgba(18,15,13,.74))}
 }
