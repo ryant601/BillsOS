@@ -3,17 +3,21 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<!-- Updated 2026-06-29: added BillsOS Assistant module. -->
+<!-- Updated 2026-06-29: added BillsOS Assistant dashboard entry. -->
 <title>BillsOS · Dashboard</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/styles.css?v=20260629assistant1"/>
+<link rel="stylesheet" href="/styles.css?v=20260629dashboard1"/>
 <style>
   .loader-panel{background:#fff;border:1px solid rgba(20,35,55,.16);border-radius:18px;padding:16px;margin-top:16px;color:#14202c;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
   .loader-panel.error{border-color:rgba(184,54,44,.42);color:#b8362c}
   .build-stamp{display:none!important}
   .ops-panel,.status-grid,.plan-card{display:none!important}
+  .assistant-entry{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 0 14px;background:#14202c;color:#fff;border-radius:20px;padding:14px 16px;box-shadow:0 14px 34px rgba(20,35,55,.18)}
+  .assistant-entry h2{margin:0;font-size:18px;letter-spacing:-.02em}
+  .assistant-entry p{margin:3px 0 0;color:rgba(255,255,255,.76);font-size:12px;line-height:1.35}
+  .assistant-entry a{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid rgba(255,255,255,.22);background:#fff;color:#14202c;text-decoration:none;border-radius:999px;padding:10px 13px;font-size:13px;font-weight:800;white-space:nowrap}
   .global-briefing{display:block!important;margin:14px 0 16px;background:#fff;border:1px solid rgba(20,35,55,.12);border-radius:22px;padding:18px;box-shadow:0 10px 30px rgba(20,35,55,.06)}
   .global-briefing .brief-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
   .global-briefing h2{margin:0;font-size:22px;letter-spacing:-.02em;color:#14202c}
@@ -55,12 +59,16 @@
   .spark .spark-head p{display:none!important}
   .chip .k{letter-spacing:.12em!important}
   @media(max-width:980px){.reminder-list{grid-template-columns:1fr 1fr}}
-  @media(max-width:760px){.global-briefing .brief-grid{grid-template-columns:1fr}.global-briefing .brief-head{display:block}.reminder-list{grid-template-columns:1fr}.reminders-head{display:block}.reminders-tools{align-items:stretch;margin-top:12px}.reminders-stats{justify-content:flex-start}.apple-reminders-note{text-align:left;max-width:none}}
+  @media(max-width:760px){.assistant-entry{display:block}.assistant-entry a{width:100%;margin-top:12px}.global-briefing .brief-grid{grid-template-columns:1fr}.global-briefing .brief-head{display:block}.reminder-list{grid-template-columns:1fr}.reminders-head{display:block}.reminders-tools{align-items:stretch;margin-top:12px}.reminders-stats{justify-content:flex-start}.apple-reminders-note{text-align:left;max-width:none}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<div class="build-stamp" aria-label="BillsOS build version">v2026.06.29-assistant.1</div>
+<div class="build-stamp" aria-label="BillsOS build version">v2026.06.29-dashboard-assistant.2</div>
+<section class="assistant-entry" aria-label="BillsOS Assistant">
+  <div><h2>BillsOS Assistant</h2><p>Ask payment timing, affordability, upcoming bill, and low-balance questions.</p></div>
+  <a href="/assistant.html?v=20260629dashboard1">💬 Open Assistant</a>
+</section>
 <div class="toggle"><div class="tabs"><button class="active" id="btn-june"><span>Jun</span><span class="dot dot-bridge"></span></button><button id="btn-july"><span>Jul</span></button><button id="btn-aug"><span>Aug</span></button><button id="btn-sep"><span>Sep</span></button><button id="btn-oct"><span>Oct</span><span class="dot dot-triple"></span></button><button id="btn-nov"><span>Nov</span></button><button id="btn-dec"><span>Dec</span><span class="dot dot-triple"></span></button></div></div>
 <section class="global-briefing" aria-label="Daily financial briefing">
   <div class="brief-head"><div><h2 id="dailyBriefingTitle">Today</h2><div class="brief-sub" id="dailyBriefingSub">Loading account view…</div></div></div>
@@ -126,10 +134,10 @@
   function renderDailyBriefing(){var now=new Date();var today=isoFromDate(now);var tomorrowDate=new Date(now);tomorrowDate.setDate(tomorrowDate.getDate()+1);var tomorrow=isoFromDate(tomorrowDate);var h=now.getHours();var greeting=h<12?'Good morning':h<17?'Good afternoon':'Good evening';var events=allEvents();var todayItems=events.filter(function(e){return e.iso===today&&e.cls.indexOf('note')<0&&e.cls.indexOf(' in')<0&&!e.done;});var tomorrowItems=events.filter(function(e){return e.iso===tomorrow&&e.cls.indexOf('note')<0&&e.cls.indexOf(' in')<0&&!e.done;});setText('dailyBriefingTitle',greeting+', Ryan');setText('dailyBriefingSub',longDate(now));setText('todayChecklistSub',todayItems.length?todayItems.length+' open item(s)':'Nothing open today');var todayList=document.getElementById('todayChecklistList');if(todayList){todayList.innerHTML=todayItems.map(function(e){return '<div class="brief-item"><span>'+e.name+'</span><span>'+(e.amountText||money(e.amount))+'</span></div>';}).join('')||'<div class="brief-item"><span>Nothing open today</span><span>✓</span></div>';}setText('tomorrowActionsTitle','Tomorrow · '+fmtDate(tomorrow));var tomorrowList=document.getElementById('tomorrowActionsList');if(tomorrowList){tomorrowList.innerHTML=tomorrowItems.map(function(e){return '<div class="brief-item"><span>'+e.name+'</span><span>'+(e.amountText||money(e.amount))+'</span></div>';}).join('')||'<div class="brief-item"><span>No open items</span><span>'+fmtDate(tomorrow)+'</span></div>';}var np=events.find(function(e){return e.iso>=today&&e.cls.indexOf(' in')>-1&&/Ryan|Alissa|Unilever|HUMC|pay/i.test(e.name);});var sf=events.find(function(e){return e.iso>=today&&/Fund living|spending/i.test(e.name);});setText('nextPaycheckMetric',np?fmtDate(np.iso):'—');setText('spendingFundedMetric',sf?fmtDate(sf.iso):'—');}
   function showMonth(m){months.forEach(function(x){var p=document.getElementById('panel-'+x);var b=document.getElementById('btn-'+x);if(p){p.classList.toggle('show',x===m);p.style.display=x===m?'block':'none';}if(b)b.classList.toggle('active',x===m);});try{localStorage.setItem('bills-last-view-static',m);}catch(e){}cleanDashboardCopy();}
   function startMonth(){try{var saved=localStorage.getItem('bills-last-view-static');if(saved&&months.indexOf(saved)>-1)return saved;}catch(e){}var map={5:'june',6:'july',7:'aug',8:'sep',9:'oct',10:'nov',11:'dec'};return map[new Date().getMonth()]||'june';}
-  async function loadCalendar(){try{var html=[];for(var i=0;i<months.length;i++){var path='/months/'+months[i]+'.html?v=20260629assistant1';var r=await fetch(path,{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error(path+' returned HTTP '+r.status);html.push(await r.text());}mount.innerHTML=html.join('\n');injectOverlayBills();months.forEach(function(m){var b=document.getElementById('btn-'+m);if(b)b.addEventListener('click',function(){showMonth(m);});});setupChecks();setupAppleReminderBridge();renderStatusCards();renderDailyBriefing();renderReminders();cleanDashboardCopy();showMonth(startMonth());}catch(e){mount.innerHTML='<div class="loader-panel error"><b>Calendar failed to load.</b><br>'+String(e.message||e)+'</div>';}}
+  async function loadCalendar(){try{var html=[];for(var i=0;i<months.length;i++){var path='/months/'+months[i]+'.html?v=20260629dashboard1';var r=await fetch(path,{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error(path+' returned HTTP '+r.status);html.push(await r.text());}mount.innerHTML=html.join('\n');injectOverlayBills();months.forEach(function(m){var b=document.getElementById('btn-'+m);if(b)b.addEventListener('click',function(){showMonth(m);});});setupChecks();setupAppleReminderBridge();renderStatusCards();renderDailyBriefing();renderReminders();cleanDashboardCopy();showMonth(startMonth());}catch(e){mount.innerHTML='<div class="loader-panel error"><b>Calendar failed to load.</b><br>'+String(e.message||e)+'</div>';}}
   loadCalendar();
 })();
 </script>
-<script src="/assistant.js?v=20260629assistant1" defer></script>
+<script src="/assistant.js?v=20260629dashboard1" defer></script>
 </body>
 </html>
