@@ -29,7 +29,8 @@ function injectBridge(html) {
   let out = normalizeDashboardProjection(html);
   if (typeof out !== "string") return out;
   const scripts = [
-    '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260630assistant5"></script>',
+    '<script id="billsosCashflowEngine" defer src="/cashflow-engine.js?v=20260630engine1"></script>',
+    '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260630assistant6"></script>',
     '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260630bridge6"></script>'
   ].filter(script => !out.includes(script.match(/id="([^"]+)"/)[1])).join("\n");
   if (!scripts) return out;
@@ -74,7 +75,7 @@ module.exports = function registerAssistantApi(app, options) {
 
   app.get("/api/assistant/status", (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
-    res.json({ configured: !!OPENAI_API_KEY, model: OPENAI_MODEL, assistant: "assistant-ui-20260630-5", bridge: "assistant-ai-bridge-20260630-6", projectionGuard: "enabled" });
+    res.json({ configured: !!OPENAI_API_KEY, model: OPENAI_MODEL, engine: "cashflow-engine-20260630-1", assistant: "assistant-ui-20260630-6", bridge: "assistant-ai-bridge-20260630-6", projectionGuard: "enabled" });
   });
 
   app.get("/api/assistant/test", async (_req, res) => {
