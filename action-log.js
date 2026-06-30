@@ -8,7 +8,7 @@
   var lastCheckmarkUpdatedAt=null;
 
   function readLocal(){try{var rows=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(rows)?rows:[]}catch(e){return []}}
-  function saveLocal(rows){localStorage.setItem(KEY,JSON.stringify((rows||[]).slice(0,30)))}
+  function saveLocal(rows){localStorage.setItem(KEY,JSON.stringify((rows||[]).slice(0,30))}
   function clean(s){return String(s||'').replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
   function fmt(v){return Number(v||0).toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0})}
   function val(id){var el=document.getElementById(id);return el?el.value:''}
@@ -16,7 +16,7 @@
   function themeLabel(){return currentTheme()==='dark'?'☀️':'🌙'}
   function loadCss(id,href){if(document.getElementById(id))return;var l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href=href;document.head.appendChild(l)}
   function loadJs(id,src){if(document.getElementById(id))return;var s=document.createElement('script');s.id=id;s.src=src;s.defer=true;document.head.appendChild(s)}
-  function loadDesign(){loadCss('billsosDesignCss','/billsos-design.css?v=20260629manrope1');loadCss('billsosImpactCss','/billsos-impact.css?v=20260629move1');loadCss('billsosDarkA11yCss','/billsos-dark-a11y.css?v=20260629a11y1');loadJs('billsosWeekToggleJs','/billsos-week-toggle.js?v=20260629week2')}
+  function loadDesign(){loadCss('billsosDesignCss','/billsos-design.css?v=20260629manrope1');loadCss('billsosImpactCss','/billsos-impact.css?v=20260629move1');loadCss('billsosDarkA11yCss','/billsos-dark-a11y.css?v=20260629a11y1');loadJs('billsosWeekToggleJs','/billsos-week-toggle.js?v=20260629week2');loadJs('billsosAssistantUi','/assistant-ui.js?v=20260629assistant2')}
 
   function applyTheme(){var dark=currentTheme()==='dark';document.documentElement.setAttribute('data-billsos-theme',dark?'dark':'light');var btn=document.getElementById('billsosThemeToggle');if(btn){btn.innerHTML='<span class="themeIcon">'+themeLabel()+'</span><span class="themeText">'+(dark?'Light':'Dark')+'</span>';btn.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode')}}
   function toggleTheme(){localStorage.setItem(THEME_KEY,currentTheme()==='dark'?'light':'dark');applyTheme()}
