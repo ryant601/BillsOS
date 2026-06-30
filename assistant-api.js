@@ -59,7 +59,7 @@ function plainText(value) {
 
 function injectBridge(html) {
   if (typeof html !== "string" || html.includes("assistant-ai-bridge.js")) return html;
-  const bridge = '<script defer src="/assistant-ai-bridge.js?v=20260630bridge2"></script>';
+  const bridge = '<script defer src="/assistant-ai-bridge.js?v=20260630bridge3"></script>';
   if (html.includes("</body>")) return html.replace("</body>", `${bridge}\n</body>`);
   return html + bridge;
 }
@@ -129,7 +129,7 @@ module.exports = function registerAssistantApi(app, options) {
     res.json({
       configured: !!OPENAI_API_KEY,
       model: OPENAI_MODEL,
-      bridge: "assistant-ai-bridge-20260630-2"
+      bridge: "assistant-ai-bridge-20260630-3"
     });
   });
 
