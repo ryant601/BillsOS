@@ -57,6 +57,13 @@ function plainText(value) {
     .trim();
 }
 
+function injectBridge(html) {
+  if (typeof html !== "string" || html.includes("assistant-ai-bridge.js")) return html;
+  const bridge = '<script defer src="/assistant-ai-bridge.js?v=20260630bridge2"></script>';
+  if (html.includes("</body>")) return html.replace("</body>", `${bridge}\n</body>`);
+  return html + bridge;
+}
+
 async function callOpenAI({ question, deterministicAnswer, billsContext }) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -109,6 +116,22 @@ async function callOpenAI({ question, deterministicAnswer, billsContext }) {
 
 module.exports = function registerAssistantApi(app, options) {
   const readBillsData = options && options.readBillsData;
+
+  app.use((req, res, next) => {
+    if (req.path !== "/" && req.path !== "/generated") return next();
+    const originalSend = res.send.bind(res);
+    res.send = body => originalSend(injectBridge(body));
+    next();
+  });
+
+  app.get("/api/assistant/status", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json({
+      configured: !!OPENAI_API_KEY,
+      model: OPENAI_MODEL,
+      bridge: "assistant-ai-bridge-20260630-2"
+    });
+  });
 
   app.post("/api/assistant", async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
