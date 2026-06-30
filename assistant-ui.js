@@ -1,70 +1,79 @@
 (function(){
   'use strict';
-  var BUILD='assistant-ui-20260630-8';
-  var engine=null,loadState='loading';
+  var BUILD='assistant-ui-20260630-9';
+  var engine=null;
   window.BillsOSModules=window.BillsOSModules||{};
 
-  function clean(value){return String(value||'').replace(/\s+/g,' ').trim();}
-  function esc(value){return String(value||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function num(text){var n=Number(String(text||'').replace(/[−–—]/g,'-').replace(/[^0-9.-]/g,''));return isFinite(n)?n:null;}
-  function money(n){return n==null||isNaN(n)?'—':'$'+Number(Math.max(0,n)).toLocaleString(undefined,{maximumFractionDigits:0});}
-  function signed(n){return (n<0?'−':'')+'$'+Math.abs(Number(n||0)).toLocaleString(undefined,{maximumFractionDigits:0});}
-  function todayIso(){var d=new Date();d.setHours(0,0,0,0);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-  function addDays(i,n){var d=new Date(i+'T12:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function clean(v){return String(v||'').replace(/\s+/g,' ').trim();}
+  function esc(v){return String(v||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function n(v){var x=Number(String(v||'').replace(/[−–—]/g,'-').replace(/[^0-9.-]/g,''));return isFinite(x)?x:null;}
+  function money(v){return v==null||isNaN(v)?'—':'$'+Number(Math.max(0,v)).toLocaleString(undefined,{maximumFractionDigits:0});}
+  function signed(v){return (v<0?'−':'')+'$'+Math.abs(Number(v||0)).toLocaleString(undefined,{maximumFractionDigits:0});}
   function fmt(i){return i?new Date(i+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'}):'—';}
-  function monthNum(name){var m={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};return m[String(name||'').toLowerCase()]||null;}
-  function visibleMonth(){var h=document.querySelector('.monthHead h2')||document.querySelector('h2');var txt=clean(h&&h.textContent),m=(txt.match(/January|February|March|April|May|June|July|August|September|October|November|December/i)||[])[0],y=(txt.match(/20\d{2}/)||[])[0]||'2026';return m?{name:m.charAt(0).toUpperCase()+m.slice(1).toLowerCase(),month:monthNum(m),year:Number(y)}:null;}
-  function isoFor(day){var vm=visibleMonth();if(!vm||!day)return null;return vm.year+'-'+String(vm.month).padStart(2,'0')+'-'+String(day).padStart(2,'0');}
-  function eventAmount(ev){var b=ev.querySelector('b:last-child')||ev.querySelector('b,.amt');var value=num(b&&b.textContent);return value==null?0:value;}
-  function eventName(ev){var span=ev.querySelector('span:not(.dot)')||ev.querySelector('.nm')||ev;return clean(span.textContent).replace(/\$[0-9,]+(?:\.\d{1,2})?/g,'').replace(/⋯/g,'').trim();}
-  function isIncomeEvent(ev){return /\bin\b|paycheck|income/i.test((ev.className||'')+' '+(ev.textContent||''));}
-  function readCalendar(){
-    var vm=visibleMonth(),days=[];
-    if(!vm)return {loaded:false,error:'No visible month found',days:[],events:[]};
-    document.querySelectorAll('.day').forEach(function(dayNode){
-      var dayText=(dayNode.querySelector('.topline span:first-child b')||dayNode.querySelector('.topline b')||{}).textContent;
-      var day=Number(dayText||0);if(!day)return;
-      var iso=isoFor(day),endNode=dayNode.querySelector('.endline b'),startNode=dayNode.querySelector('.topline span:last-child b');
-      var ending=num(endNode&&endNode.textContent),starting=num(startNode&&startNode.textContent);
-      var events=[];
-      dayNode.querySelectorAll('.ev').forEach(function(ev){
-        if((ev.textContent||'').indexOf('BillsOS action log')>=0)return;
-        events.push({iso:iso,day:day,name:eventName(ev),amount:eventAmount(ev),income:isIncomeEvent(ev),done:/\bdone\b/.test(ev.className||'')});
-      });
-      days.push({iso:iso,day:day,starting:starting,ending:ending,events:events});
+  function today(){var d=new Date();d.setHours(0,0,0,0);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function addDays(i,c){var d=new Date(i+'T12:00:00');d.setDate(d.getDate()+c);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function monthNum(name){return {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12}[String(name||'').toLowerCase()]||null;}
+  function monthName(num){return ['','January','February','March','April','May','June','July','August','September','October','November','December'][Number(num)||0]||'';}
+  function parseMonthText(text){var m=(String(text||'').match(/January|February|March|April|May|June|July|August|September|October|November|December/i)||[])[0],y=(String(text||'').match(/20\d{2}/)||[])[0]||'2026';return m?{name:m.charAt(0).toUpperCase()+m.slice(1).toLowerCase(),month:monthNum(m),year:Number(y)}:null;}
+  function iso(y,m,d){return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+  function eventAmount(ev){var b=ev.querySelector('b:last-child')||ev.querySelector('b,.amt');var x=n(b&&b.textContent);return x==null?0:x;}
+  function eventName(ev){var span=ev.querySelector('span:not(.dot)')||ev.querySelector('.nm')||ev;return clean(span.textContent).replace(/\$[0-9,]+(?:\.\d{1,2})?/g,'').replace(/⋯/g,'').replace(/^\s*[✓○]\s*/,'').trim();}
+  function isIncome(ev){return /\bin\b|paycheck|income/i.test((ev.className||'')+' '+(ev.textContent||''));}
+  function parsePanel(panel){
+    var head=panel.querySelector('.monthHead h2,.monthHead,h2'),mm=parseMonthText(head&&head.textContent),days=[];
+    if(!mm)return null;
+    panel.querySelectorAll('.day').forEach(function(dayNode){
+      var day=Number(((dayNode.querySelector('.topline span:first-child b')||dayNode.querySelector('.topline b')||{}).textContent)||0);if(!day)return;
+      var id=iso(mm.year,mm.month,day),endNode=dayNode.querySelector('.endline b'),startNode=dayNode.querySelector('.topline span:last-child b'),ending=n(endNode&&endNode.textContent),starting=n(startNode&&startNode.textContent),events=[];
+      dayNode.querySelectorAll('.ev').forEach(function(ev){if((ev.textContent||'').indexOf('BillsOS action log')>=0)return;events.push({iso:id,day:day,name:eventName(ev),amount:eventAmount(ev),income:isIncome(ev),done:/\bdone\b/.test(ev.className||'')});});
+      days.push({iso:id,day:day,month:mm.month,year:mm.year,starting:starting,ending:ending,events:events});
     });
-    var all=[];days.forEach(function(d){d.events.forEach(function(e){all.push(e);});});
-    return {loaded:days.length>0,month:vm,days:days,events:all,source:'rendered-calendar'};
+    return days.length?{month:mm,days:days}:null;
   }
-  function rangeFromQuestion(q,cal){
-    var s=String(q||'').toLowerCase(),vm=cal.month,start=vm.year+'-'+String(vm.month).padStart(2,'0')+'-01',end=vm.year+'-'+String(vm.month).padStart(2,'0')+'-'+String(new Date(vm.year,vm.month,0).getDate()).padStart(2,'0'),label=vm.name+' visible calendar';
-    var explicit=(s.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/)||[])[1];
-    if(explicit&&monthNum(explicit)!==vm.month)return {start:start,end:end,label:vm.name+' visible calendar',mismatch:true,requested:explicit};
-    var m=s.match(/(?:next|within|in)\s+(\d+)\s*(day|days|week|weeks|month|months)/),n=null;
-    if(m)n=Number(m[1])*(m[2].indexOf('week')===0?7:m[2].indexOf('month')===0?30:1);else if(/three weeks|3 weeks/.test(s))n=21;else if(/two weeks|2 weeks/.test(s))n=14;else if(/week/.test(s))n=7;
-    if(n){var first=cal.days[0]&&cal.days[0].iso,now=todayIso();start=(now.slice(0,7)===first.slice(0,7))?now:first;end=addDays(start,n);label='next '+n+' days shown on '+vm.name+' calendar';}
-    return {start:start,end:end,label:label};
+  function parseRoot(root){
+    var panels=[],nodes=Array.prototype.slice.call(root.querySelectorAll('.calPanel'));
+    if(!nodes.length)nodes=Array.prototype.slice.call(root.querySelectorAll('[id^="panel-"],section,main')).filter(function(x){return x.querySelector&&x.querySelector('.monthHead,.day');});
+    if(!nodes.length)nodes=[root];
+    nodes.forEach(function(node){var p=parsePanel(node);if(p)panels.push(p);});
+    var byKey={},days=[],events=[];
+    panels.forEach(function(p){var key=p.month.year+'-'+String(p.month.month).padStart(2,'0');if(byKey[key])return;byKey[key]=1;p.days.forEach(function(d){days.push(d);d.events.forEach(function(e){events.push(e);});});});
+    days.sort(function(a,b){return a.iso.localeCompare(b.iso);});events.sort(function(a,b){return a.iso.localeCompare(b.iso);});
+    return {loaded:days.length>0,days:days,events:events,months:Object.keys(byKey).sort(),source:'rendered-calendar-all-months'};
+  }
+  async function readCalendar(question){
+    var cal=parseRoot(document),want=explicitMonth(question);
+    if(cal.loaded&&(!want||cal.months.indexOf(want)>=0))return cal;
+    try{var r=await fetch('/generated?assistantCalendar='+Date.now(),{cache:'no-store'});if(r.ok){var html=await r.text(),doc=new DOMParser().parseFromString(html,'text/html'),fetched=parseRoot(doc);if(fetched.loaded)return fetched;}}catch(_e){}
+    return cal;
+  }
+  function explicitMonth(q){var m=(String(q||'').toLowerCase().match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/)||[])[1];return m?'2026-'+String(monthNum(m)).padStart(2,'0'):null;}
+  function scope(q,cal){
+    var s=String(q||'').toLowerCase(),em=explicitMonth(q),start,end,label;
+    if(em){var y=Number(em.slice(0,4)),m=Number(em.slice(5,7));start=em+'-01';end=em+'-'+String(new Date(y,m,0).getDate()).padStart(2,'0');label=monthName(m);return {start:start,end:end,label:label};}
+    var match=s.match(/(?:next|within|in)\s+(\d+)\s*(day|days|week|weeks|month|months)/),count=null;
+    if(match)count=Number(match[1])*(match[2].indexOf('week')===0?7:match[2].indexOf('month')===0?30:1);else if(/three weeks|3 weeks/.test(s))count=21;else if(/two weeks|2 weeks/.test(s))count=14;else if(/week/.test(s))count=7;else if(/month/.test(s))count=30;
+    if(count){start=today();end=addDays(start,count);return {start:start,end:end,label:'next '+count+' days'};}
+    var first=cal.days[0],last=cal.days[cal.days.length-1];return {start:first&&first.iso||today(),end:last&&last.iso||addDays(today(),30),label:'rendered calendar'};
   }
   function parseAmount(q){if(engine&&engine.parseAmount)return engine.parseAmount(q);var m=String(q||'').match(/\$\s*([0-9][0-9,]*(?:\.\d{1,2})?)/)||String(q||'').match(/(?:pay|payment|spend|buy|afford|for)\s+([0-9][0-9,]*(?:\.\d{1,2})?)/i);return m?Number(m[1].replace(/,/g,'')):0;}
-  function daysInRange(cal,range){return cal.days.filter(function(d){return d.iso>=range.start&&d.iso<=range.end&&d.ending!=null;});}
-  function lowDay(cal,range){var ds=daysInRange(cal,range);return ds.reduce(function(a,b){return !a||b.ending<a.ending?b:a;},null);}
-  function nearbyEvents(cal,iso){return cal.events.filter(function(e){var diff=Math.round((new Date(e.iso+'T12:00:00')-new Date(iso+'T12:00:00'))/86400000);return !e.income&&!e.done&&Math.abs(diff)<=3&&Math.abs(e.amount)>=300;});}
-  function bestDay(cal,amount,range){var ds=daysInRange(cal,range);if(!ds.length)return null;return ds.map(function(d){var after=Math.max(0,d.ending-amount),buffer=after-1000,near=nearbyEvents(cal,d.iso),same=cal.events.filter(function(e){return e.iso===d.iso&&!e.income&&!e.done;}),wknd=[0,6].indexOf(new Date(d.iso+'T12:00:00').getDay())>-1,score=buffer-near.length*175-same.length*90-(wknd?40:0);return {iso:d.iso,balance:d.ending,after:after,buffer:buffer,near:near,score:score};}).sort(function(a,b){return b.score-a.score;})[0];}
-  function localAnswer(q){
-    var cal=readCalendar();
-    if(!cal.loaded)return '<b>I could not read the visible calendar.</b><p>Refresh the dashboard and try again.</p>';
-    var range=rangeFromQuestion(q,cal),s=String(q||'').toLowerCase(),amount=parseAmount(q);
-    if(range.mismatch)return '<b>I can answer from the visible '+esc(cal.month.name)+' calendar right now.</b><p>Switch the calendar to '+esc(range.requested)+' and ask again so the balances come from the rendered calendar.</p>';
-    if((/best|when|day|date|pay|payment|safest/.test(s))&&amount){var best=bestDay(cal,amount,range),low=lowDay(cal,range);if(!best)return '<b>I could not find visible calendar days for '+esc(range.label)+'.</b>';return '<b>'+(best.buffer>=0?'Best fit: ':'Needs review: ')+fmt(best.iso)+'</b><ul><li>Period reviewed: '+esc(range.label)+'</li><li>Payment: <b>'+money(amount)+'</b></li><li>Visible calendar ending balance that day: <b>'+money(best.balance)+'</b></li><li>After payment: <b>'+money(best.after)+'</b></li><li>Buffer vs $1,000: <b>'+signed(best.buffer)+'</b></li>'+(low?'<li>Lowest visible ending balance in period: '+money(low.ending)+' on '+fmt(low.iso)+'</li>':'')+(best.near.length?'<li>Nearby large items: '+best.near.slice(0,3).map(function(e){return esc(e.name)+' on '+fmt(e.iso);}).join(', ')+'</li>':'<li>No large bill cluster within 3 days.</li>')+'</ul>';}
-    if(/lowest|low|minimum|floor|risk|buffer|projection/.test(s)){var low=lowDay(cal,range);return low?'<b>Lowest visible calendar balance</b><ul><li>Period reviewed: '+esc(range.label)+'</li><li>'+fmt(low.iso)+': <b>'+money(low.ending)+'</b></li></ul>':'<b>No visible balances found for '+esc(range.label)+'.</b>';}
-    if(/upcoming|coming up|bills|due|next bill/.test(s)){var items=cal.events.filter(function(e){return e.iso>=range.start&&e.iso<=range.end&&!e.income&&!e.done;}).slice(0,8);return '<b>Upcoming visible items</b><ul><li>Period reviewed: '+esc(range.label)+'</li>'+(items.length?items.map(function(e){return '<li>'+fmt(e.iso)+' · '+esc(e.name)+' · <b>'+money(e.amount)+'</b></li>';}).join(''):'<li>No open bill items found.</li>')+'</ul>';}
-    return '<b>I can answer from the visible calendar.</b><ul><li>“Lowest balance in this month”</li><li>“Best day to pay $500 in the next 3 weeks”</li><li>“What bills are coming up?”</li></ul>';
+  function daysIn(cal,sc){return cal.days.filter(function(d){return d.iso>=sc.start&&d.iso<=sc.end&&d.ending!=null;});}
+  function lowDay(cal,sc){return daysIn(cal,sc).reduce(function(a,b){return !a||b.ending<a.ending?b:a;},null);}
+  function nearby(cal,iso){return cal.events.filter(function(e){var diff=Math.round((new Date(e.iso+'T12:00:00')-new Date(iso+'T12:00:00'))/86400000);return !e.income&&!e.done&&Math.abs(diff)<=3&&Math.abs(e.amount)>=300;});}
+  function bestDay(cal,amt,sc){var ds=daysIn(cal,sc);if(!ds.length)return null;return ds.map(function(d){var after=Math.max(0,d.ending-amt),buffer=after-1000,near=nearby(cal,d.iso),same=cal.events.filter(function(e){return e.iso===d.iso&&!e.income&&!e.done;}),wknd=[0,6].indexOf(new Date(d.iso+'T12:00:00').getDay())>-1,score=buffer-near.length*175-same.length*90-(wknd?40:0);return {iso:d.iso,balance:d.ending,after:after,buffer:buffer,near:near,score:score};}).sort(function(a,b){return b.score-a.score;})[0];}
+  async function answer(q){
+    var cal=await readCalendar(q);if(!cal.loaded)return '<b>I could not read the rendered calendar.</b><p>Refresh the dashboard and try again.</p>';
+    var sc=scope(q,cal),s=String(q||'').toLowerCase(),amt=parseAmount(q),available=daysIn(cal,sc);
+    if(!available.length)return '<b>No rendered calendar balances found for '+esc(sc.label)+'.</b><p>The assistant is using rendered calendar data only.</p>';
+    if((/best|when|day|date|pay|payment|safest/.test(s))&&amt){var b=bestDay(cal,amt,sc),l=lowDay(cal,sc);if(!b)return '<b>I could not find rendered calendar days for '+esc(sc.label)+'.</b>';return '<b>'+(b.buffer>=0?'Best fit: ':'Needs review: ')+fmt(b.iso)+'</b><ul><li>Period reviewed: '+esc(sc.label)+'</li><li>Payment: <b>'+money(amt)+'</b></li><li>Rendered calendar ending balance that day: <b>'+money(b.balance)+'</b></li><li>After payment: <b>'+money(b.after)+'</b></li><li>Buffer vs $1,000: <b>'+signed(b.buffer)+'</b></li>'+(l?'<li>Lowest rendered ending balance in period: '+money(l.ending)+' on '+fmt(l.iso)+'</li>':'')+(b.near.length?'<li>Nearby large items: '+b.near.slice(0,3).map(function(e){return esc(e.name)+' on '+fmt(e.iso);}).join(', ')+'</li>':'<li>No large bill cluster within 3 days.</li>')+'</ul>';}
+    if(/lowest|low|minimum|floor|risk|buffer|projection/.test(s)){var low=lowDay(cal,sc);return low?'<b>Lowest rendered calendar balance</b><ul><li>Period reviewed: '+esc(sc.label)+'</li><li>'+fmt(low.iso)+': <b>'+money(low.ending)+'</b></li></ul>':'<b>No rendered balances found for '+esc(sc.label)+'.</b>';}
+    if(/upcoming|coming up|bills|due|next bill/.test(s)){var items=cal.events.filter(function(e){return e.iso>=sc.start&&e.iso<=sc.end&&!e.income&&!e.done;}).slice(0,8);return '<b>Upcoming rendered items</b><ul><li>Period reviewed: '+esc(sc.label)+'</li>'+(items.length?items.map(function(e){return '<li>'+fmt(e.iso)+' · '+esc(e.name)+' · <b>'+money(e.amount)+'</b></li>';}).join(''):'<li>No open bill items found.</li>')+'</ul>';}
+    return '<b>I can answer from the rendered calendar.</b><ul><li>“Lowest balance in October”</li><li>“Best day to pay $500 in the next 3 weeks”</li><li>“What bills are coming up next month?”</li></ul>';
   }
-  async function parseIntent(question){try{await fetch('/api/assistant/intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:question})});}catch(_e){}}
+  async function parseIntent(q){try{await fetch('/api/assistant/intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});}catch(_e){}}
   function addStyle(){if(document.getElementById('billsos-assistant-ui-style'))return;var style=document.createElement('style');style.id='billsos-assistant-ui-style';style.textContent='.billsos-ai-fab{position:fixed!important;right:16px!important;bottom:18px!important;z-index:2147483647!important;border:0!important;border-radius:999px!important;background:#14202c!important;color:#fff!important;padding:13px 16px!important;box-shadow:0 16px 38px rgba(20,35,55,.32)!important;font:800 13px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;display:flex!important;gap:9px!important;align-items:center!important}.billsos-ai-dot{display:grid!important;place-items:center!important;width:24px!important;height:24px!important;border-radius:999px!important;background:rgba(255,255,255,.16)!important}.billsos-ai-sheet{position:fixed!important;right:16px!important;bottom:82px!important;width:min(460px,calc(100vw - 32px))!important;max-height:72vh!important;z-index:2147483646!important;background:#fff!important;border:1px solid rgba(20,35,55,.16)!important;border-radius:22px!important;box-shadow:0 24px 70px rgba(20,35,55,.28)!important;display:none!important;overflow:hidden!important}.billsos-ai-sheet.open{display:flex!important;flex-direction:column!important}.billsos-ai-head{display:flex!important;align-items:center!important;justify-content:space-between!important;padding:13px 14px!important;border-bottom:1px solid rgba(20,35,55,.1)!important;font:800 14px system-ui!important;color:#14202c!important}.billsos-ai-sub{display:block!important;font:500 11px system-ui!important;color:#64748b!important;margin-top:2px!important}.billsos-ai-close{border:1px solid rgba(20,35,55,.12)!important;background:#fff!important;border-radius:999px!important;width:30px!important;height:30px!important;font-size:18px!important;color:#41505f!important}.billsos-ai-log{padding:14px!important;background:#f8fafc!important;color:#14202c!important;font:500 13px/1.4 system-ui!important;overflow:auto!important;display:flex!important;flex-direction:column!important;gap:9px!important}.billsos-msg{border:1px solid rgba(20,35,55,.1)!important;background:#fff!important;border-radius:16px!important;padding:10px 11px!important;max-width:94%!important}.billsos-msg.user{background:#14202c!important;color:#fff!important;align-self:flex-end!important}.billsos-msg ul{margin:8px 0 0 18px!important;padding:0!important}.billsos-msg li{margin:4px 0!important}.billsos-msg p{margin:7px 0 0!important}.billsos-ai-prompts{display:flex!important;gap:7px!important;flex-wrap:wrap!important;padding:10px 10px 0!important;background:#fff!important;border-top:1px solid rgba(20,35,55,.1)!important}.billsos-ai-prompt{border:1px solid rgba(20,35,55,.12)!important;background:#f8fafc!important;color:#334155!important;border-radius:999px!important;padding:7px 9px!important;font:750 11px system-ui!important}.billsos-ai-form{display:flex!important;gap:8px!important;padding:10px!important;background:#fff!important}.billsos-ai-form input{flex:1!important;min-width:0!important;border:1px solid rgba(20,35,55,.16)!important;border-radius:999px!important;padding:10px 12px!important;font-size:14px!important}.billsos-ai-form button{border:0!important;background:#14202c!important;color:#fff!important;border-radius:999px!important;padding:10px 13px!important;font-weight:800!important}@media(max-width:760px){.billsos-ai-sheet{left:0!important;right:0!important;bottom:0!important;width:auto!important;max-height:82vh!important;border-radius:22px 22px 0 0!important}.billsos-ai-fab{right:14px!important;bottom:14px!important}.billsos-ai-prompt{width:100%!important;text-align:left!important}}';document.head.appendChild(style);}
   function addMsg(kind,html){var log=document.getElementById('billsosAiLog');if(!log)return null;var node=document.createElement('div');node.className='billsos-msg '+kind;node.innerHTML=kind==='user'?esc(html):html;log.appendChild(node);log.scrollTop=log.scrollHeight;return node;}
-  async function ask(question){question=clean(question);if(!question)return;addMsg('user',question);parseIntent(question);addMsg('',localAnswer(question));}
-  function make(){if(document.getElementById('billsosAiFab'))return;var sheet=document.createElement('section');sheet.id='billsosAiSheet';sheet.className='billsos-ai-sheet';sheet.innerHTML='<div class="billsos-ai-head"><div><span>BillsOS Assistant</span><span class="billsos-ai-sub">Visible calendar balances · payment timing</span></div><button class="billsos-ai-close" id="billsosAiClose" type="button">×</button></div><div class="billsos-ai-log" id="billsosAiLog"><div class="billsos-msg"><b>BillsOS</b><p>Ask: “Best day to pay $500 in the next 3 weeks.”</p></div></div><div class="billsos-ai-prompts"><button class="billsos-ai-prompt" type="button">Lowest balance in this month</button><button class="billsos-ai-prompt" type="button">Best day to pay $500 in the next 3 weeks</button><button class="billsos-ai-prompt" type="button">What bills are coming up?</button></div><form class="billsos-ai-form" id="billsosAiForm"><input id="billsosAiInput" autocomplete="off" placeholder="Ask BillsOS…"><button>Ask</button></form>';var fab=document.createElement('button');fab.id='billsosAiFab';fab.className='billsos-ai-fab';fab.type='button';fab.innerHTML='<span class="billsos-ai-dot">💬</span><span>Ask BillsOS</span>';document.body.appendChild(sheet);document.body.appendChild(fab);fab.onclick=function(){sheet.classList.toggle('open');if(sheet.classList.contains('open'))setTimeout(function(){var input=document.getElementById('billsosAiInput');if(input)input.focus();},50);};document.getElementById('billsosAiClose').onclick=function(){sheet.classList.remove('open');};document.getElementById('billsosAiForm').onsubmit=function(event){event.preventDefault();var input=document.getElementById('billsosAiInput');ask(input.value);input.value='';};document.querySelectorAll('.billsos-ai-prompt').forEach(function(button){button.onclick=function(){ask(button.textContent);};});}
-  function init(){try{engine=window.BillsOSCashflow||null;loadState='ready';addStyle();make();window.BillsOSModules.assistant={loaded:true,build:BUILD,source:'visible-calendar',engine:engine&&engine.BUILD,at:new Date().toISOString()};}catch(err){window.BillsOSModules.assistant={loaded:false,error:String(err&&err.message||err),build:BUILD};}}
+  async function ask(q){q=clean(q);if(!q)return;addMsg('user',q);var p=addMsg('','<b>Checking BillsOS.</b><p>Reading rendered calendar balances.</p>');parseIntent(q);try{var html=await answer(q);if(p&&p.parentNode)p.parentNode.removeChild(p);addMsg('',html);}catch(e){if(p&&p.parentNode)p.parentNode.removeChild(p);addMsg('','<b>I could not answer from the rendered calendar.</b><p>'+esc(e&&e.message||e)+'</p>');}}
+  function make(){if(document.getElementById('billsosAiFab'))return;var sheet=document.createElement('section');sheet.id='billsosAiSheet';sheet.className='billsos-ai-sheet';sheet.innerHTML='<div class="billsos-ai-head"><div><span>BillsOS Assistant</span><span class="billsos-ai-sub">Rendered calendar balances · payment timing</span></div><button class="billsos-ai-close" id="billsosAiClose" type="button">×</button></div><div class="billsos-ai-log" id="billsosAiLog"><div class="billsos-msg"><b>BillsOS</b><p>Ask: “Lowest balance in October.”</p></div></div><div class="billsos-ai-prompts"><button class="billsos-ai-prompt" type="button">Lowest balance in October</button><button class="billsos-ai-prompt" type="button">Best day to pay $500 in the next 3 weeks</button><button class="billsos-ai-prompt" type="button">What bills are coming up next month?</button></div><form class="billsos-ai-form" id="billsosAiForm"><input id="billsosAiInput" autocomplete="off" placeholder="Ask BillsOS…"><button>Ask</button></form>';var fab=document.createElement('button');fab.id='billsosAiFab';fab.className='billsos-ai-fab';fab.type='button';fab.innerHTML='<span class="billsos-ai-dot">💬</span><span>Ask BillsOS</span>';document.body.appendChild(sheet);document.body.appendChild(fab);fab.onclick=function(){sheet.classList.toggle('open');if(sheet.classList.contains('open'))setTimeout(function(){var input=document.getElementById('billsosAiInput');if(input)input.focus();},50);};document.getElementById('billsosAiClose').onclick=function(){sheet.classList.remove('open');};document.getElementById('billsosAiForm').onsubmit=function(e){e.preventDefault();var input=document.getElementById('billsosAiInput');ask(input.value);input.value='';};document.querySelectorAll('.billsos-ai-prompt').forEach(function(b){b.onclick=function(){ask(b.textContent);};});}
+  function init(){try{engine=window.BillsOSCashflow||null;addStyle();make();window.BillsOSModules.assistant={loaded:true,build:BUILD,source:'rendered-calendar-all-months',engine:engine&&engine.BUILD,at:new Date().toISOString()};}catch(e){window.BillsOSModules.assistant={loaded:false,error:String(e&&e.message||e),build:BUILD};}}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
