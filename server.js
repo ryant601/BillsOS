@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs");
+const registerAssistantApi = require("./assistant-api");
 
 const app = express();
 
@@ -253,6 +254,8 @@ app.post("/api/bills", (req, res) => {
     res.status(500).json({ error: "Could not save bills control data" });
   }
 });
+
+registerAssistantApi(app, { readBillsData });
 
 app.get("/generated", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
