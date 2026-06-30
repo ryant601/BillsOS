@@ -1,114 +1,70 @@
 (function(){
   'use strict';
-  var BUILD='assistant-ui-20260630-7';
-  var engine=null,data=null,model=null,loadState='loading';
+  var BUILD='assistant-ui-20260630-8';
+  var engine=null,loadState='loading';
   window.BillsOSModules=window.BillsOSModules||{};
 
   function clean(value){return String(value||'').replace(/\s+/g,' ').trim();}
   function esc(value){return String(value||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function isIncome(event){return engine&&engine.isIncome?engine.isIncome(event):Number(event&&event.amount||0)>0;}
-  function loadEngine(){engine=window.BillsOSCashflow||null;return !!engine;}
-  function scoped(question){return engine.scopeFromQuestion(question);}
-  function openEvents(scope){return engine.openEvents(model,scope).filter(function(event){return !event.done;});}
-
-  async function loadData(){
-    try{
-      loadState='loading';
-      if(!loadEngine())throw new Error('Cashflow engine is not loaded');
-      var response=await fetch('/api/bills?assistant='+Date.now(),{cache:'no-store'});
-      if(!response.ok)throw new Error('HTTP '+response.status);
-      data=engine.norm(await response.json());
-      model=engine.build(data);
-      loadState='ready';
-      window.BillsOSModules.assistantData={loaded:true,build:BUILD,engine:engine.BUILD,at:new Date().toISOString(),updatedAt:data.updatedAt||null};
-    }catch(err){
-      loadState='error';
-      window.BillsOSModules.assistantData={loaded:false,build:BUILD,error:String(err&&err.message||err),at:new Date().toISOString()};
-    }
+  function num(text){var n=Number(String(text||'').replace(/[−–—]/g,'-').replace(/[^0-9.-]/g,''));return isFinite(n)?n:null;}
+  function money(n){return n==null||isNaN(n)?'—':'$'+Number(Math.max(0,n)).toLocaleString(undefined,{maximumFractionDigits:0});}
+  function signed(n){return (n<0?'−':'')+'$'+Math.abs(Number(n||0)).toLocaleString(undefined,{maximumFractionDigits:0});}
+  function todayIso(){var d=new Date();d.setHours(0,0,0,0);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function addDays(i,n){var d=new Date(i+'T12:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function fmt(i){return i?new Date(i+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'}):'—';}
+  function monthNum(name){var m={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};return m[String(name||'').toLowerCase()]||null;}
+  function visibleMonth(){var h=document.querySelector('.monthHead h2')||document.querySelector('h2');var txt=clean(h&&h.textContent),m=(txt.match(/January|February|March|April|May|June|July|August|September|October|November|December/i)||[])[0],y=(txt.match(/20\d{2}/)||[])[0]||'2026';return m?{name:m.charAt(0).toUpperCase()+m.slice(1).toLowerCase(),month:monthNum(m),year:Number(y)}:null;}
+  function isoFor(day){var vm=visibleMonth();if(!vm||!day)return null;return vm.year+'-'+String(vm.month).padStart(2,'0')+'-'+String(day).padStart(2,'0');}
+  function eventAmount(ev){var b=ev.querySelector('b:last-child')||ev.querySelector('b,.amt');var value=num(b&&b.textContent);return value==null?0:value;}
+  function eventName(ev){var span=ev.querySelector('span:not(.dot)')||ev.querySelector('.nm')||ev;return clean(span.textContent).replace(/\$[0-9,]+(?:\.\d{1,2})?/g,'').replace(/⋯/g,'').trim();}
+  function isIncomeEvent(ev){return /\bin\b|paycheck|income/i.test((ev.className||'')+' '+(ev.textContent||''));}
+  function readCalendar(){
+    var vm=visibleMonth(),days=[];
+    if(!vm)return {loaded:false,error:'No visible month found',days:[],events:[]};
+    document.querySelectorAll('.day').forEach(function(dayNode){
+      var dayText=(dayNode.querySelector('.topline span:first-child b')||dayNode.querySelector('.topline b')||{}).textContent;
+      var day=Number(dayText||0);if(!day)return;
+      var iso=isoFor(day),endNode=dayNode.querySelector('.endline b'),startNode=dayNode.querySelector('.topline span:last-child b');
+      var ending=num(endNode&&endNode.textContent),starting=num(startNode&&startNode.textContent);
+      var events=[];
+      dayNode.querySelectorAll('.ev').forEach(function(ev){
+        if((ev.textContent||'').indexOf('BillsOS action log')>=0)return;
+        events.push({iso:iso,day:day,name:eventName(ev),amount:eventAmount(ev),income:isIncomeEvent(ev),done:/\bdone\b/.test(ev.className||'')});
+      });
+      days.push({iso:iso,day:day,starting:starting,ending:ending,events:events});
+    });
+    var all=[];days.forEach(function(d){d.events.forEach(function(e){all.push(e);});});
+    return {loaded:days.length>0,month:vm,days:days,events:all,source:'rendered-calendar'};
   }
-
-  function payment(question){
-    var amount=engine.parseAmount(question),scope=scoped(question),best=engine.bestPaymentDay(model,amount,scope),low=engine.lowBalance(model,scope);
-    if(!amount)return null;
-    if(!best)return '<b>I could not find projected days for '+esc(scope.label)+'.</b>';
-    return '<b>'+(best.buffer>=0?'Best fit: ':'Needs review: ')+engine.fmt(best.iso)+'</b><ul><li>Period reviewed: '+esc(scope.label)+'</li><li>Payment: <b>'+engine.dollars(amount)+'</b></li><li>Projected balance that day: <b>'+engine.dollars(best.balance)+'</b></li><li>After payment: <b>'+engine.dollars(best.after)+'</b></li><li>Buffer vs '+engine.dollars(engine.FLOOR)+': <b>'+engine.signed(best.buffer)+'</b></li>'+(low?'<li>Lowest projected balance in period: '+engine.dollars(low.balance)+' on '+engine.fmt(low.iso)+'</li>':'')+(best.near&&best.near.length?'<li>Nearby large items: '+best.near.slice(0,3).map(function(event){return esc(event.name)+' on '+engine.fmt(event.iso);}).join(', ')+'</li>':'<li>No large bill cluster within 3 days.</li>')+'</ul>';
+  function rangeFromQuestion(q,cal){
+    var s=String(q||'').toLowerCase(),vm=cal.month,start=vm.year+'-'+String(vm.month).padStart(2,'0')+'-01',end=vm.year+'-'+String(vm.month).padStart(2,'0')+'-'+String(new Date(vm.year,vm.month,0).getDate()).padStart(2,'0'),label=vm.name+' visible calendar';
+    var explicit=(s.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/)||[])[1];
+    if(explicit&&monthNum(explicit)!==vm.month)return {start:start,end:end,label:vm.name+' visible calendar',mismatch:true,requested:explicit};
+    var m=s.match(/(?:next|within|in)\s+(\d+)\s*(day|days|week|weeks|month|months)/),n=null;
+    if(m)n=Number(m[1])*(m[2].indexOf('week')===0?7:m[2].indexOf('month')===0?30:1);else if(/three weeks|3 weeks/.test(s))n=21;else if(/two weeks|2 weeks/.test(s))n=14;else if(/week/.test(s))n=7;
+    if(n){var first=cal.days[0]&&cal.days[0].iso,now=todayIso();start=(now.slice(0,7)===first.slice(0,7))?now:first;end=addDays(start,n);label='next '+n+' days shown on '+vm.name+' calendar';}
+    return {start:start,end:end,label:label};
   }
-  function afford(question){
-    var amount=engine.parseAmount(question),scope=scoped(question),low=engine.lowBalance(model,scope),best=amount?engine.bestPaymentDay(model,amount,scope):null;
-    if(!amount)return null;
-    if(!low||!best)return '<b>I could not find projected balances for '+esc(scope.label)+'.</b>';
-    var after=Math.max(0,low.balance-amount);
-    return '<b>'+(after>=engine.FLOOR?'Looks workable':'Needs review')+'</b><ul><li>Period reviewed: '+esc(scope.label)+'</li><li>Amount: <b>'+engine.dollars(amount)+'</b></li><li>Lowest projected balance: '+engine.dollars(low.balance)+' on '+engine.fmt(low.iso)+'</li><li>Lowest balance after payment: <b>'+engine.dollars(after)+'</b></li><li>Best timing found: '+engine.fmt(best.iso)+' after projected balance '+engine.dollars(best.after)+'</li></ul>';
+  function parseAmount(q){if(engine&&engine.parseAmount)return engine.parseAmount(q);var m=String(q||'').match(/\$\s*([0-9][0-9,]*(?:\.\d{1,2})?)/)||String(q||'').match(/(?:pay|payment|spend|buy|afford|for)\s+([0-9][0-9,]*(?:\.\d{1,2})?)/i);return m?Number(m[1].replace(/,/g,'')):0;}
+  function daysInRange(cal,range){return cal.days.filter(function(d){return d.iso>=range.start&&d.iso<=range.end&&d.ending!=null;});}
+  function lowDay(cal,range){var ds=daysInRange(cal,range);return ds.reduce(function(a,b){return !a||b.ending<a.ending?b:a;},null);}
+  function nearbyEvents(cal,iso){return cal.events.filter(function(e){var diff=Math.round((new Date(e.iso+'T12:00:00')-new Date(iso+'T12:00:00'))/86400000);return !e.income&&!e.done&&Math.abs(diff)<=3&&Math.abs(e.amount)>=300;});}
+  function bestDay(cal,amount,range){var ds=daysInRange(cal,range);if(!ds.length)return null;return ds.map(function(d){var after=Math.max(0,d.ending-amount),buffer=after-1000,near=nearbyEvents(cal,d.iso),same=cal.events.filter(function(e){return e.iso===d.iso&&!e.income&&!e.done;}),wknd=[0,6].indexOf(new Date(d.iso+'T12:00:00').getDay())>-1,score=buffer-near.length*175-same.length*90-(wknd?40:0);return {iso:d.iso,balance:d.ending,after:after,buffer:buffer,near:near,score:score};}).sort(function(a,b){return b.score-a.score;})[0];}
+  function localAnswer(q){
+    var cal=readCalendar();
+    if(!cal.loaded)return '<b>I could not read the visible calendar.</b><p>Refresh the dashboard and try again.</p>';
+    var range=rangeFromQuestion(q,cal),s=String(q||'').toLowerCase(),amount=parseAmount(q);
+    if(range.mismatch)return '<b>I can answer from the visible '+esc(cal.month.name)+' calendar right now.</b><p>Switch the calendar to '+esc(range.requested)+' and ask again so the balances come from the rendered calendar.</p>';
+    if((/best|when|day|date|pay|payment|safest/.test(s))&&amount){var best=bestDay(cal,amount,range),low=lowDay(cal,range);if(!best)return '<b>I could not find visible calendar days for '+esc(range.label)+'.</b>';return '<b>'+(best.buffer>=0?'Best fit: ':'Needs review: ')+fmt(best.iso)+'</b><ul><li>Period reviewed: '+esc(range.label)+'</li><li>Payment: <b>'+money(amount)+'</b></li><li>Visible calendar ending balance that day: <b>'+money(best.balance)+'</b></li><li>After payment: <b>'+money(best.after)+'</b></li><li>Buffer vs $1,000: <b>'+signed(best.buffer)+'</b></li>'+(low?'<li>Lowest visible ending balance in period: '+money(low.ending)+' on '+fmt(low.iso)+'</li>':'')+(best.near.length?'<li>Nearby large items: '+best.near.slice(0,3).map(function(e){return esc(e.name)+' on '+fmt(e.iso);}).join(', ')+'</li>':'<li>No large bill cluster within 3 days.</li>')+'</ul>';}
+    if(/lowest|low|minimum|floor|risk|buffer|projection/.test(s)){var low=lowDay(cal,range);return low?'<b>Lowest visible calendar balance</b><ul><li>Period reviewed: '+esc(range.label)+'</li><li>'+fmt(low.iso)+': <b>'+money(low.ending)+'</b></li></ul>':'<b>No visible balances found for '+esc(range.label)+'.</b>';}
+    if(/upcoming|coming up|bills|due|next bill/.test(s)){var items=cal.events.filter(function(e){return e.iso>=range.start&&e.iso<=range.end&&!e.income&&!e.done;}).slice(0,8);return '<b>Upcoming visible items</b><ul><li>Period reviewed: '+esc(range.label)+'</li>'+(items.length?items.map(function(e){return '<li>'+fmt(e.iso)+' · '+esc(e.name)+' · <b>'+money(e.amount)+'</b></li>';}).join(''):'<li>No open bill items found.</li>')+'</ul>';}
+    return '<b>I can answer from the visible calendar.</b><ul><li>“Lowest balance in this month”</li><li>“Best day to pay $500 in the next 3 weeks”</li><li>“What bills are coming up?”</li></ul>';
   }
-  function upcoming(question){
-    var scope=scoped(question),items=openEvents(scope).filter(function(event){return !isIncome(event);}).slice(0,8);
-    return '<b>Upcoming open items</b><ul><li>Period reviewed: '+esc(scope.label)+'</li>'+(items.length?items.map(function(event){return '<li>'+engine.fmt(event.iso)+' · '+esc(event.name)+' · <b>'+esc(event.amountText||engine.dollars(Math.abs(event.amount)))+'</b></li>';}).join(''):'<li>No open bill items found.</li>')+'</ul>';
-  }
-  function lowAnswer(question){
-    var scope=scoped(question),low=engine.lowBalance(model,scope);
-    return low?'<b>Lowest projected balance</b><ul><li>Period reviewed: '+esc(scope.label)+'</li><li>'+engine.fmt(low.iso)+': <b>'+engine.dollars(low.balance)+'</b></li></ul>':'<b>No projected balances found for '+esc(scope.label)+'.</b>';
-  }
-  function summary(){
-    var scope={start:engine.today(),end:engine.addDays(engine.today(),30),label:'next 30 days'},events=openEvents(scope),income=events.find(isIncome),bill=events.find(function(event){return !isIncome(event);}),low=engine.lowBalance(model,scope);
-    return '<b>Current BillsOS read</b><ul><li>Next income: '+(income?engine.fmt(income.iso)+' · '+esc(income.name):'—')+'</li><li>Next bill: '+(bill?engine.fmt(bill.iso)+' · '+esc(bill.name)+' · '+esc(bill.amountText):'—')+'</li><li>Open items in next 30 days: '+events.filter(function(event){return !isIncome(event);}).length+'</li><li>30-day low: '+(low?engine.dollars(low.balance)+' on '+engine.fmt(low.iso):'—')+'</li></ul>';
-  }
-  function general(){return '<b>I can answer BillsOS questions.</b><ul><li>“Lowest balance in October”</li><li>“Best day to pay $500 in July”</li><li>“Can I afford $800 this month?”</li><li>“What bills are coming up next month?”</li></ul>';}
-  function reply(question){
-    if(loadState==='loading')return '<b>Loading BillsOS data.</b><p>Try again in a moment.</p>';
-    if(loadState==='error')return '<b>I could not read BillsOS data yet.</b><p>Refresh the dashboard. If this persists, the assistant cannot reach the shared cash-flow engine or /api/bills.</p>';
-    var text=String(question||'').toLowerCase();
-    if(/afford|spend|buy|can i/.test(text)&&engine.parseAmount(question))return afford(question);
-    if(/best|when|day|date|pay|payment/.test(text)&&engine.parseAmount(question))return payment(question);
-    if(/upcoming|coming up|bills|due|next bill/.test(text))return upcoming(question);
-    if(/lowest|low|minimum|floor|risk|buffer|projection/.test(text))return lowAnswer(question);
-    if(/summary|status|where.*stand|current read/.test(text))return summary();
-    return general();
-  }
-
-  function addStyle(){
-    if(document.getElementById('billsos-assistant-ui-style'))return;
-    var style=document.createElement('style');
-    style.id='billsos-assistant-ui-style';
-    style.textContent='.billsos-ai-fab{position:fixed!important;right:16px!important;bottom:18px!important;z-index:2147483647!important;border:0!important;border-radius:999px!important;background:#14202c!important;color:#fff!important;padding:13px 16px!important;box-shadow:0 16px 38px rgba(20,35,55,.32)!important;font:800 13px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;display:flex!important;gap:9px!important;align-items:center!important}.billsos-ai-dot{display:grid!important;place-items:center!important;width:24px!important;height:24px!important;border-radius:999px!important;background:rgba(255,255,255,.16)!important}.billsos-ai-sheet{position:fixed!important;right:16px!important;bottom:82px!important;width:min(460px,calc(100vw - 32px))!important;max-height:72vh!important;z-index:2147483646!important;background:#fff!important;border:1px solid rgba(20,35,55,.16)!important;border-radius:22px!important;box-shadow:0 24px 70px rgba(20,35,55,.28)!important;display:none!important;overflow:hidden!important}.billsos-ai-sheet.open{display:flex!important;flex-direction:column!important}.billsos-ai-head{display:flex!important;align-items:center!important;justify-content:space-between!important;padding:13px 14px!important;border-bottom:1px solid rgba(20,35,55,.1)!important;font:800 14px system-ui!important;color:#14202c!important}.billsos-ai-sub{display:block!important;font:500 11px system-ui!important;color:#64748b!important;margin-top:2px!important}.billsos-ai-close{border:1px solid rgba(20,35,55,.12)!important;background:#fff!important;border-radius:999px!important;width:30px!important;height:30px!important;font-size:18px!important;color:#41505f!important}.billsos-ai-log{padding:14px!important;background:#f8fafc!important;color:#14202c!important;font:500 13px/1.4 system-ui!important;overflow:auto!important;display:flex!important;flex-direction:column!important;gap:9px!important}.billsos-msg{border:1px solid rgba(20,35,55,.1)!important;background:#fff!important;border-radius:16px!important;padding:10px 11px!important;max-width:94%!important}.billsos-msg.user{background:#14202c!important;color:#fff!important;align-self:flex-end!important}.billsos-msg ul{margin:8px 0 0 18px!important;padding:0!important}.billsos-msg li{margin:4px 0!important}.billsos-msg p{margin:7px 0 0!important}.billsos-ai-prompts{display:flex!important;gap:7px!important;flex-wrap:wrap!important;padding:10px 10px 0!important;background:#fff!important;border-top:1px solid rgba(20,35,55,.1)!important}.billsos-ai-prompt{border:1px solid rgba(20,35,55,.12)!important;background:#f8fafc!important;color:#334155!important;border-radius:999px!important;padding:7px 9px!important;font:750 11px system-ui!important}.billsos-ai-form{display:flex!important;gap:8px!important;padding:10px!important;background:#fff!important}.billsos-ai-form input{flex:1!important;min-width:0!important;border:1px solid rgba(20,35,55,.16)!important;border-radius:999px!important;padding:10px 12px!important;font-size:14px!important}.billsos-ai-form button{border:0!important;background:#14202c!important;color:#fff!important;border-radius:999px!important;padding:10px 13px!important;font-weight:800!important}@media(max-width:760px){.billsos-ai-sheet{left:0!important;right:0!important;bottom:0!important;width:auto!important;max-height:82vh!important;border-radius:22px 22px 0 0!important}.billsos-ai-fab{right:14px!important;bottom:14px!important}.billsos-ai-prompt{width:100%!important;text-align:left!important}}';
-    document.head.appendChild(style);
-  }
+  async function parseIntent(question){try{await fetch('/api/assistant/intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:question})});}catch(_e){}}
+  function addStyle(){if(document.getElementById('billsos-assistant-ui-style'))return;var style=document.createElement('style');style.id='billsos-assistant-ui-style';style.textContent='.billsos-ai-fab{position:fixed!important;right:16px!important;bottom:18px!important;z-index:2147483647!important;border:0!important;border-radius:999px!important;background:#14202c!important;color:#fff!important;padding:13px 16px!important;box-shadow:0 16px 38px rgba(20,35,55,.32)!important;font:800 13px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;display:flex!important;gap:9px!important;align-items:center!important}.billsos-ai-dot{display:grid!important;place-items:center!important;width:24px!important;height:24px!important;border-radius:999px!important;background:rgba(255,255,255,.16)!important}.billsos-ai-sheet{position:fixed!important;right:16px!important;bottom:82px!important;width:min(460px,calc(100vw - 32px))!important;max-height:72vh!important;z-index:2147483646!important;background:#fff!important;border:1px solid rgba(20,35,55,.16)!important;border-radius:22px!important;box-shadow:0 24px 70px rgba(20,35,55,.28)!important;display:none!important;overflow:hidden!important}.billsos-ai-sheet.open{display:flex!important;flex-direction:column!important}.billsos-ai-head{display:flex!important;align-items:center!important;justify-content:space-between!important;padding:13px 14px!important;border-bottom:1px solid rgba(20,35,55,.1)!important;font:800 14px system-ui!important;color:#14202c!important}.billsos-ai-sub{display:block!important;font:500 11px system-ui!important;color:#64748b!important;margin-top:2px!important}.billsos-ai-close{border:1px solid rgba(20,35,55,.12)!important;background:#fff!important;border-radius:999px!important;width:30px!important;height:30px!important;font-size:18px!important;color:#41505f!important}.billsos-ai-log{padding:14px!important;background:#f8fafc!important;color:#14202c!important;font:500 13px/1.4 system-ui!important;overflow:auto!important;display:flex!important;flex-direction:column!important;gap:9px!important}.billsos-msg{border:1px solid rgba(20,35,55,.1)!important;background:#fff!important;border-radius:16px!important;padding:10px 11px!important;max-width:94%!important}.billsos-msg.user{background:#14202c!important;color:#fff!important;align-self:flex-end!important}.billsos-msg ul{margin:8px 0 0 18px!important;padding:0!important}.billsos-msg li{margin:4px 0!important}.billsos-msg p{margin:7px 0 0!important}.billsos-ai-prompts{display:flex!important;gap:7px!important;flex-wrap:wrap!important;padding:10px 10px 0!important;background:#fff!important;border-top:1px solid rgba(20,35,55,.1)!important}.billsos-ai-prompt{border:1px solid rgba(20,35,55,.12)!important;background:#f8fafc!important;color:#334155!important;border-radius:999px!important;padding:7px 9px!important;font:750 11px system-ui!important}.billsos-ai-form{display:flex!important;gap:8px!important;padding:10px!important;background:#fff!important}.billsos-ai-form input{flex:1!important;min-width:0!important;border:1px solid rgba(20,35,55,.16)!important;border-radius:999px!important;padding:10px 12px!important;font-size:14px!important}.billsos-ai-form button{border:0!important;background:#14202c!important;color:#fff!important;border-radius:999px!important;padding:10px 13px!important;font-weight:800!important}@media(max-width:760px){.billsos-ai-sheet{left:0!important;right:0!important;bottom:0!important;width:auto!important;max-height:82vh!important;border-radius:22px 22px 0 0!important}.billsos-ai-fab{right:14px!important;bottom:14px!important}.billsos-ai-prompt{width:100%!important;text-align:left!important}}';document.head.appendChild(style);}
   function addMsg(kind,html){var log=document.getElementById('billsosAiLog');if(!log)return null;var node=document.createElement('div');node.className='billsos-msg '+kind;node.innerHTML=kind==='user'?esc(html):html;log.appendChild(node);log.scrollTop=log.scrollHeight;return node;}
-  async function ask(question){
-    question=clean(question);if(!question)return;
-    addMsg('user',question);
-    var pending=addMsg('','<b>Checking BillsOS.</b><p>Reading the question and running the cash-flow engine.</p>');
-    try{
-      var response=await fetch('/api/assistant/intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:question})});
-      var payload=await response.json().catch(function(){return {};});
-      if(pending&&pending.parentNode)pending.parentNode.removeChild(pending);
-      if(response.ok&&payload&&payload.answer){
-        var node=addMsg('',payload.answer);
-        window.BillsOSModules.assistantIntent={loaded:true,build:BUILD,mode:payload.mode,intent:payload.intent,error:payload.error||null,at:new Date().toISOString()};
-        return node;
-      }
-      addMsg('',reply(question));
-      window.BillsOSModules.assistantIntent={loaded:false,build:BUILD,error:(payload&&payload.error)||('HTTP '+response.status),at:new Date().toISOString()};
-    }catch(err){
-      if(pending&&pending.parentNode)pending.parentNode.removeChild(pending);
-      addMsg('',reply(question));
-      window.BillsOSModules.assistantIntent={loaded:false,build:BUILD,error:String(err&&err.message||err),at:new Date().toISOString()};
-    }
-  }
-  function make(){
-    if(document.getElementById('billsosAiFab'))return;
-    var sheet=document.createElement('section');
-    sheet.id='billsosAiSheet';sheet.className='billsos-ai-sheet';
-    sheet.innerHTML='<div class="billsos-ai-head"><div><span>BillsOS Assistant</span><span class="billsos-ai-sub">Payment timing · upcoming bills · balance checks</span></div><button class="billsos-ai-close" id="billsosAiClose" type="button">×</button></div><div class="billsos-ai-log" id="billsosAiLog"><div class="billsos-msg"><b>BillsOS</b><p>Ask: “Lowest balance in October.”</p></div></div><div class="billsos-ai-prompts"><button class="billsos-ai-prompt" type="button">Lowest balance in October</button><button class="billsos-ai-prompt" type="button">Best day to pay $500 in the next 3 weeks</button><button class="billsos-ai-prompt" type="button">Can I afford $800 this month?</button><button class="billsos-ai-prompt" type="button">What bills are coming up next month?</button></div><form class="billsos-ai-form" id="billsosAiForm"><input id="billsosAiInput" autocomplete="off" placeholder="Ask BillsOS…"><button>Ask</button></form>';
-    var fab=document.createElement('button');fab.id='billsosAiFab';fab.className='billsos-ai-fab';fab.type='button';fab.innerHTML='<span class="billsos-ai-dot">💬</span><span>Ask BillsOS</span>';
-    document.body.appendChild(sheet);document.body.appendChild(fab);
-    fab.onclick=function(){sheet.classList.toggle('open');if(sheet.classList.contains('open'))setTimeout(function(){var input=document.getElementById('billsosAiInput');if(input)input.focus();},50);};
-    document.getElementById('billsosAiClose').onclick=function(){sheet.classList.remove('open');};
-    document.getElementById('billsosAiForm').onsubmit=function(event){event.preventDefault();var input=document.getElementById('billsosAiInput');ask(input.value);input.value='';};
-    document.querySelectorAll('.billsos-ai-prompt').forEach(function(button){button.onclick=function(){ask(button.textContent);};});
-  }
-  function init(){
-    try{addStyle();make();loadData();setTimeout(loadData,1200);window.BillsOSModules.assistant={loaded:true,build:BUILD,engine:window.BillsOSCashflow&&window.BillsOSCashflow.BUILD,at:new Date().toISOString()};}
-    catch(err){window.BillsOSModules.assistant={loaded:false,error:String(err&&err.message||err),build:BUILD};}
-  }
+  async function ask(question){question=clean(question);if(!question)return;addMsg('user',question);parseIntent(question);addMsg('',localAnswer(question));}
+  function make(){if(document.getElementById('billsosAiFab'))return;var sheet=document.createElement('section');sheet.id='billsosAiSheet';sheet.className='billsos-ai-sheet';sheet.innerHTML='<div class="billsos-ai-head"><div><span>BillsOS Assistant</span><span class="billsos-ai-sub">Visible calendar balances · payment timing</span></div><button class="billsos-ai-close" id="billsosAiClose" type="button">×</button></div><div class="billsos-ai-log" id="billsosAiLog"><div class="billsos-msg"><b>BillsOS</b><p>Ask: “Best day to pay $500 in the next 3 weeks.”</p></div></div><div class="billsos-ai-prompts"><button class="billsos-ai-prompt" type="button">Lowest balance in this month</button><button class="billsos-ai-prompt" type="button">Best day to pay $500 in the next 3 weeks</button><button class="billsos-ai-prompt" type="button">What bills are coming up?</button></div><form class="billsos-ai-form" id="billsosAiForm"><input id="billsosAiInput" autocomplete="off" placeholder="Ask BillsOS…"><button>Ask</button></form>';var fab=document.createElement('button');fab.id='billsosAiFab';fab.className='billsos-ai-fab';fab.type='button';fab.innerHTML='<span class="billsos-ai-dot">💬</span><span>Ask BillsOS</span>';document.body.appendChild(sheet);document.body.appendChild(fab);fab.onclick=function(){sheet.classList.toggle('open');if(sheet.classList.contains('open'))setTimeout(function(){var input=document.getElementById('billsosAiInput');if(input)input.focus();},50);};document.getElementById('billsosAiClose').onclick=function(){sheet.classList.remove('open');};document.getElementById('billsosAiForm').onsubmit=function(event){event.preventDefault();var input=document.getElementById('billsosAiInput');ask(input.value);input.value='';};document.querySelectorAll('.billsos-ai-prompt').forEach(function(button){button.onclick=function(){ask(button.textContent);};});}
+  function init(){try{engine=window.BillsOSCashflow||null;loadState='ready';addStyle();make();window.BillsOSModules.assistant={loaded:true,build:BUILD,source:'visible-calendar',engine:engine&&engine.BUILD,at:new Date().toISOString()};}catch(err){window.BillsOSModules.assistant={loaded:false,error:String(err&&err.message||err),build:BUILD};}}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
