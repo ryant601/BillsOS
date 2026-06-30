@@ -41,11 +41,19 @@ body::after{
 
 /* ---------- toggle ---------- */
 .toggle{display:flex;justify-content:center;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:32px;padding-bottom:2px;animation:fade .6s ease both}
-.tabs{display:inline-flex;gap:3px;padding:4px;background:#e8eaee;border-radius:14px;min-width:max-content}
-.tabs button{position:relative;border:none;background:transparent;color:var(--mut);padding:9px 17px;border-radius:10px;cursor:pointer;font-family:'Bricolage Grotesque';font-weight:700;font-size:13px;letter-spacing:-.01em;transition:all .2s cubic-bezier(.4,0,.2,1);white-space:nowrap;display:flex;align-items:center;gap:5px;line-height:1}
+.tabs{display:inline-flex;flex-wrap:nowrap;gap:3px;padding:4px;background:#e8eaee;border-radius:14px;min-width:max-content;width:max-content;max-width:none}
+.tabs button{position:relative;border:none;background:transparent;color:var(--mut);padding:9px 17px;border-radius:10px;cursor:pointer;font-family:'Bricolage Grotesque';font-weight:700;font-size:13px;letter-spacing:-.01em;transition:all .2s cubic-bezier(.4,0,.2,1);white-space:nowrap;display:flex;align-items:center;gap:5px;line-height:1;flex:0 0 auto}
 .tabs button:hover:not(.active){background:rgba(255,255,255,.6);color:var(--ink)}
 .tabs button.active{background:#ffffff;color:var(--ink);box-shadow:0 1px 4px rgba(20,35,55,.14),0 0 0 1px rgba(20,35,55,.06)}
 .tabs button .dot{width:6px;height:6px;border-radius:99px;flex-shrink:0}
+@media(max-width:520px){
+  body{padding-left:10px;padding-right:10px}
+  .toggle{justify-content:flex-start;margin-left:-2px;margin-right:-2px;margin-bottom:22px;padding:0 2px 8px;scrollbar-width:none}
+  .toggle::-webkit-scrollbar{display:none}
+  .tabs{gap:2px;padding:3px;border-radius:13px;min-width:max-content;width:max-content;max-width:none}
+  .tabs button{padding:8px 10px;border-radius:9px;font-size:12px;gap:4px}
+  .tabs button .dot{width:5px;height:5px}
+}
 .dot-bridge{background:var(--violet);opacity:.7}
 .dot-triple{background:var(--xfer)}
 .month-panel{display:none;animation:fade .5s ease both}
