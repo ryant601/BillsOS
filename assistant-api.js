@@ -57,11 +57,26 @@ function plainText(value) {
     .trim();
 }
 
+function normalizeDashboardProjection(html) {
+  if (typeof html !== "string") return html;
+  return html
+    .replace(/mm\[0\]==='june'\?0:bal/g, "bal")
+    .replace(
+      /push\(Math\.min\(dim,Math\.max\(1,base\+add\)\),'Spending account funding',-Math\.abs\(Number\(sp\.amount\)\),'out system','rule'\)/g,
+      "var fundDay=Math.min(dim,Math.max(1,base+add)),fundAmt=safeSweepAmount(fundDay,sp.amount);if(fundAmt>0)push(fundDay,'Spending account funding',-fundAmt,'out system','rule')"
+    )
+    .replace(
+      /push\(base,'Spending account funding',-Math\.abs\(Number\(sp\.amount\)\),'out system','rule'\)/g,
+      "var fundDay=base,fundAmt=safeSweepAmount(fundDay,sp.amount);if(fundAmt>0)push(fundDay,'Spending account funding',-fundAmt,'out system','rule')"
+    );
+}
+
 function injectBridge(html) {
-  if (typeof html !== "string" || html.includes("assistant-ai-bridge.js")) return html;
-  const bridge = '<script defer src="/assistant-ai-bridge.js?v=20260630bridge3"></script>';
-  if (html.includes("</body>")) return html.replace("</body>", `${bridge}\n</body>`);
-  return html + bridge;
+  let out = normalizeDashboardProjection(html);
+  if (typeof out !== "string" || out.includes("assistant-ai-bridge.js")) return out;
+  const bridge = '<script defer src="/assistant-ai-bridge.js?v=20260630bridge4"></script>';
+  if (out.includes("</body>")) return out.replace("</body>", `${bridge}\n</body>`);
+  return out + bridge;
 }
 
 async function callOpenAI({ question, deterministicAnswer, billsContext }) {
@@ -129,7 +144,8 @@ module.exports = function registerAssistantApi(app, options) {
     res.json({
       configured: !!OPENAI_API_KEY,
       model: OPENAI_MODEL,
-      bridge: "assistant-ai-bridge-20260630-3"
+      bridge: "assistant-ai-bridge-20260630-4",
+      projectionGuard: "enabled"
     });
   });
 
