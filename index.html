@@ -81,12 +81,12 @@
   .week-strip .day .dnum{font-size:16px}
   .week-strip .day .badge{padding:2px 6px;font-size:7px}
   .week-strip .day .events{gap:4px}
-  .week-strip .day .ev{font-size:10px;line-height:1.15;align-items:center;background:rgba(184,54,44,.18);border-color:rgba(255,255,255,.06);box-shadow:none;padding:6px 8px}
+  .week-strip .day .ev{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:1px;font-size:10px;line-height:1.1;align-items:center;background:rgba(184,54,44,.18);border-color:rgba(255,255,255,.06);box-shadow:none;padding:6px 8px}
   .week-strip .day .ev.in{background:rgba(15,157,88,.18)}
   .week-strip .day .ev.xfer{background:rgba(168,101,26,.18)}
   .week-strip .day .ev .dot,.week-strip .day .ev .flag,.week-strip .day .ev input[type="checkbox"]{display:none!important}
-  .week-strip .day .ev .amt{font-size:9px;flex:0 0 auto;margin-left:8px}
-  .week-strip .day .ev .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .week-strip .day .ev .nm{white-space:normal;overflow:hidden;text-overflow:clip;min-width:0;grid-column:1;grid-row:1 / span 2}
+  .week-strip .day .ev .amt{font-size:9px;grid-column:2;grid-row:1;justify-self:end;align-self:start;margin:0}
   .week-strip .day .events .ev:nth-child(n+3){display:none}
   .week-strip .day .events .ev.more{display:flex!important;gap:6px;align-items:center;justify-content:flex-start;color:#8b96a3;background:transparent;border:0;border-radius:0;padding:0 2px;font-size:9px;font-style:italic}
   .week-strip .day .events .ev.more .dot{display:none}
@@ -96,9 +96,18 @@
   header .tag{display:none!important}
   .spark .spark-head p{display:none!important}
   .chip .k{letter-spacing:.12em!important}
+  .mobile-sheet{display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-radius:22px 22px 0 0;border:1px solid rgba(20,35,55,.12);box-shadow:0 -16px 40px rgba(20,35,55,.16);max-height:min(72vh,760px);overflow:auto;padding:14px 14px 18px}
+  .mobile-sheet.open{display:block}
+  .mobile-sheet .sheet-handle{width:54px;height:5px;border-radius:999px;background:rgba(20,35,55,.18);margin:2px auto 12px}
+  .mobile-sheet .sheet-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}
+  .mobile-sheet .sheet-head h3{margin:0;font-size:18px;letter-spacing:-.02em;color:#14202c}
+  .mobile-sheet .sheet-head button{border:1px solid rgba(20,35,55,.12);background:#fff;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:700;color:#41505f}
+  .mobile-sheet .sheet-sub{margin:3px 0 12px;color:#5f6b7a;font-size:12px;line-height:1.4}
+  .mobile-sheet-backdrop{display:none;position:fixed;inset:0;background:rgba(20,35,55,.32);z-index:39}
+  .mobile-sheet-backdrop.open{display:block}
   @media(max-width:1180px){.month-shell{grid-template-columns:1fr}.detail-drawer{position:static}}
   @media(max-width:980px){.reminder-list{grid-template-columns:1fr 1fr}.week-row{grid-template-columns:1fr}.week-meta{position:static}.week-strip{overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:2px}.week-strip .day{min-width:178px;scroll-snap-align:start}}
-  @media(max-width:760px){.assistant-entry{display:block}.assistant-entry a{width:100%;margin-top:12px}.global-briefing .brief-grid{grid-template-columns:1fr}.global-briefing .brief-head{display:block}.reminder-list{grid-template-columns:1fr}.reminders-head{display:block}.reminders-tools{align-items:stretch;margin-top:12px}.reminders-stats{justify-content:flex-start}.apple-reminders-note{text-align:left;max-width:none}.week-row{gap:8px}.week-strip{grid-template-columns:1fr;overflow:visible}.week-strip .day{min-width:0}}
+  @media(max-width:760px){.assistant-entry{display:block}.assistant-entry a{width:100%;margin-top:12px}.global-briefing .brief-grid{grid-template-columns:1fr}.global-briefing .brief-head{display:block}.reminder-list{grid-template-columns:1fr}.reminders-head{display:block}.reminders-tools{align-items:stretch;margin-top:12px}.reminders-stats{justify-content:flex-start}.apple-reminders-note{text-align:left;max-width:none}.week-row{gap:8px}.week-strip{grid-template-columns:1fr;overflow:visible}.week-strip .day{min-width:0}.detail-drawer{display:none}.mobile-sheet,.mobile-sheet-backdrop{display:none}.mobile-sheet.open,.mobile-sheet-backdrop.open{display:block}}
 </style>
 </head>
 <body>
@@ -129,6 +138,15 @@
 </aside>
 </div>
 </div>
+<div class="mobile-sheet-backdrop" id="mobileSheetBackdrop"></div>
+<aside class="mobile-sheet" id="mobileSheet" aria-live="polite" aria-hidden="true">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div><h3 id="sheetTitle">Select a day</h3><div class="sheet-sub" id="sheetSub">Tap any day to view the full list.</div></div>
+    <button type="button" id="closeMobileSheet">Close</button>
+  </div>
+  <div id="sheetContent" class="detail-empty">The bottom sheet will show the full day breakdown.</div>
+</aside>
 <script>
 (function(){
   var months=['june','july','aug','sep','oct','nov','dec'];
@@ -160,6 +178,27 @@
   function overlayAmount(item,month){return item.amountByMonth&&item.amountByMonth[month]!=null?item.amountByMonth[month]:item.defaultAmount;}
   function replaceExact(from,to){document.querySelectorAll('body *').forEach(function(el){if(el.children.length)return;var t=cleanText(el.textContent);if(t===from)el.textContent=to;});}
   function updateChip(panel,label,value){var labels=[].slice.call(panel.querySelectorAll('.chip .k'));var key=labels.find(function(el){return cleanText(el.textContent).toLowerCase()===label.toLowerCase();});if(!key)return;var chip=key.closest('.chip');var val=chip?chip.querySelector('.v'):null;if(val)val.textContent=value;}
+  function syncMobileSheet(titleText, subText, html){
+    var sheet=document.getElementById('mobileSheet');
+    var backdrop=document.getElementById('mobileSheetBackdrop');
+    var title=document.getElementById('sheetTitle');
+    var sub=document.getElementById('sheetSub');
+    var content=document.getElementById('sheetContent');
+    if(!sheet||!backdrop||!title||!sub||!content)return;
+    if(!html){
+      sheet.classList.remove('open');
+      backdrop.classList.remove('open');
+      sheet.setAttribute('aria-hidden','true');
+      return;
+    }
+    title.textContent=titleText||'Day details';
+    sub.textContent=subText||'';
+    content.className='detail-list';
+    content.innerHTML=html;
+    sheet.classList.add('open');
+    backdrop.classList.add('open');
+    sheet.setAttribute('aria-hidden','false');
+  }
   function setDetailFromDay(day, panel){
     var title=document.getElementById('detailTitle');
     var sub=document.getElementById('detailSub');
@@ -187,6 +226,7 @@
       var cls=ev.classList.contains('in')?'in':ev.classList.contains('xfer')?'xfer':'out';
       return '<div class="detail-item '+cls+'"><div class="name">'+escapeHtml(name)+'</div><div class="amt">'+escapeHtml(amt||'')+'</div></div>';
     }).join(''):'<div class="detail-empty">No items on this day.</div>';
+    syncMobileSheet(title.textContent, sub.textContent, content.innerHTML);
   }
   function wireWeekDrawer(panel){
     panel.querySelectorAll('.day[data-day]').forEach(function(day){
@@ -222,6 +262,10 @@
   function showMonth(m){months.forEach(function(x){var p=document.getElementById('panel-'+x);var b=document.getElementById('btn-'+x);if(p){p.classList.toggle('show',x===m);p.style.display=x===m?'block':'none';}if(b)b.classList.toggle('active',x===m);});try{localStorage.setItem('bills-last-view-static',m);}catch(e){}cleanDashboardCopy();}
   function startMonth(){try{var saved=localStorage.getItem('bills-last-view-static');if(saved&&months.indexOf(saved)>-1)return saved;}catch(e){}var map={5:'june',6:'july',7:'aug',8:'sep',9:'oct',10:'nov',11:'dec'};return map[new Date().getMonth()]||'june';}
   async function loadCalendar(){try{var html=[];for(var i=0;i<months.length;i++){var path='/months/'+months[i]+'.html?v=20260629dashboard1';var r=await fetch(path,{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error(path+' returned HTTP '+r.status);html.push(await r.text());}mount.innerHTML=html.join('\n');injectOverlayBills();months.forEach(function(m){var b=document.getElementById('btn-'+m);if(b)b.addEventListener('click',function(){showMonth(m);});});document.querySelectorAll('.month-panel').forEach(groupIntoWeeks);setupChecks();setupAppleReminderBridge();renderStatusCards();renderDailyBriefing();renderReminders();cleanDashboardCopy();showMonth(startMonth());}catch(e){mount.innerHTML='<div class="loader-panel error"><b>Calendar failed to load.</b><br>'+String(e.message||e)+'</div>';}}
+  var mobileBackdrop=document.getElementById('mobileSheetBackdrop');
+  var mobileClose=document.getElementById('closeMobileSheet');
+  if(mobileBackdrop)mobileBackdrop.addEventListener('click',function(){syncMobileSheet(null,null,null);});
+  if(mobileClose)mobileClose.addEventListener('click',function(){syncMobileSheet(null,null,null);});
   loadCalendar();
 })();
 </script>
