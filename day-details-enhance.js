@@ -28,7 +28,9 @@
           calendarBox.checked = box.checked;
           calendarBox.dispatchEvent(new Event('change', { bubbles: true }));
         });
-        item.insertBefore(box, item.firstChild);
+        const main = item.querySelector('.detailMain');
+        if (main && main.parentNode === item) item.insertBefore(box, main);
+        else item.insertBefore(box, item.firstChild);
       } else if (existing) {
         existing.checked = checked;
       }
