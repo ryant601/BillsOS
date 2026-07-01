@@ -118,7 +118,7 @@ function generatedDashboardHtml() {
 
   html = html.replace(
     "</style></head>",
-    ".moveBtn{border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.7);border-radius:9px;padding:1px 7px;font-weight:900;color:inherit}.tag{display:block;font-size:10px;color:var(--mut);font-weight:800;margin-top:2px}.month-shell{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start;margin-top:14px}.drawer{position:sticky;top:12px;background:rgba(255,253,248,.98);border:1px solid rgba(31,58,61,.18);border-radius:22px;padding:16px;box-shadow:0 18px 42px rgba(55,43,31,.12)}.drawer .eyebrow{font-size:10px;letter-spacing:.2em;color:var(--primary);margin-bottom:8px}.drawer h3{margin:0 0 4px;font-size:20px;letter-spacing:-.03em}.drawer .sub{margin:0 0 12px;font-size:12px;color:var(--mut)}.detailList{display:grid;gap:8px}.detailItem{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:10px 11px;border:1px solid rgba(222,214,202,.86);border-radius:14px;background:#fbf7ef}.detailItem .name{font-size:12px;font-weight:700;line-height:1.3}.detailItem .amt{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;white-space:nowrap}.detailEmpty{border:1px dashed rgba(222,214,202,.92);border-radius:14px;padding:14px;color:var(--mut);font-size:13px;line-height:1.5;background:#fff}.sheet{position:fixed;inset:0;background:rgba(20,24,28,.38);display:none;align-items:flex-end;justify-content:center;padding:16px;z-index:20}.sheet.on{display:flex}.sheetCard{width:min(460px,100%);background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 22px 70px rgba(0,0,0,.22)}.sheetCard h3{margin:0 0 4px;font-size:22px}.sheetCard p{margin:0 0 12px;color:var(--mut)}.sheetGrid{display:grid;gap:8px}.sheetGrid button,.sheetGrid input{width:100%;border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px;text-align:left;font-weight:900;color:var(--ink);font:inherit}.sheetGrid button.primary{background:var(--primary);color:#fff}.sheetGrid button.warn{color:var(--outflow)}.sheetGrid button.undo{background:#fbf7ef}@media(max-width:900px){.month-shell{grid-template-columns:1fr}.drawer{position:static}}</style></head>"
+    ".moveBtn{border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.7);border-radius:9px;padding:1px 7px;font-weight:900;color:inherit}.tag{display:block;font-size:10px;color:var(--mut);font-weight:800;margin-top:2px}.month-shell{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start;margin-top:14px}.drawer{position:sticky;top:12px;background:rgba(255,253,248,.98);border:1px solid rgba(31,58,61,.18);border-radius:22px;padding:16px;box-shadow:0 18px 42px rgba(55,43,31,.12)}.drawer .eyebrow{font-size:10px;letter-spacing:.2em;color:var(--primary);margin-bottom:8px}.drawer h3{margin:0 0 4px;font-size:20px;letter-spacing:-.03em}.drawer .sub{margin:0 0 12px;font-size:12px;color:var(--mut)}.detailList{display:grid;gap:8px}.detailItem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 11px;border:1px solid rgba(222,214,202,.86);border-radius:14px;background:#fbf7ef}.detailItem .detailMain{min-width:0}.detailItem .name{font-size:12px;font-weight:700;line-height:1.3}.detailItem .amt{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;white-space:nowrap}.detailItem input{width:14px;height:14px;margin-top:2px}.detailEmpty{border:1px dashed rgba(222,214,202,.92);border-radius:14px;padding:14px;color:var(--mut);font-size:13px;line-height:1.5;background:#fff}.sheet{position:fixed;inset:0;background:rgba(20,24,28,.38);display:none;align-items:flex-end;justify-content:center;padding:16px;z-index:20}.sheet.on{display:flex}.sheetCard{width:min(460px,100%);background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 22px 70px rgba(0,0,0,.22)}.sheetCard h3{margin:0 0 4px;font-size:22px}.sheetCard p{margin:0 0 12px;color:var(--mut)}.sheetGrid{display:grid;gap:8px}.sheetGrid button,.sheetGrid input{width:100%;border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px;text-align:left;font-weight:900;color:var(--ink);font:inherit}.sheetGrid button.primary{background:var(--primary);color:#fff}.sheetGrid button.warn{color:var(--outflow)}.sheetGrid button.undo{background:#fbf7ef}@media(max-width:900px){.month-shell{grid-template-columns:1fr}.drawer{position:static}}</style></head>"
   );
 
   html = html.replace(
@@ -128,7 +128,7 @@ function generatedDashboardHtml() {
 
   html = html.replace(
     "done={},FIRST_BEGIN=3671,currentRows=[];",
-    "done={},adjust={},FIRST_BEGIN=3671,currentRows=[],eventMap={},lastData=null,selectedKey=null,lastUndo=null;"
+    "done={},adjust={},FIRST_BEGIN=3671,currentRows=[],eventMap={},lastData=null,selectedKey=null,selectedDayKey=null,lastUndo=null;"
   );
 
   html = html.replace(
@@ -175,6 +175,10 @@ function generatedDashboardHtml() {
     "done=JSON.parse(localStorage.getItem('billsos-generated-done-v5')||'{}')||{};var r=await fetch",
     "done=JSON.parse(localStorage.getItem('billsos-generated-done-v5')||'{}')||{};adjust=JSON.parse(localStorage.getItem('billsos-pay-adjust-v1')||'{}')||{};var r=await fetch"
   );
+
+  if (!html.includes('/day-details-enhance.js')) {
+    html = html.replace('</body>', '<script defer src="/day-details-enhance.js?v=20260701day1"></script></body>');
+  }
 
   return html;
 }
