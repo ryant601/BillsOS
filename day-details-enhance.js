@@ -5,46 +5,24 @@
     return (el && el.textContent ? el.textContent : '').replace(/\s+/g, ' ').trim();
   }
 
-  function selectedDayNumber() {
-    const title = document.getElementById('detailTitle');
-    const m = title && text(title).match(/Day\s+(\d{1,2})/i);
-    return m ? String(Number(m[1])) : '';
-  }
-
-  function matchingCalendarCheckbox(detailItem) {
-    const dayNum = selectedDayNumber();
-    const nameEl = detailItem.querySelector('.name');
-    const amtEl = detailItem.querySelector('.amt');
-    const name = text(nameEl);
-    const amt = text(amtEl);
-    if (!name || !amt) return null;
-
-    const labels = Array.from(document.querySelectorAll('.day label.ev'));
-    return labels.find(function (label) {
-      const day = label.closest('.day');
-      const dayNumber = day && day.querySelector('.topline b') ? text(day.querySelector('.topline b')) : '';
-      if (dayNum && dayNumber !== dayNum) return false;
-      return text(label).includes(name) && text(label).includes(amt);
-    }) || null;
-  }
-
   function syncDrawer() {
     const items = document.querySelectorAll('#detailContent .detailItem');
     if (!items.length) return;
 
     items.forEach(function (item) {
-      const match = matchingCalendarCheckbox(item);
+      const key = item.getAttribute('data-detail-id');
+      const match = key ? document.querySelector('.day label.ev input[data-id="' + CSS.escape(key) + '"]') : null;
       const existing = item.querySelector(CHECKBOX_SELECTOR);
-      const checked = !!(match && match.querySelector('input[type="checkbox"]') && match.querySelector('input[type="checkbox"]').checked);
+      const checked = !!(match && match.checked);
 
-      if (!existing && match && match.querySelector('input[type="checkbox"]')) {
+      if (!existing && match) {
         const box = document.createElement('input');
         box.type = 'checkbox';
         box.setAttribute('aria-label', 'Mark complete');
         box.dataset.ddSync = '1';
         box.checked = checked;
         box.addEventListener('change', function () {
-          const calendarBox = match.querySelector('input[type="checkbox"]');
+          const calendarBox = match;
           if (!calendarBox) return;
           if (calendarBox.checked === box.checked) return;
           calendarBox.checked = box.checked;
