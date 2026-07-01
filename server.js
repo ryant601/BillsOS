@@ -199,6 +199,7 @@ function loginPage(error = "") {
 </head>
 <body>
 <form class="card" method="POST" action="/login">
+<div style="margin:0 0 14px;padding:10px 12px;border-radius:14px;background:#a8651a;color:#fff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 20px rgba(0,0,0,.22)">LIVE BUILD · 2026-07-01 · v01565c2</div>
 <h1>BillsOS</h1>
 <p>Sign in to view the dashboard.</p>
 <label>Username</label>
