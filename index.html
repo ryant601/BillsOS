@@ -80,12 +80,15 @@
   .week-strip .day .dtop{gap:5px;margin-bottom:7px}
   .week-strip .day .dnum{font-size:16px}
   .week-strip .day .badge{padding:2px 6px;font-size:7px}
-  .week-strip .day .events{gap:3px}
-  .week-strip .day .ev{font-size:10px;line-height:1.15;align-items:center}
-  .week-strip .day .ev .amt{font-size:9px}
-  .week-strip .day .ev .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .week-strip .day .events{gap:4px}
+  .week-strip .day .ev{font-size:10px;line-height:1.15;align-items:center;background:rgba(184,54,44,.18);border-color:rgba(255,255,255,.06);box-shadow:none;padding:6px 8px}
+  .week-strip .day .ev.in{background:rgba(15,157,88,.18)}
+  .week-strip .day .ev.xfer{background:rgba(168,101,26,.18)}
+  .week-strip .day .ev .dot,.week-strip .day .ev .flag,.week-strip .day .ev input[type="checkbox"]{display:none!important}
+  .week-strip .day .ev .amt{font-size:9px;flex:0 0 auto;margin-left:8px}
+  .week-strip .day .ev .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
   .week-strip .day .events .ev:nth-child(n+3){display:none}
-  .week-strip .day .events .ev.more{display:flex!important;gap:6px;align-items:center;justify-content:space-between;color:#5f6b7a;background:rgba(20,35,55,.04);border:1px dashed rgba(20,35,55,.12);border-radius:10px;padding:4px 8px}
+  .week-strip .day .events .ev.more{display:flex!important;gap:6px;align-items:center;justify-content:flex-start;color:#8b96a3;background:transparent;border:0;border-radius:0;padding:0 2px;font-size:9px;font-style:italic}
   .week-strip .day .events .ev.more .dot{display:none}
   .week-strip .day .events .ev.more .amt{display:none}
   .week-strip .day .events .ev.more .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:normal}
