@@ -55,7 +55,8 @@
   .reminder-actions button{border:1px solid rgba(20,35,55,.14);background:#fff;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:700;color:#41505f;cursor:pointer}
   .reminder-actions button:hover{border-color:rgba(10,125,68,.3);color:#0a7d44}
   .month-shell{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:14px;align-items:start}
-  .detail-drawer{position:sticky;top:12px;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(250,246,238,.98));border:1px solid rgba(168,101,26,.28);border-radius:22px;padding:16px;box-shadow:0 18px 40px rgba(20,35,55,.14)}
+  .detail-drawer{position:sticky;top:12px;background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(250,246,238,.98));border:1px solid rgba(168,101,26,.28);border-radius:22px;padding:16px;box-shadow:0 18px 40px rgba(20,35,55,.14);transition:box-shadow .18s ease,border-color .18s ease,transform .18s ease}
+  .detail-drawer.active{border-color:rgba(168,101,26,.55);box-shadow:0 24px 52px rgba(20,35,55,.18);transform:translateY(-2px)}
   .detail-drawer::before{content:'DAY DETAILS';display:block;margin:0 0 10px;font-size:10px;letter-spacing:.2em;font-weight:800;color:#a8651a}
   .detail-drawer h3{margin:0 0 4px;font-size:19px;letter-spacing:-.02em;color:#14202c}
   .detail-drawer .sub{margin:0 0 12px;font-size:12px;color:#5f6b7a;line-height:1.4}
@@ -95,6 +96,7 @@
   .week-strip .day .events .ev.more .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:normal}
   .week-strip .day.has-overflow .bod{margin-top:4px}
   .week-strip .day.has-overflow::after{content:attr(data-summary);display:block;margin-top:4px;padding:0 2px;font-size:9px;line-height:1.2;color:#a8651a;font-style:italic}
+  .week-strip .day.selected{outline:2px solid rgba(168,101,26,.5);outline-offset:2px}
   header .eyebrow{letter-spacing:.18em!important}
   header .tag{display:none!important}
   .spark .spark-head p{display:none!important}
@@ -206,8 +208,10 @@
     var title=document.getElementById('detailTitle');
     var sub=document.getElementById('detailSub');
     var content=document.getElementById('detailContent');
+    var drawer=document.getElementById('detailDrawer');
     if(!title||!sub||!content)return;
     if(!day){
+      if(drawer)drawer.classList.remove('active');
       title.textContent='Select a day';
       sub.textContent='Choose any day card to see its bills, balance, and notes.';
       content.className='detail-empty';
@@ -220,6 +224,7 @@
     var start=cleanText((day.querySelector('.bod b')||{}).textContent||'');
     var end=cleanText((day.querySelector('.eod b')||{}).textContent||'');
     var events=[].slice.call(day.querySelectorAll('.events .ev:not(.more)')).filter(function(ev){return !ev.classList.contains('note')||cleanText((ev.querySelector('.nm')||{}).textContent||'');});
+    if(drawer)drawer.classList.add('active');
     title.textContent=monthTitle.textContent+' · Day '+dayNum;
     sub.textContent=dow+' · Start '+start+' · End '+end;
     content.className='detail-list';
