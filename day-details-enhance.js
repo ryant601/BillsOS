@@ -45,8 +45,10 @@
         box.checked = checked;
         box.addEventListener('change', function () {
           const calendarBox = match.querySelector('input[type="checkbox"]');
-          if (!calendarBox || calendarBox.checked === box.checked) return;
-          calendarBox.click();
+          if (!calendarBox) return;
+          if (calendarBox.checked === box.checked) return;
+          calendarBox.checked = box.checked;
+          calendarBox.dispatchEvent(new Event('change', { bubbles: true }));
         });
         item.insertBefore(box, item.firstChild);
       } else if (existing) {
