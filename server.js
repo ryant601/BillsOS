@@ -8,7 +8,9 @@ const app = express();
 
 const USER = process.env.BILLS_USER || "ryan";
 const PASS = process.env.BILLS_PASS || "";
-const SECRET = process.env.SESSION_SECRET || PASS || "change-me";
+const TEMP_USER = process.env.BILLS_TEMP_USER || "temp";
+const TEMP_PASS = process.env.BILLS_TEMP_PASS || "";
+const SECRET = process.env.SESSION_SECRET || PASS || TEMP_PASS || "change-me";
 const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, "data");
 const CHECKMARK_FILE = path.join(DATA_DIR, "checkmarks.json");
 const BILLS_FILE = path.join(DATA_DIR, "bills.json");
@@ -16,11 +18,22 @@ const BILLS_FILE = path.join(DATA_DIR, "bills.json");
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: "2mb" }));
 
-function makeToken() {
+function makeToken(username = USER, password = PASS) {
   return crypto
     .createHmac("sha256", SECRET)
-    .update(`${USER}:${PASS}`)
+    .update(`${username}:${password}`)
     .digest("hex");
+}
+
+function validAccounts() {
+  const accounts = [];
+  if (PASS) accounts.push({ username: USER, password: PASS });
+  if (TEMP_PASS) accounts.push({ username: TEMP_USER, password: TEMP_PASS });
+  return accounts;
+}
+
+function authenticate(username, password) {
+  return validAccounts().find(account => account.username === username && account.password === password);
 }
 
 function getCookies(req) {
@@ -37,7 +50,7 @@ function getCookies(req) {
 
 function isLoggedIn(req) {
   const cookies = getCookies(req);
-  return cookies.billsos_auth === makeToken();
+  return validAccounts().some(account => cookies.billsos_auth === makeToken(account.username, account.password));
 }
 
 function ensureDataDir() {
@@ -201,14 +214,15 @@ function loginPage(error = "") {
 }
 
 app.get("/login", (req, res) => {
-  if (!PASS) return res.status(500).send("BILLS_PASS is not set on Render.");
+  if (!validAccounts().length) return res.status(500).send("Set BILLS_PASS or BILLS_TEMP_PASS on Render.");
   res.send(loginPage());
 });
 
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  if (username === USER && password === PASS) {
-    res.setHeader("Set-Cookie", `billsos_auth=${makeToken()}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`);
+  const account = authenticate(username, password);
+  if (account) {
+    res.setHeader("Set-Cookie", `billsos_auth=${makeToken(account.username, account.password)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`);
     return res.redirect("/");
   }
   res.status(401).send(loginPage("Invalid username or password."));
