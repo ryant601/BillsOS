@@ -81,17 +81,19 @@
   .week-strip .day .dnum{font-size:16px}
   .week-strip .day .badge{padding:2px 6px;font-size:7px}
   .week-strip .day .events{gap:4px}
-  .week-strip .day .ev{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:1px;font-size:10px;line-height:1.1;align-items:center;background:rgba(184,54,44,.18);border-color:rgba(255,255,255,.06);box-shadow:none;padding:6px 8px}
+  .week-strip .day .ev{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:1px;font-size:10px;line-height:1.1;align-items:center;background:rgba(184,54,44,.16);border-color:rgba(255,255,255,.05);box-shadow:none;padding:6px 8px;min-height:34px}
   .week-strip .day .ev.in{background:rgba(15,157,88,.18)}
   .week-strip .day .ev.xfer{background:rgba(168,101,26,.18)}
   .week-strip .day .ev .dot,.week-strip .day .ev .flag,.week-strip .day .ev input[type="checkbox"]{display:none!important}
   .week-strip .day .ev .nm{white-space:normal;overflow:hidden;text-overflow:clip;min-width:0;grid-column:1;grid-row:1 / span 2}
   .week-strip .day .ev .amt{font-size:9px;grid-column:2;grid-row:1;justify-self:end;align-self:start;margin:0}
-  .week-strip .day .events .ev:nth-child(n+3){display:none}
-  .week-strip .day .events .ev.more{display:flex!important;gap:6px;align-items:center;justify-content:flex-start;color:#8b96a3;background:transparent;border:0;border-radius:0;padding:0 2px;font-size:9px;font-style:italic}
+  .week-strip .day .events .ev:nth-child(n+2){display:none}
+  .week-strip .day .events .ev.more{display:flex!important;gap:6px;align-items:center;justify-content:flex-start;color:#a2aab3;background:rgba(20,35,55,.04);border:1px dashed rgba(20,35,55,.12);border-radius:10px;padding:4px 8px;font-size:9px;font-style:normal}
   .week-strip .day .events .ev.more .dot{display:none}
   .week-strip .day .events .ev.more .amt{display:none}
   .week-strip .day .events .ev.more .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:normal}
+  .week-strip .day.has-overflow .bod{margin-top:4px}
+  .week-strip .day.has-overflow::after{content:attr(data-summary);display:block;margin-top:4px;padding:0 2px;font-size:9px;line-height:1.2;color:#a2aab3;font-style:italic}
   header .eyebrow{letter-spacing:.18em!important}
   header .tag{display:none!important}
   .spark .spark-head p{display:none!important}
@@ -238,7 +240,7 @@
       });
     });
   }
-  function compressDayCards(panel){panel.querySelectorAll('.day[data-day]').forEach(function(day){var events=day.querySelector('.events');if(!events||events.dataset.compacted==='1')return;var items=[].slice.call(events.querySelectorAll('.ev:not(.more)'));if(items.length<=2){events.dataset.compacted='1';return;}items.slice(2).forEach(function(ev){ev.remove();});var more=document.createElement('div');more.className='ev more';more.innerHTML='<span class="nm">+'+(items.length-2)+' more</span>';events.appendChild(more);events.dataset.compacted='1';});}
+  function compressDayCards(panel){panel.querySelectorAll('.day[data-day]').forEach(function(day){var events=day.querySelector('.events');if(!events||events.dataset.compacted==='1')return;var items=[].slice.call(events.querySelectorAll('.ev:not(.more)'));var summary=(items.length>1?items.length-1:0)+' more';day.dataset.summary=items.length?summary:'';day.classList.toggle('has-overflow',items.length>1);if(items.length<=1){events.dataset.compacted='1';return;}items.slice(1).forEach(function(ev){ev.remove();});var more=document.createElement('div');more.className='ev more';more.innerHTML='<span class="nm">+'+(items.length-1)+' more</span>';events.appendChild(more);events.dataset.compacted='1';});}
   function weekRangeLabel(days){var first=days[0],last=days[days.length-1],start=first?first.querySelector('.dnum'):null,end=last?last.querySelector('.dnum'):null;return start&&end?start.textContent+'–'+end.textContent:'';}
   function groupIntoWeeks(panel){var grid=panel.querySelector('.grid');if(!grid||grid.dataset.weeked==='1')return;var nodes=[].slice.call(grid.children),weeks=[];for(var i=0;i<nodes.length;i+=7)weeks.push(nodes.slice(i,i+7));grid.innerHTML='';weeks.forEach(function(week,idx){var row=document.createElement('section');row.className='week-row';var meta=document.createElement('div');meta.className='week-meta';var days=week.filter(function(n){return n.classList.contains('day')&&n.hasAttribute('data-day');});meta.innerHTML='<span class="week-label">Week '+(idx+1)+'</span><span class="week-range">'+weekRangeLabel(days)+' in '+cleanText((panel.querySelector('h1')||{}).textContent||'')+'</span>';var strip=document.createElement('div');strip.className='week-strip';week.forEach(function(node){strip.appendChild(node);});row.appendChild(meta);row.appendChild(strip);grid.appendChild(row);});grid.dataset.weeked='1';compressDayCards(panel);wireWeekDrawer(panel);setDetailFromDay(panel.querySelector('.day[data-day]'),panel);}
   function injectOverlayBills(){overlays.forEach(function(item){var start=monthNumber(item.startMonth);months.forEach(function(month){if(monthNumber(month)<start)return;var panel=document.getElementById('panel-'+month);if(!panel)return;var day=panel.querySelector('.day[data-day="'+item.day+'"]');if(!day)return;var events=day.querySelector('.events');if(!events){events=document.createElement('div');events.className='events';var eod=day.querySelector('.eod');day.insertBefore(events,eod||null);}var exists=[].slice.call(events.querySelectorAll('.nm')).some(function(el){return cleanText(el.textContent)===item.name;});if(exists)return;var ev=document.createElement('div');ev.className='ev out billsos-overlay';ev.innerHTML='<span class="dot"></span><span class="nm">'+item.name+'</span><span class="flag '+item.flag+'">'+(item.flag==='auto'?'A':'M')+'</span><span class="amt">'+amtOut(overlayAmount(item,month))+'</span>';events.appendChild(ev);});});document.querySelectorAll('.month-panel').forEach(recalculateMonth);}
