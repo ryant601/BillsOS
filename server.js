@@ -188,7 +188,7 @@ function loginPage(error = "") {
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BillsOS Login · LIVE BUILD 2026-07-01 v01565c9</title>
+  <title>BillsOS Login · LIVE BUILD 2026-07-01 v01565ca</title>
 <style>
     body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: white; min-height: 100vh; display: grid; place-items: center; }
     .card { width: min(92vw, 380px); background: #111827; border: 1px solid #334155; border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
@@ -202,9 +202,9 @@ function loginPage(error = "") {
 </head>
 <body>
 <form class="card" method="POST" action="/login">
-<div style="margin:0 0 14px;padding:10px 12px;border-radius:14px;background:#a8651a;color:#fff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 20px rgba(0,0,0,.22)">LIVE BUILD · 2026-07-01 · v01565c9</div>
+<div style="margin:0 0 14px;padding:10px 12px;border-radius:14px;background:#a8651a;color:#fff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 20px rgba(0,0,0,.22)">LIVE BUILD · 2026-07-01 · v01565ca</div>
 <h1>BillsOS</h1>
-<p>Sign in to view the dashboard. Build stamp: LIVE BUILD · 2026-07-01 · v01565c9</p>
+<p>Sign in to view the dashboard. Build stamp: LIVE BUILD · 2026-07-01 · v01565ca</p>
 <label>Username</label>
 <input name="username" autocomplete="username" required>
 <label>Password</label>
