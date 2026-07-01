@@ -8,7 +8,8 @@ These rules exist so future ChatGPT sessions handle this repository consistently
 - When the user asks for a BillsOS app change, update the GitHub repository directly.
 - Repository: `ryant601/BillsOS`
 - Default branch: `main`
-- Live app: Render deployment connected to the repository.
+- Live app: Railway deployment connected to the repository.
+- After each completed BillsOS app change, commit and push the change to `origin/main` so Railway's GitHub integration can deploy it automatically.
 
 ## Before editing
 
@@ -20,12 +21,13 @@ These rules exist so future ChatGPT sessions handle this repository consistently
 ## After editing
 
 - Commit directly to GitHub with a clear commit message.
+- Push the completed commit to `origin/main`; do not leave finished app changes only in the local worktree.
 - Tell the user:
   - repo name
   - file path changed
   - short commit SHA
   - what changed
-  - whether Render should redeploy automatically
+  - whether Railway should redeploy automatically
 
 ## UI / copy preferences
 
