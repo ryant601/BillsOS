@@ -127,13 +127,12 @@ function generatedDashboardHtml() {
   );
 
   html = html.replace(
-    "done={},FIRST_BEGIN=3671,currentRows=[];",
-    "done={},adjust={},FIRST_BEGIN=3671,currentRows=[],eventMap={},lastData=null,selectedKey=null,selectedDayKey=null,lastUndo=null,resizeState=false;"
+    "done={},attentionCollapsed=localStorage.getItem('billsos-attention-collapsed-v1')==='1',FIRST_BEGIN=3671,currentRows=[];",
+    "done={},adjust={},attentionCollapsed=localStorage.getItem('billsos-attention-collapsed-v1')==='1',FIRST_BEGIN=3671,currentRows=[],eventMap={},lastData=null,selectedKey=null,selectedDayKey=null,lastUndo=null,resizeState=false;"
   );
 
   html = html.replace(
-    "function esc(s){return String(s||'').replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}",
-    "function esc(s){return String(s||'').replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}function rowKey(e){return (e.originalDate||e.date)+'|'+e.name+'|'+e.amount}function itemKey(e){return e.originalKey||rowKey(e)}function todayIso(offset){var d=new Date();d.setDate(d.getDate()+(offset||0));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}function saveAdjust(){localStorage.setItem('billsos-pay-adjust-v1',JSON.stringify(adjust))}function saveDone(){localStorage.setItem('billsos-generated-done-v5',JSON.stringify(done))}function rememberUndo(k){lastUndo={key:k,adjust:adjust[k]?Object.assign({},adjust[k]):null,done:!!done[k]}}function undoLast(){if(!lastUndo)return;if(lastUndo.adjust)adjust[lastUndo.key]=lastUndo.adjust;else delete adjust[lastUndo.key];if(lastUndo.done)done[lastUndo.key]=1;else delete done[lastUndo.key];saveAdjust();saveDone();closeSheet();render(lastData);lastUndo=null}function loadDrawerWidth(){var saved=Number(localStorage.getItem('billsos-drawer-width-v1')||260);return isFinite(saved)?Math.max(220,Math.min(420,saved)):260}function applyDrawerWidth(n){var v=Math.max(220,Math.min(420,Number(n)||260));document.documentElement.style.setProperty('--drawer-w',v+'px');localStorage.setItem('billsos-drawer-width-v1',String(v));return v}function initResize(){var handle=document.getElementById('resizeHandle');if(!handle||handle.dataset.bound)return;handle.dataset.bound='1';var startX=0,startW=0;var onMove=function(ev){if(!resizeState)return;var dx=ev.clientX-startX;applyDrawerWidth(startW-dx)};var onUp=function(){if(!resizeState)return;resizeState=false;handle.classList.remove('dragging');window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp)};handle.addEventListener('pointerdown',function(ev){if(window.innerWidth<=900)return;resizeState=true;handle.classList.add('dragging');startX=ev.clientX;startW=Number(getComputedStyle(document.documentElement).getPropertyValue('--drawer-w'))||260;handle.setPointerCapture&&handle.setPointerCapture(ev.pointerId);window.addEventListener('pointermove',onMove);window.addEventListener('pointerup',onUp)})}applyDrawerWidth(loadDrawerWidth())"
+    "function esc(s){return String(s||'').replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}function saveAttention(){localStorage.setItem('billsos-attention-collapsed-v1',attentionCollapsed?'1':'0')}function rowKey(e){return (e.originalDate||e.date)+'|'+e.name+'|'+e.amount}function itemKey(e){return e.originalKey||rowKey(e)}function todayIso(offset){var d=new Date();d.setDate(d.getDate()+(offset||0));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}function saveAdjust(){localStorage.setItem('billsos-pay-adjust-v1',JSON.stringify(adjust))}function saveDone(){localStorage.setItem('billsos-generated-done-v5',JSON.stringify(done))}function rememberUndo(k){lastUndo={key:k,adjust:adjust[k]?Object.assign({},adjust[k]):null,done:!!done[k]}}function undoLast(){if(!lastUndo)return;if(lastUndo.adjust)adjust[lastUndo.key]=lastUndo.adjust;else delete adjust[lastUndo.key];if(lastUndo.done)done[lastUndo.key]=1;else delete done[lastUndo.key];saveAdjust();saveDone();closeSheet();render(lastData);lastUndo=null}function loadDrawerWidth(){var saved=Number(localStorage.getItem('billsos-drawer-width-v1')||260);return isFinite(saved)?Math.max(220,Math.min(420,saved)):260}function applyDrawerWidth(n){var v=Math.max(220,Math.min(420,Number(n)||260));document.documentElement.style.setProperty('--drawer-w',v+'px');localStorage.setItem('billsos-drawer-width-v1',String(v));return v}function initResize(){var handle=document.getElementById('resizeHandle');if(!handle||handle.dataset.bound)return;handle.dataset.bound='1';var startX=0,startW=0;var onMove=function(ev){if(!resizeState)return;var dx=ev.clientX-startX;applyDrawerWidth(startW-dx)};var onUp=function(){if(!resizeState)return;resizeState=false;handle.classList.remove('dragging');window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp)};handle.addEventListener('pointerdown',function(ev){if(window.innerWidth<=900)return;resizeState=true;handle.classList.add('dragging');startX=ev.clientX;startW=Number(getComputedStyle(document.documentElement).getPropertyValue('--drawer-w'))||260;handle.setPointerCapture&&handle.setPointerCapture(ev.pointerId);window.addEventListener('pointermove',onMove);window.addEventListener('pointerup',onUp)})}applyDrawerWidth(loadDrawerWidth())"
   );
 
   html = html.replace(
@@ -189,7 +188,7 @@ function loginPage(error = "") {
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BillsOS Login · LIVE BUILD 2026-07-01 v01565c7</title>
+  <title>BillsOS Login · LIVE BUILD 2026-07-01 v01565c8</title>
 <style>
     body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: white; min-height: 100vh; display: grid; place-items: center; }
     .card { width: min(92vw, 380px); background: #111827; border: 1px solid #334155; border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
@@ -203,9 +202,9 @@ function loginPage(error = "") {
 </head>
 <body>
 <form class="card" method="POST" action="/login">
-<div style="margin:0 0 14px;padding:10px 12px;border-radius:14px;background:#a8651a;color:#fff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 20px rgba(0,0,0,.22)">LIVE BUILD · 2026-07-01 · v01565c7</div>
+<div style="margin:0 0 14px;padding:10px 12px;border-radius:14px;background:#a8651a;color:#fff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 20px rgba(0,0,0,.22)">LIVE BUILD · 2026-07-01 · v01565c8</div>
 <h1>BillsOS</h1>
-<p>Sign in to view the dashboard. Build stamp: LIVE BUILD · 2026-07-01 · v01565c7</p>
+<p>Sign in to view the dashboard. Build stamp: LIVE BUILD · 2026-07-01 · v01565c8</p>
 <label>Username</label>
 <input name="username" autocomplete="username" required>
 <label>Password</label>
