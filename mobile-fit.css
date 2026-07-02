@@ -45,6 +45,14 @@ img,svg,canvas,video,iframe,table{
   width:auto!important;
 }
 
+.billsos-ai-form input,
+#billsosAiInput{
+  font-size:16px!important;
+  line-height:1.25!important;
+  -webkit-text-size-adjust:100%!important;
+  transform:translateZ(0);
+}
+
 @media(max-width:760px){
   body{
     position:relative;
@@ -96,5 +104,58 @@ img,svg,canvas,video,iframe,table{
   .day{
     min-width:0!important;
     max-width:100%!important;
+  }
+  .billsos-ai-sheet{
+    position:fixed!important;
+    left:10px!important;
+    right:10px!important;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 76px)!important;
+    top:auto!important;
+    width:auto!important;
+    max-width:none!important;
+    max-height:min(70dvh,620px)!important;
+    border-radius:22px!important;
+  }
+  .billsos-ai-log{
+    min-height:0!important;
+    max-height:calc(min(70dvh,620px) - 178px)!important;
+    overflow:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  .billsos-ai-form{
+    align-items:center!important;
+    gap:8px!important;
+    padding:10px!important;
+    padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
+  }
+  .billsos-ai-form input,
+  #billsosAiInput{
+    min-height:48px!important;
+    height:48px!important;
+    font-size:16px!important;
+    border-radius:16px!important;
+  }
+  .billsos-ai-form button{
+    min-height:48px!important;
+    height:48px!important;
+    flex:0 0 auto!important;
+    font-size:16px!important;
+    border-radius:16px!important;
+  }
+  .billsos-ai-fab{
+    right:14px!important;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 14px)!important;
+  }
+}
+
+@media(max-width:390px){
+  .billsos-ai-sheet{
+    left:8px!important;
+    right:8px!important;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 72px)!important;
+    max-height:72dvh!important;
+  }
+  .billsos-ai-log{
+    max-height:calc(72dvh - 178px)!important;
   }
 }
