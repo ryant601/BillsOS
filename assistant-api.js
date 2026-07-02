@@ -4,7 +4,7 @@ const cashflow = require("./cashflow-engine");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.CHATGPT_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || process.env.CHATGPT_MODEL || "gpt-4.1-mini";
-const INTENT_BUILD = "assistant-intent-20260702-9";
+const INTENT_BUILD = "assistant-intent-20260702-10";
 
 function compactBillsContext(data) {
   const src = data && typeof data === "object" ? data : {};
@@ -73,7 +73,7 @@ function injectBridge(html) {
   let out = normalizeDashboardProjection(html);
   if (typeof out !== "string") return out;
   out = replaceScriptById(out, "billsosCashflowEngine", "/cashflow-engine.js?v=20260630engine1");
-  out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260702intent3");
+  out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260702intent4");
   out = replaceScriptById(out, "billsosAssistantAiBridge", "/assistant-ai-bridge.js?v=20260702bridge4");
   return out;
 }
@@ -124,6 +124,13 @@ function validIso(value) {
   return /^20\d{2}-\d{2}-\d{2}$/.test(String(value || ""));
 }
 
+function wordNumber(value) {
+  const text = String(value || "").toLowerCase();
+  const words = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+  if (/^\d+$/.test(text)) return Number(text);
+  return words[text] || null;
+}
+
 function fixedScopeIntent(intent, start, end, label, patchReason) {
   return {
     ...(intent || {}),
@@ -154,16 +161,16 @@ function correctIntent(question, intent) {
 
   if (text.includes("thanksgiving")) {
     const day = "2026-11-26";
-    const window = text.match(/(\d+)\s+days?\s+before\s+and\s+after/) || text.match(/(\d+)\s+days?\s+around/);
+    const window = text.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+days?\s+before\s+and\s+after/) || text.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+days?\s+around/);
     if (window) {
-      const n = Number(window[1]);
-      const start = cashflow.addDays ? cashflow.addDays(day, -n) : "2026-11-23";
-      const end = cashflow.addDays ? cashflow.addDays(day, n) : "2026-11-29";
-      out = fixedScopeIntent(out, start, end, `Thanksgiving ± ${n} days`, "deterministic-holiday");
+      const n = wordNumber(window[1]) || 0;
+      const start = cashflow.addDays ? cashflow.addDays(day, -n) : day;
+      const end = cashflow.addDays ? cashflow.addDays(day, n) : day;
+      out = fixedScopeIntent(out, start, end, `Thanksgiving ± ${n} days`, "deterministic-holiday-window");
     } else {
       out = fixedScopeIntent(out, day, day, "Thanksgiving Day", "deterministic-holiday");
     }
-    if (/outflow|outflows|bill|bills|projected|that day|coming up|due/.test(text)) {
+    if (/outflow|outflows|item|items|bill|bills|projected|that day|coming up|due/.test(text)) {
       out.intent = "upcoming_bills";
       out.constraints = { ...(out.constraints || {}), flow: "outflow" };
     }
@@ -219,6 +226,8 @@ async function parseIntentWithOpenAI(question, data) {
       "BillsOS currently has month data from 2026-06 through 2026-12.",
       "Interpret quarters normally: Q1 Jan-Mar, Q2 Apr-Jun, Q3 Jul-Sep, Q4 Oct-Dec. For Q4 return 2026-10-01 through 2026-12-31.",
       "For Thanksgiving 2026, use 2026-11-26. For Christmas 2026, use 2026-12-25.",
+      "Normalize spelled numbers in date windows: one=1, two=2, three=3, four=4, five=5, etc.",
+      "For two days before and after Thanksgiving, return 2026-11-24 through 2026-11-28.",
       "For three days before and after Thanksgiving, return 2026-11-23 through 2026-11-29.",
       "For named months, holidays, phrases like first half of November, after Thanksgiving, before Christmas, and next month, return concrete ISO dateStart/dateEnd.",
       "Do not default broad named periods like Q4, October, December, or Thanksgiving to next 30 days.",
@@ -250,7 +259,7 @@ module.exports = function registerAssistantApi(app, options) {
       model: OPENAI_MODEL,
       engine: cashflow.BUILD,
       intent: INTENT_BUILD,
-      assistant: "assistant-ui-20260702-intent3",
+      assistant: "assistant-ui-20260702-intent4",
       bridge: "assistant-ai-bridge-20260702-4",
       assistantSource: "cashflow-engine-all-months",
       interpretation: "openai-intent-first",
