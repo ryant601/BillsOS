@@ -36,7 +36,7 @@
       '<input id="balanceCorrectionDate" type="date" style="border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px;font:inherit">' +
       '<input id="balanceCorrectionNote" placeholder="Note" style="border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px;font:inherit">' +
       '<button id="saveBalanceCorrection" type="button" style="border:1px solid var(--primary);border-radius:12px;background:var(--primary);color:#fff;padding:10px 12px;font-weight:900">Add correction</button>' +
-      '<div id="balanceCorrectionMeta" style="font-size:12px;color:var(--mut)">Adds a visible correction item to this month.</div>' +
+      '<div id="balanceCorrectionMeta" style="font-size:12px;color:var(--mut)">Adjusts the running balance without adding a visible calendar action.</div>' +
       '</div>';
     card.appendChild(panel);
 
@@ -68,7 +68,7 @@
       type: amount >= 0 ? 'income' : 'expense',
       amount: amount,
       date: date,
-      notes: 'Manual balance correction'
+      notes: 'Manual balance correction; calculation-only'
     });
     await fetch('/api/bills', {
       method: 'POST',
