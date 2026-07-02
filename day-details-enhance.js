@@ -1,7 +1,7 @@
 (function () {
   const CHECKBOX_SELECTOR = '.detailItem input[type="checkbox"]';
   const CALM_THEME_HREF = '/calm-household.css?v=20260702mobile1';
-  const MOBILE_FIT_HREF = '/mobile-fit.css?v=20260702fit1';
+  const MOBILE_FIT_HREF = '/mobile-fit.css?v=20260702fit2';
   const ACTION_LOG_LABEL = 'billsos action log';
   const BALANCE_CORRECTION_LABEL = 'balance correction';
 
