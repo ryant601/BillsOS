@@ -1,6 +1,6 @@
 (function () {
   const CHECKBOX_SELECTOR = '.detailItem input[type="checkbox"]';
-  const CALM_THEME_HREF = '/calm-household.css?v=20260702calm1';
+  const CALM_THEME_HREF = '/calm-household.css?v=20260702mobile1';
   const ACTION_LOG_LABEL = 'billsos action log';
   const BALANCE_CORRECTION_LABEL = 'balance correction';
 
