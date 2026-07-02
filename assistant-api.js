@@ -4,7 +4,7 @@ const cashflow = require("./cashflow-engine");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.CHATGPT_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || process.env.CHATGPT_MODEL || "gpt-4.1-mini";
-const INTENT_BUILD = "assistant-intent-20260702-7";
+const INTENT_BUILD = "assistant-intent-20260702-8";
 
 function compactBillsContext(data) {
   const src = data && typeof data === "object" ? data : {};
@@ -61,17 +61,21 @@ function normalizeDashboardProjection(html) {
     .replace(/push\(base,'Spending account funding',-Math\.abs\(Number\(sp\.amount\)\),'out system','rule'\)/g, "var fundDay=base,fundAmt=safeSweepAmount(fundDay,sp.amount);if(fundAmt>0)push(fundDay,'Spending account funding',-fundAmt,'out system','rule')");
 }
 
+function replaceScriptById(html, id, src) {
+  const tag = `<script id="${id}" defer src="${src}"></script>`;
+  const re = new RegExp(`<script[^>]*id=["']${id}["'][^>]*><\\/script>`, "i");
+  if (re.test(html)) return html.replace(re, tag);
+  if (html.includes("</body>")) return html.replace("</body>", `${tag}\n</body>`);
+  return html + tag;
+}
+
 function injectBridge(html) {
   let out = normalizeDashboardProjection(html);
   if (typeof out !== "string") return out;
-  const scripts = [
-    '<script id="billsosCashflowEngine" defer src="/cashflow-engine.js?v=20260630engine1"></script>',
-    '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260702modelintent1"></script>',
-    '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260702bridge3"></script>'
-  ].filter(script => !out.includes(script.match(/id="([^"]+)"/)[1])).join("\n");
-  if (!scripts) return out;
-  if (out.includes("</body>")) return out.replace("</body>", `${scripts}\n</body>`);
-  return out + scripts;
+  out = replaceScriptById(out, "billsosCashflowEngine", "/cashflow-engine.js?v=20260630engine1");
+  out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260702intent2");
+  out = replaceScriptById(out, "billsosAssistantAiBridge", "/assistant-ai-bridge.js?v=20260702bridge4");
+  return out;
 }
 
 function outputText(payload) {
@@ -120,7 +124,8 @@ function localIntent(question) {
   const text = String(question || "").toLowerCase();
   const amount = cashflow.parseAmount(question);
   let intent = "unknown";
-  if (/average|avg|daily spend|monthly spend|spend per day|spend per month|quarter|q[1-4]/.test(text)) intent = "spend_average";
+  if (/outflow|outflows|projected.*that day|that day|specific day|thanksgiving|christmas/.test(text)) intent = "upcoming_bills";
+  else if (/average|avg|daily spend|monthly spend|spend per day|spend per month|quarter|q[1-4]/.test(text)) intent = "spend_average";
   else if (/afford|spend|buy|can i/.test(text) && amount) intent = "affordability";
   else if (/best|when|day|date|pay|payment|safest/.test(text) && amount) intent = "payment_timing";
   else if (/upcoming|coming up|bills|due|next bill/.test(text)) intent = "upcoming_bills";
@@ -152,10 +157,14 @@ async function parseIntentWithOpenAI(question, data) {
       "Use planning year 2026 unless the user explicitly gives another year.",
       "BillsOS currently has month data from 2026-06 through 2026-12.",
       "Interpret quarters normally: Q1 Jan-Mar, Q2 Apr-Jun, Q3 Jul-Sep, Q4 Oct-Dec. For 'Q4' return 2026-10-01 through 2026-12-31.",
+      "For Thanksgiving 2026, use 2026-11-26. For Christmas 2026, use 2026-12-25.",
+      "For 'three days before and after Thanksgiving', return 2026-11-23 through 2026-11-29.",
+      "For 'what day is Thanksgiving and are there outflows that day', return dateStart and dateEnd as 2026-11-26, intent upcoming_bills, and scopeLabel Thanksgiving Day.",
       "For named months, holidays, phrases like 'first half of November', 'after Thanksgiving', 'before Christmas', and 'next month', return concrete ISO dateStart/dateEnd.",
-      "Do not default broad named periods like Q4, October, or December to next 30 days.",
+      "Do not default broad named periods like Q4, October, December, or Thanksgiving to next 30 days.",
       "Return only valid JSON with keys: intent, amount, dateStart, dateEnd, scopeLabel, target, constraints, requiresConfirmation, confidence, clarificationQuestion.",
       "Allowed intent values: payment_timing, affordability, low_balance, upcoming_bills, spend_average, summary, unknown.",
+      "For outflow/list questions about a day or window, use intent upcoming_bills and constraints.flow='outflow'.",
       "For average spend questions, use intent spend_average and put aggregation in constraints.aggregation as daily, weekly, monthly, or period_total when clear.",
       "requiresConfirmation must be true only for data-changing requests, such as move, add, delete, mark paid, or change."
     ].join("\n"),
@@ -181,10 +190,11 @@ module.exports = function registerAssistantApi(app, options) {
       model: OPENAI_MODEL,
       engine: cashflow.BUILD,
       intent: INTENT_BUILD,
-      assistant: "assistant-ui-20260702-modelintent1",
-      bridge: "assistant-ai-bridge-20260702-3",
+      assistant: "assistant-ui-20260702-intent2",
+      bridge: "assistant-ai-bridge-20260702-4",
       assistantSource: "cashflow-engine-all-months",
       interpretation: "openai-intent-first",
+      scriptLoader: "replace-script-by-id",
       projectionGuard: "enabled",
       envAccepted: ["OPENAI_API_KEY", "OPENAI_KEY", "CHATGPT_API_KEY"].filter(name => !!process.env[name])
     });
