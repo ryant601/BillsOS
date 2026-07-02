@@ -7,15 +7,20 @@
   const YEAR = 2026;
   const FIRST_BEGIN = 3671;
   const RULE_ID = '__billsos_system_rules__';
-  const MONTHS = [
-    ['june', 6, 'June'],
-    ['july', 7, 'July'],
-    ['aug', 8, 'August'],
-    ['sep', 9, 'September'],
-    ['oct', 10, 'October'],
-    ['nov', 11, 'November'],
-    ['dec', 12, 'December']
-  ];
+  const MONTHS = [['june', 6, 'June'], ['july', 7, 'July'], ['aug', 8, 'August'], ['sep', 9, 'September'], ['oct', 10, 'October'], ['nov', 11, 'November'], ['dec', 12, 'December']];
+
+  function text(el) { return (el && el.textContent ? el.textContent : '').replace(/\s+/g, ' ').trim(); }
+  function normalizedText(el) { return text(el).toLowerCase(); }
+  function isActionLogMeta(item) { return normalizedText(item).indexOf(ACTION_LOG_LABEL) >= 0; }
+  function isBalanceCorrection(item) { return normalizedText(item).indexOf(BALANCE_CORRECTION_LABEL) >= 0; }
+  function isCalculationOnly(item) { return isActionLogMeta(item) || isBalanceCorrection(item); }
+  function money(value) { return Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
+  function signedMoney(value) { const n = Number(value || 0); return (n < 0 ? '−' : '+') + money(Math.abs(n)); }
+  function parseMoney(value) { const n = Number(String(value || '').replace(/[−–—]/g, '-').replace(/[^0-9.-]/g, '')); return Number.isFinite(n) ? n : 0; }
+  function absMoney(value) { return Math.abs(parseMoney(value)); }
+  function days(month) { return new Date(YEAR, month, 0).getDate(); }
+  function iso(month, day) { return YEAR + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0'); }
+  function rowKey(event) { return (event.originalDate || event.date) + '|' + event.name + '|' + event.amount; }
 
   function installStylesheet(href, dataKey, dataValue) {
     if (document.querySelector('link[' + dataKey + '="' + dataValue + '"]')) return;
@@ -25,78 +30,15 @@
     link.setAttribute(dataKey, dataValue);
     document.head.appendChild(link);
   }
-
   function installCalmHouseholdTheme() {
     installStylesheet(CALM_THEME_HREF, 'data-billsos-calm-household', '1');
     installStylesheet(MOBILE_FIT_HREF, 'data-billsos-mobile-fit', '1');
   }
 
-  function text(el) {
-    return (el && el.textContent ? el.textContent : '').replace(/\s+/g, ' ').trim();
-  }
-
-  function normalizedText(el) {
-    return text(el).toLowerCase();
-  }
-
-  function isActionLogMeta(item) {
-    return normalizedText(item).indexOf(ACTION_LOG_LABEL) >= 0;
-  }
-
-  function isBalanceCorrection(item) {
-    return normalizedText(item).indexOf(BALANCE_CORRECTION_LABEL) >= 0;
-  }
-
-  function isCalculationOnly(item) {
-    return isActionLogMeta(item) || isBalanceCorrection(item);
-  }
-
-  function money(value) {
-    return Number(value || 0).toLocaleString(undefined, {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0
-    });
-  }
-
-  function signedMoney(value) {
-    const n = Number(value || 0);
-    return (n < 0 ? '−' : '+') + money(Math.abs(n));
-  }
-
-  function parseMoney(value) {
-    const raw = String(value || '').replace(/[−–—]/g, '-').replace(/[^0-9.-]/g, '');
-    if (!raw) return 0;
-    const parsed = Number(raw);
-    return Number.isFinite(parsed) ? Math.abs(parsed) : 0;
-  }
-
-  function days(month) {
-    return new Date(YEAR, month, 0).getDate();
-  }
-
-  function iso(month, day) {
-    return YEAR + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-  }
-
-  function rowKey(event) {
-    return (event.originalDate || event.date) + '|' + event.name + '|' + event.amount;
-  }
-
   function systemRules(data) {
     const defaults = {
       spendingFunding: { enabled: true, amount: 1500, count: 2, timing: 'same-day-income' },
-      sweep: {
-        enabled: true,
-        preferredBuffer: 1250,
-        hardBuffer: 1000,
-        day: 28,
-        label: 'Sweep transfer',
-        targets: {
-          '2026-07': { day: 31, amount: 705.05, label: 'Sweep to savings / debt' },
-          '2026-09': { day: 30, amount: 1123.2, label: 'Sweep to savings / debt' }
-        }
-      }
+      sweep: { enabled: true, preferredBuffer: 1250, hardBuffer: 1000, day: 28, label: 'Sweep transfer', targets: { '2026-07': { day: 31, amount: 705.05, label: 'Sweep to savings / debt' }, '2026-09': { day: 30, amount: 1123.2, label: 'Sweep to savings / debt' } } }
     };
     try {
       const row = (data.oneTimeEvents || []).find(function (item) { return item && item.id === RULE_ID; });
@@ -112,9 +54,7 @@
   function oneDates(item, monthKey) {
     const out = [];
     const matches = String(item.notes || '').match(/20\d{2}-\d{2}-\d{2}/g) || [];
-    matches.forEach(function (date) {
-      if (date.slice(0, 7) === monthKey && out.indexOf(date) < 0) out.push(date);
-    });
+    matches.forEach(function (date) { if (date.slice(0, 7) === monthKey && out.indexOf(date) < 0) out.push(date); });
     if (!out.length && item.date && String(item.date).slice(0, 7) === monthKey) out.push(item.date);
     return out;
   }
@@ -123,21 +63,15 @@
     const monthKey = YEAR + '-' + String(month).padStart(2, '0');
     const dim = days(month);
     const rows = [];
-
     function push(day, name, amount, cls, type) {
       const n = Number(day || 0);
-      if (n >= 1 && n <= dim) {
-        rows.push({ date: iso(month, n), day: n, name: name || 'Item', amount: Number(amount || 0), cls: cls || 'out', type: type || '' });
-      }
+      if (n >= 1 && n <= dim) rows.push({ date: iso(month, n), day: n, name: name || 'Item', amount: Number(amount || 0), cls: cls || 'out', type: type || '' });
     }
-
     function safeSweepAmount(day, requested) {
       const byDay = {};
       let balance = Number(begin || 0);
       let minAfter = null;
-      rows.forEach(function (row) {
-        byDay[row.day] = (byDay[row.day] || 0) + Number(row.amount || 0);
-      });
+      rows.forEach(function (row) { byDay[row.day] = (byDay[row.day] || 0) + Number(row.amount || 0); });
       for (let d = 1; d <= dim; d += 1) {
         balance += Number(byDay[d] || 0);
         if (d >= day) minAfter = minAfter === null ? balance : Math.min(minAfter, balance);
@@ -147,13 +81,9 @@
     }
 
     (data.bills || []).forEach(function (bill) {
-      if (bill.active === false) return;
-      if (bill.frequency && bill.frequency !== 'monthly') return;
-      if (bill.startMonth && bill.startMonth > monthKey) return;
-      if (bill.endMonth && bill.endMonth < monthKey) return;
+      if (bill.active === false || (bill.frequency && bill.frequency !== 'monthly') || (bill.startMonth && bill.startMonth > monthKey) || (bill.endMonth && bill.endMonth < monthKey)) return;
       push(Math.min(Number(bill.dueDay || 1), dim), bill.name || 'Bill', -Math.abs(Number(bill.amount || 0)), 'out', bill.payMethod || bill.paymentMethod || bill.type);
     });
-
     (data.oneTimeEvents || []).forEach(function (item) {
       if (item.id === RULE_ID) return;
       oneDates(item, monthKey).forEach(function (date) {
@@ -162,20 +92,14 @@
         push(Number(date.slice(8, 10)), item.name || 'One-time item', isIncome ? Math.abs(amount) : -Math.abs(amount), isIncome ? 'in' : 'out', item.type);
       });
     });
-
     (data.income || []).forEach(function (income) {
       if (income.active === false) return;
       const amount = Math.abs(Number(income.amount || 0));
       const name = income.name || 'Income';
       const schedule = income.schedule || 'manual';
-      if (schedule === 'semi-monthly-15-30') {
-        push(15, name, amount, 'in', 'income');
-        push(Math.min(30, dim), name, amount, 'in', 'income');
-      } else if (schedule === 'biweekly') {
-        [1, 15, 29].forEach(function (day) { if (day <= dim) push(day, name, amount, 'in', 'income'); });
-      } else {
-        push(1, name, amount, 'in', 'income');
-      }
+      if (schedule === 'semi-monthly-15-30') { push(15, name, amount, 'in', 'income'); push(Math.min(30, dim), name, amount, 'in', 'income'); }
+      else if (schedule === 'biweekly') [1, 15, 29].forEach(function (day) { if (day <= dim) push(day, name, amount, 'in', 'income'); });
+      else push(1, name, amount, 'in', 'income');
     });
 
     const rules = systemRules(data);
@@ -206,7 +130,6 @@
         if (available > 0 && amount > 0) push(day, sweep.label || 'Sweep transfer', -amount, 'out system', 'rule');
       }
     }
-
     return rows.sort(function (a, b) { return a.date.localeCompare(b.date) || b.amount - a.amount; });
   }
 
@@ -221,15 +144,9 @@
       event.originalKey = key;
       event.originalDate = event.date;
       event.originalDay = event.day;
-      if (move && move.date) {
-        event.date = move.date;
-        event.day = Number(move.date.slice(8, 10));
-        event.adjusted = move;
-      }
+      if (move && move.date) { event.date = move.date; event.day = Number(move.date.slice(8, 10)); event.adjusted = move; }
       return event;
-    }).filter(function (event) {
-      return event.date.slice(0, 7) === monthKey;
-    }).sort(function (a, b) { return a.date.localeCompare(b.date) || b.amount - a.amount; });
+    }).filter(function (event) { return event.date.slice(0, 7) === monthKey; }).sort(function (a, b) { return a.date.localeCompare(b.date) || b.amount - a.amount; });
   }
 
   function buildModel(data) {
@@ -287,9 +204,7 @@
       if (ksweep) ksweep.textContent = money(projectedSweep);
 
       const byDay = {};
-      current.rows.forEach(function (row) {
-        byDay[row.day] = (byDay[row.day] || 0) + row.amount;
-      });
+      current.rows.forEach(function (row) { byDay[row.day] = (byDay[row.day] || 0) + row.amount; });
       let running = current.begin;
       mount.querySelectorAll('.day:not(.blank)').forEach(function (dayNode) {
         const dayNum = Number(text(dayNode.querySelector('.topline b')) || 0);
@@ -307,76 +222,85 @@
     }
   }
 
-  function scheduleBalanceSync() {
-    window.clearTimeout(balanceSyncTimer);
-    balanceSyncTimer = window.setTimeout(syncVisibleBalancesFromData, 120);
-  }
+  function scheduleBalanceSync() { window.clearTimeout(balanceSyncTimer); balanceSyncTimer = window.setTimeout(syncVisibleBalancesFromData, 120); }
 
   function removeCalendarCalculationOnlyRows() {
-    document.querySelectorAll('.day label.ev, .day .ev').forEach(function (item) {
-      if (!isCalculationOnly(item)) return;
-      item.remove();
-    });
+    document.querySelectorAll('.day label.ev, .day .ev').forEach(function (item) { if (isCalculationOnly(item)) item.remove(); });
   }
 
   function removeDrawerCalculationOnlyRows() {
     const detail = document.getElementById('detailContent');
     if (!detail) return;
-
     const items = Array.from(detail.querySelectorAll('.detailItem'));
     if (!items.length) return;
-
     let removed = false;
-    items.forEach(function (item) {
-      if (!isCalculationOnly(item)) return;
-      item.remove();
-      removed = true;
-    });
+    items.forEach(function (item) { if (isCalculationOnly(item)) { item.remove(); removed = true; } });
+    if (removed && !detail.querySelector('.detailItem')) { detail.className = 'detailEmpty'; detail.textContent = 'No visible actions on this day.'; }
+  }
 
-    if (removed && !detail.querySelector('.detailItem')) {
-      detail.className = 'detailEmpty';
-      detail.textContent = 'No visible actions on this day.';
-    }
+  function drawerItems() {
+    const detail = document.getElementById('detailContent');
+    if (!detail) return [];
+    return Array.from(detail.children).filter(function (child) { return child.classList && child.classList.contains('detailItem') && !isCalculationOnly(child); });
   }
 
   function insertDrawerNetSummary() {
     const detail = document.getElementById('detailContent');
     if (!detail) return;
-
     const existing = detail.querySelector('.drawerNetSummary');
-    const items = Array.from(detail.children).filter(function (child) {
-      return child.classList && child.classList.contains('detailItem') && !isCalculationOnly(child);
-    });
-
-    if (!items.length) {
-      if (existing) existing.remove();
-      return;
-    }
-
+    const items = drawerItems();
+    if (!items.length) { if (existing) existing.remove(); return; }
     let inflow = 0;
     let outflow = 0;
     items.forEach(function (item) {
-      const amount = parseMoney(text(item.querySelector('.amt')));
+      const amount = absMoney(text(item.querySelector('.amt')));
       const direction = item.querySelector('.dir');
-      const isInflow = direction && direction.classList.contains('in');
-      if (isInflow) inflow += amount;
+      if (direction && direction.classList.contains('in')) inflow += amount;
       else outflow += amount;
     });
-
     const net = inflow - outflow;
     const signature = [items.length, inflow, outflow, net].join('|');
     if (existing && existing.dataset.summarySignature === signature) return;
-
     const summary = existing || document.createElement('div');
     summary.className = 'drawerNetSummary';
     summary.dataset.summarySignature = signature;
     summary.style.cssText = 'display:grid;grid-template-columns:1fr;gap:7px;margin:0 0 10px;padding:10px 11px;border:1px solid rgba(31,58,61,.18);border-radius:14px;background:rgba(251,247,239,.9);font-size:12px';
-    summary.innerHTML =
-      '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">Inflows</span><b style="color:var(--green)">' + money(inflow) + '</b></div>' +
-      '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">Outflows</span><b style="color:var(--outflow)">' + money(outflow) + '</b></div>' +
-      '<div style="display:flex;justify-content:space-between;gap:10px;border-top:1px solid rgba(20,35,55,.1);padding-top:7px"><span style="font-weight:900">Net</span><b style="font-size:13px">' + signedMoney(net) + '</b></div>';
-
+    summary.innerHTML = '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">Inflows</span><b style="color:var(--green)">' + money(inflow) + '</b></div>' + '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">Outflows</span><b style="color:var(--outflow)">' + money(outflow) + '</b></div>' + '<div style="display:flex;justify-content:space-between;gap:10px;border-top:1px solid rgba(20,35,55,.1);padding-top:7px"><span style="font-weight:900">Net</span><b style="font-size:13px">' + signedMoney(net) + '</b></div>';
     if (!existing) detail.insertBefore(summary, detail.firstChild);
+  }
+
+  function selectedDayNode() {
+    const selected = document.querySelector('.day.selected');
+    if (selected && !selected.classList.contains('blank')) return selected;
+    const title = text(document.getElementById('detailTitle'));
+    const match = title.match(/Day\s+(\d+)/i);
+    if (!match) return null;
+    const day = Number(match[1]);
+    return Array.from(document.querySelectorAll('.day:not(.blank)')).find(function (node) { return Number(text(node.querySelector('.topline b')) || 0) === day; }) || null;
+  }
+
+  function insertBalanceBridge() {
+    const detail = document.getElementById('detailContent');
+    if (!detail) return;
+    const existing = detail.querySelector('.drawerBalanceBridge');
+    const node = selectedDayNode();
+    const first = document.querySelector('.day:not(.blank)');
+    if (!node || !first) { if (existing) existing.remove(); return; }
+    const monthStart = parseMoney(text(first.querySelector('.topline span:last-child b')));
+    const dayStart = parseMoney(text(node.querySelector('.topline span:last-child b')));
+    const dayEnd = parseMoney(text(node.querySelector('.endline b')));
+    const beforeNet = dayStart - monthStart;
+    const todayNet = dayEnd - dayStart;
+    const throughNet = dayEnd - monthStart;
+    const sig = [monthStart, beforeNet, todayNet, throughNet, dayEnd].join('|');
+    if (existing && existing.dataset.bridgeSignature === sig) return;
+    const bridge = existing || document.createElement('div');
+    bridge.className = 'drawerBalanceBridge';
+    bridge.dataset.bridgeSignature = sig;
+    bridge.style.cssText = 'display:grid;gap:7px;margin:0 0 10px;padding:10px 11px;border:1px solid rgba(31,58,61,.18);border-radius:14px;background:#fff;font-size:12px';
+    bridge.innerHTML = '<div style="font-weight:900;margin-bottom:1px">Balance bridge</div>' + '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">Month start</span><b>' + money(monthStart) + '</b></div>' + '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">Before this day</span><b>' + signedMoney(beforeNet) + '</b></div>' + '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">This day</span><b>' + signedMoney(todayNet) + '</b></div>' + '<div style="display:flex;justify-content:space-between;gap:10px;border-top:1px solid rgba(20,35,55,.1);padding-top:7px"><span style="font-weight:900">Ending balance</span><b>' + money(dayEnd) + '</b></div>';
+    const after = detail.querySelector('.drawerNetSummary');
+    if (!existing) detail.insertBefore(bridge, after ? after.nextSibling : detail.firstChild);
   }
 
   function syncDrawer() {
@@ -384,65 +308,36 @@
     removeCalendarCalculationOnlyRows();
     removeDrawerCalculationOnlyRows();
     insertDrawerNetSummary();
-
+    insertBalanceBridge();
     const items = document.querySelectorAll('#detailContent .detailItem');
     if (!items.length) return;
-
     items.forEach(function (item) {
       const key = item.getAttribute('data-detail-id');
       const match = key ? document.querySelector('.day label.ev input[data-id="' + CSS.escape(key) + '"]') : null;
       const existing = item.querySelector(CHECKBOX_SELECTOR);
       const checked = !!(match && match.checked);
-
       if (!existing && match) {
         const box = document.createElement('input');
         box.type = 'checkbox';
         box.setAttribute('aria-label', 'Mark complete');
         box.dataset.ddSync = '1';
         box.checked = checked;
-        box.addEventListener('change', function () {
-          const calendarBox = match;
-          if (!calendarBox) return;
-          if (calendarBox.checked === box.checked) return;
-          calendarBox.checked = box.checked;
-          calendarBox.dispatchEvent(new Event('change', { bubbles: true }));
-        });
+        box.addEventListener('change', function () { if (!match || match.checked === box.checked) return; match.checked = box.checked; match.dispatchEvent(new Event('change', { bubbles: true })); });
         const main = item.querySelector('.detailMain');
-        if (main && main.parentNode === item) item.insertBefore(box, main);
-        else item.insertBefore(box, item.firstChild);
-      } else if (existing) {
-        existing.checked = checked;
-      }
+        if (main && main.parentNode === item) item.insertBefore(box, main); else item.insertBefore(box, item.firstChild);
+      } else if (existing) existing.checked = checked;
     });
   }
 
   let timer = 0;
-  function scheduleSync() {
-    window.clearTimeout(timer);
-    timer = window.setTimeout(syncDrawer, 50);
-  }
+  function scheduleSync() { window.clearTimeout(timer); timer = window.setTimeout(syncDrawer, 50); }
 
   installCalmHouseholdTheme();
-
   const observer = new MutationObserver(scheduleSync);
   observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true });
-
-  window.addEventListener('load', function () {
-    installCalmHouseholdTheme();
-    scheduleSync();
-    scheduleBalanceSync();
-  });
-  window.addEventListener('hashchange', function () {
-    balanceSyncSignature = '';
-    scheduleSync();
-    scheduleBalanceSync();
-  });
-  document.addEventListener('click', function (event) {
-    if (event.target && event.target.closest('#tabs button')) {
-      balanceSyncSignature = '';
-      scheduleBalanceSync();
-    }
-  });
+  window.addEventListener('load', function () { installCalmHouseholdTheme(); scheduleSync(); scheduleBalanceSync(); });
+  window.addEventListener('hashchange', function () { balanceSyncSignature = ''; scheduleSync(); scheduleBalanceSync(); });
+  document.addEventListener('click', function (event) { if (event.target && event.target.closest('#tabs button')) { balanceSyncSignature = ''; scheduleBalanceSync(); } });
   scheduleSync();
   scheduleBalanceSync();
 })();
