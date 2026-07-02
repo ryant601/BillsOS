@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var BUILD='assistant-ai-bridge-20260702-1';
+  var BUILD='assistant-ai-bridge-20260702-2';
   window.BillsOSModules=window.BillsOSModules||{};
   var state={loaded:true,build:BUILD,at:new Date().toISOString(),observing:false,requests:0,successes:0,failures:0,lastStatus:'initializing',lastError:null,model:null};
   window.BillsOSModules.assistantAiBridge=state;
@@ -47,7 +47,7 @@
       state.lastStatus='openai-response-applied';
       state.lastError=null;
       node.innerHTML=answerHtml(data.answer);
-      source(node,'ChatGPT response · BillsOS math', 'openai');
+      source(node,'ChatGPT response · '+(data.model||'model unspecified')+' · BillsOS math', 'openai');
     }catch(e){
       state.failures++;
       state.lastStatus='local-response-kept';
@@ -62,7 +62,7 @@
     node.dataset.aiBridge='1';
     var question=userQuestionFor(node);
     if(!question){source(node,'Local BillsOS answer · no user question found','local');return;}
-    source(node,'Sending to ChatGPT · BillsOS math is source of truth','pending');
+    source(node,'Sending to ChatGPT · model from OPENAI_MODEL · BillsOS math is source of truth','pending');
     rewrite(node,question,node.innerHTML||text);
   }
   function scan(){document.querySelectorAll('#billsosAiLog .billsos-msg:not(.user)').forEach(mark)}
