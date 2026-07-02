@@ -2,6 +2,7 @@
   const CHECKBOX_SELECTOR = '.detailItem input[type="checkbox"]';
   const CALM_THEME_HREF = '/calm-household.css?v=20260702calm1';
   const ACTION_LOG_LABEL = 'billsos action log';
+  const BALANCE_CORRECTION_LABEL = 'balance correction';
 
   function installCalmHouseholdTheme() {
     if (document.querySelector('link[data-billsos-calm-household="1"]')) return;
@@ -16,11 +17,30 @@
     return (el && el.textContent ? el.textContent : '').replace(/\s+/g, ' ').trim();
   }
 
-  function isActionLogMeta(item) {
-    return text(item).toLowerCase().indexOf(ACTION_LOG_LABEL) >= 0;
+  function normalizedText(el) {
+    return text(el).toLowerCase();
   }
 
-  function removeDrawerMetaRows() {
+  function isActionLogMeta(item) {
+    return normalizedText(item).indexOf(ACTION_LOG_LABEL) >= 0;
+  }
+
+  function isBalanceCorrection(item) {
+    return normalizedText(item).indexOf(BALANCE_CORRECTION_LABEL) >= 0;
+  }
+
+  function isCalculationOnly(item) {
+    return isActionLogMeta(item) || isBalanceCorrection(item);
+  }
+
+  function removeCalendarCalculationOnlyRows() {
+    document.querySelectorAll('.day label.ev, .day .ev').forEach(function (item) {
+      if (!isCalculationOnly(item)) return;
+      item.remove();
+    });
+  }
+
+  function removeDrawerCalculationOnlyRows() {
     const detail = document.getElementById('detailContent');
     if (!detail) return;
 
@@ -29,19 +49,20 @@
 
     let removed = false;
     items.forEach(function (item) {
-      if (!isActionLogMeta(item)) return;
+      if (!isCalculationOnly(item)) return;
       item.remove();
       removed = true;
     });
 
     if (removed && !detail.querySelector('.detailItem')) {
       detail.className = 'detailEmpty';
-      detail.textContent = 'No items on this day.';
+      detail.textContent = 'No visible actions on this day.';
     }
   }
 
   function syncDrawer() {
-    removeDrawerMetaRows();
+    removeCalendarCalculationOnlyRows();
+    removeDrawerCalculationOnlyRows();
 
     const items = document.querySelectorAll('#detailContent .detailItem');
     if (!items.length) return;
