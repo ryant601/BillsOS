@@ -41,6 +41,23 @@
     installStylesheet(MOBILE_FIT_HREF, 'data-billsos-mobile-fit', '1');
   }
 
+  function installOneTimeTransferStyles() {
+    if (document.getElementById('oneTimeTransferStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'oneTimeTransferStyles';
+    style.textContent = [
+      '.ev.xfer{background:#fff1a8!important;color:#5f4300!important;border-color:rgba(176,124,0,.38)!important}',
+      '.ev.xfer .nm,.ev.xfer span{color:#5f4300!important}',
+      '.ev.xfer .dot{background:#d8a100!important;box-shadow:0 0 0 2px rgba(216,161,0,.18)!important}',
+      '.ev.xfer.done{opacity:.58}',
+      '.week-strip .day .ev.xfer{background:#fff1a8!important;color:#5f4300!important}',
+      '.detailItem.xfer{background:#fff7cf!important;border-color:rgba(176,124,0,.32)!important}',
+      '.detailItem.xfer .amt,.detailItem.xfer .dir{color:#7a5600!important}',
+      '.mobile-sheet .detailItem.xfer{background:#fff7cf!important;border-color:rgba(176,124,0,.32)!important}'
+    ].join('');
+    document.head.appendChild(style);
+  }
+
   function oneDates(item, monthKey) {
     const out = [];
     const matches = String(item.notes || '').match(/20\d{2}-\d{2}-\d{2}/g) || [];
@@ -67,7 +84,8 @@
       oneDates(item, monthKey).forEach(function (date) {
         const amount = Number(item.amount || 0);
         const isIncome = item.type === 'income';
-        push(Number(date.slice(8, 10)), item.name || 'One-time item', isIncome ? Math.abs(amount) : -Math.abs(amount), isIncome ? 'in' : 'out', item.type);
+        const isTransfer = item.type === 'transfer';
+        push(Number(date.slice(8, 10)), item.name || 'One-time item', isIncome ? Math.abs(amount) : -Math.abs(amount), isIncome ? 'in' : (isTransfer ? 'xfer' : 'out'), item.type);
       });
     });
     (data.income || []).forEach(function (income) {
@@ -125,6 +143,50 @@
 
   let balanceSyncTimer = 0;
   let balanceSyncBusy = false;
+  let transferColorTimer = 0;
+  let transferColorBusy = false;
+
+  function oneTimeTransferKeys(data) {
+    const keys = new Set();
+    MONTHS.forEach(function (monthDef) {
+      const monthKey = YEAR + '-' + String(monthDef[1]).padStart(2, '0');
+      (data.oneTimeEvents || []).forEach(function (item) {
+        if (item.id === RULE_ID || item.type !== 'transfer') return;
+        oneDates(item, monthKey).forEach(function (date) {
+          const amount = -Math.abs(Number(item.amount || 0));
+          keys.add(date + '|' + (item.name || 'One-time item') + '|' + amount);
+        });
+      });
+    });
+    return keys;
+  }
+
+  async function colorOneTimeTransfersFromData() {
+    if (transferColorBusy) return;
+    transferColorBusy = true;
+    try {
+      installOneTimeTransferStyles();
+      const response = await fetch('/api/bills?transferColor=' + Date.now(), { cache: 'no-store' });
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const keys = oneTimeTransferKeys(await response.json());
+      document.querySelectorAll('.day label.ev input[data-id], .day .ev input[data-id]').forEach(function (input) {
+        const row = input.closest('.ev');
+        const isTransfer = keys.has(input.getAttribute('data-id'));
+        if (!row) return;
+        row.classList.toggle('xfer', isTransfer);
+        if (isTransfer) row.classList.remove('out');
+      });
+      document.querySelectorAll('#detailContent .detailItem[data-detail-id], .mobile-sheet .detailItem[data-detail-id]').forEach(function (item) {
+        item.classList.toggle('xfer', keys.has(item.getAttribute('data-detail-id')));
+      });
+    } catch (_err) {
+      // Leave existing calendar styling unchanged if saved data cannot be read.
+    } finally {
+      transferColorBusy = false;
+    }
+  }
+
+  function scheduleTransferColorSync() { window.clearTimeout(transferColorTimer); transferColorTimer = window.setTimeout(colorOneTimeTransfersFromData, 140); }
 
   async function syncVisibleBalancesFromData() {
     if (balanceSyncBusy) return;
@@ -258,6 +320,7 @@
 
   function syncDrawer() {
     scheduleBalanceSync();
+    scheduleTransferColorSync();
     removeCalendarCalculationOnlyRows();
     removeDrawerCalculationOnlyRows();
     insertDrawerNetSummary();
@@ -267,8 +330,10 @@
     items.forEach(function (item) {
       const key = item.getAttribute('data-detail-id');
       const match = key ? document.querySelector('.day label.ev input[data-id="' + CSS.escape(key) + '"]') : null;
+      const row = match ? match.closest('.ev') : null;
       const existing = item.querySelector(CHECKBOX_SELECTOR);
       const checked = !!(match && match.checked);
+      if (row) item.classList.toggle('xfer', row.classList.contains('xfer'));
       if (!existing && match) {
         const box = document.createElement('input');
         box.type = 'checkbox';
@@ -286,11 +351,13 @@
   function scheduleSync() { window.clearTimeout(timer); timer = window.setTimeout(syncDrawer, 50); }
 
   installCalmHouseholdTheme();
+  installOneTimeTransferStyles();
   const observer = new MutationObserver(scheduleSync);
   observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true });
-  window.addEventListener('load', function () { installCalmHouseholdTheme(); scheduleSync(); scheduleBalanceSync(); });
-  window.addEventListener('hashchange', function () { scheduleSync(); scheduleBalanceSync(); });
-  document.addEventListener('click', function (event) { if (event.target && event.target.closest('#tabs button')) { scheduleBalanceSync(); } });
+  window.addEventListener('load', function () { installCalmHouseholdTheme(); installOneTimeTransferStyles(); scheduleSync(); scheduleBalanceSync(); scheduleTransferColorSync(); });
+  window.addEventListener('hashchange', function () { scheduleSync(); scheduleBalanceSync(); scheduleTransferColorSync(); });
+  document.addEventListener('click', function (event) { if (event.target && event.target.closest('#tabs button')) { scheduleBalanceSync(); scheduleTransferColorSync(); } });
   scheduleSync();
   scheduleBalanceSync();
+  scheduleTransferColorSync();
 })();
