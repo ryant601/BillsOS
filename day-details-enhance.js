@@ -1,6 +1,7 @@
 (function () {
   const CHECKBOX_SELECTOR = '.detailItem input[type="checkbox"]';
   const CALM_THEME_HREF = '/calm-household.css?v=20260702calm1';
+  const ACTION_LOG_LABEL = 'billsos action log';
 
   function installCalmHouseholdTheme() {
     if (document.querySelector('link[data-billsos-calm-household="1"]')) return;
@@ -15,7 +16,33 @@
     return (el && el.textContent ? el.textContent : '').replace(/\s+/g, ' ').trim();
   }
 
+  function isActionLogMeta(item) {
+    return text(item).toLowerCase().indexOf(ACTION_LOG_LABEL) >= 0;
+  }
+
+  function removeDrawerMetaRows() {
+    const detail = document.getElementById('detailContent');
+    if (!detail) return;
+
+    const items = Array.from(detail.querySelectorAll('.detailItem'));
+    if (!items.length) return;
+
+    let removed = false;
+    items.forEach(function (item) {
+      if (!isActionLogMeta(item)) return;
+      item.remove();
+      removed = true;
+    });
+
+    if (removed && !detail.querySelector('.detailItem')) {
+      detail.className = 'detailEmpty';
+      detail.textContent = 'No items on this day.';
+    }
+  }
+
   function syncDrawer() {
+    removeDrawerMetaRows();
+
     const items = document.querySelectorAll('#detailContent .detailItem');
     if (!items.length) return;
 
