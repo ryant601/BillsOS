@@ -4,7 +4,7 @@ const cashflow = require("./cashflow-engine");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.CHATGPT_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || process.env.CHATGPT_MODEL || "gpt-4.1-mini";
-const INTENT_BUILD = "assistant-intent-20260702-8";
+const INTENT_BUILD = "assistant-intent-20260702-9";
 
 function compactBillsContext(data) {
   const src = data && typeof data === "object" ? data : {};
@@ -73,7 +73,7 @@ function injectBridge(html) {
   let out = normalizeDashboardProjection(html);
   if (typeof out !== "string") return out;
   out = replaceScriptById(out, "billsosCashflowEngine", "/cashflow-engine.js?v=20260630engine1");
-  out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260702intent2");
+  out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260702intent3");
   out = replaceScriptById(out, "billsosAssistantAiBridge", "/assistant-ai-bridge.js?v=20260702bridge4");
   return out;
 }
@@ -120,7 +120,67 @@ function extractJson(text) {
   return null;
 }
 
-function localIntent(question) {
+function validIso(value) {
+  return /^20\d{2}-\d{2}-\d{2}$/.test(String(value || ""));
+}
+
+function fixedScopeIntent(intent, start, end, label, patchReason) {
+  return {
+    ...(intent || {}),
+    dateStart: start,
+    dateEnd: end,
+    scopeLabel: label,
+    constraints: { ...((intent && intent.constraints) || {}), scopePatch: patchReason },
+    confidence: Math.max(Number((intent && intent.confidence) || 0), 0.95)
+  };
+}
+
+function correctIntent(question, intent) {
+  const text = String(question || "").toLowerCase();
+  let out = intent && typeof intent === "object" ? { ...intent } : localIntent(question, false);
+
+  const q = text.match(/\bq([1-4])\b|\b([1-4])(?:st|nd|rd|th)?\s+quarter\b/);
+  if (q) {
+    const quarter = Number(q[1] || q[2]);
+    const startMonth = (quarter - 1) * 3 + 1;
+    const endMonth = startMonth + 2;
+    const year = 2026;
+    const start = `${year}-${String(startMonth).padStart(2, "0")}-01`;
+    const end = `${year}-${String(endMonth).padStart(2, "0")}-${String(new Date(year, endMonth, 0).getDate()).padStart(2, "0")}`;
+    out = fixedScopeIntent(out, start, end, `Q${quarter}`, "deterministic-quarter");
+    if (/average|avg|spend|outflow|monthly|daily/.test(text)) out.intent = "spend_average";
+    if (/monthly|per month/.test(text)) out.constraints = { ...(out.constraints || {}), aggregation: "monthly" };
+  }
+
+  if (text.includes("thanksgiving")) {
+    const day = "2026-11-26";
+    const window = text.match(/(\d+)\s+days?\s+before\s+and\s+after/) || text.match(/(\d+)\s+days?\s+around/);
+    if (window) {
+      const n = Number(window[1]);
+      const start = cashflow.addDays ? cashflow.addDays(day, -n) : "2026-11-23";
+      const end = cashflow.addDays ? cashflow.addDays(day, n) : "2026-11-29";
+      out = fixedScopeIntent(out, start, end, `Thanksgiving ± ${n} days`, "deterministic-holiday");
+    } else {
+      out = fixedScopeIntent(out, day, day, "Thanksgiving Day", "deterministic-holiday");
+    }
+    if (/outflow|outflows|bill|bills|projected|that day|coming up|due/.test(text)) {
+      out.intent = "upcoming_bills";
+      out.constraints = { ...(out.constraints || {}), flow: "outflow" };
+    }
+  }
+
+  if (!validIso(out.dateStart) || !validIso(out.dateEnd)) {
+    const fallback = cashflow.scopeFromQuestion(question);
+    out.dateStart = fallback.start;
+    out.dateEnd = fallback.end;
+    out.scopeLabel = fallback.label;
+    out.constraints = { ...(out.constraints || {}), scopePatch: "fallback-scope" };
+  }
+
+  return out;
+}
+
+function localIntent(question, applyCorrection = true) {
   const text = String(question || "").toLowerCase();
   const amount = cashflow.parseAmount(question);
   let intent = "unknown";
@@ -132,7 +192,7 @@ function localIntent(question) {
   else if (/lowest|low|minimum|floor|risk|buffer|projection/.test(text)) intent = "low_balance";
   else if (/summary|status|where.*stand|current read/.test(text)) intent = "summary";
   const scope = cashflow.scopeFromQuestion(question);
-  return {
+  const base = {
     intent,
     amount: amount || null,
     dateStart: scope.start,
@@ -143,6 +203,7 @@ function localIntent(question) {
     confidence: intent === "unknown" ? 0.35 : 0.7,
     requiresConfirmation: false
   };
+  return applyCorrection ? correctIntent(question, base) : base;
 }
 
 async function parseIntentWithOpenAI(question, data) {
@@ -156,11 +217,10 @@ async function parseIntentWithOpenAI(question, data) {
       "Your primary job is natural-language interpretation: date ranges, periods, metrics, aggregation, and user intent.",
       "Use planning year 2026 unless the user explicitly gives another year.",
       "BillsOS currently has month data from 2026-06 through 2026-12.",
-      "Interpret quarters normally: Q1 Jan-Mar, Q2 Apr-Jun, Q3 Jul-Sep, Q4 Oct-Dec. For 'Q4' return 2026-10-01 through 2026-12-31.",
+      "Interpret quarters normally: Q1 Jan-Mar, Q2 Apr-Jun, Q3 Jul-Sep, Q4 Oct-Dec. For Q4 return 2026-10-01 through 2026-12-31.",
       "For Thanksgiving 2026, use 2026-11-26. For Christmas 2026, use 2026-12-25.",
-      "For 'three days before and after Thanksgiving', return 2026-11-23 through 2026-11-29.",
-      "For 'what day is Thanksgiving and are there outflows that day', return dateStart and dateEnd as 2026-11-26, intent upcoming_bills, and scopeLabel Thanksgiving Day.",
-      "For named months, holidays, phrases like 'first half of November', 'after Thanksgiving', 'before Christmas', and 'next month', return concrete ISO dateStart/dateEnd.",
+      "For three days before and after Thanksgiving, return 2026-11-23 through 2026-11-29.",
+      "For named months, holidays, phrases like first half of November, after Thanksgiving, before Christmas, and next month, return concrete ISO dateStart/dateEnd.",
       "Do not default broad named periods like Q4, October, December, or Thanksgiving to next 30 days.",
       "Return only valid JSON with keys: intent, amount, dateStart, dateEnd, scopeLabel, target, constraints, requiresConfirmation, confidence, clarificationQuestion.",
       "Allowed intent values: payment_timing, affordability, low_balance, upcoming_bills, spend_average, summary, unknown.",
@@ -170,7 +230,7 @@ async function parseIntentWithOpenAI(question, data) {
     ].join("\n"),
     input: [{ role: "user", content: [{ type: "input_text", text: JSON.stringify({ currentDate: cashflow.today(), planningYear: 2026, userQuestion: question, billsContext: compactBillsContext(data) }) }] }]
   });
-  return { mode: "openai", intent: extractJson(outputText(payload)) || localIntent(question) };
+  return { mode: "openai", intent: correctIntent(question, extractJson(outputText(payload)) || localIntent(question)) };
 }
 
 module.exports = function registerAssistantApi(app, options) {
@@ -190,10 +250,11 @@ module.exports = function registerAssistantApi(app, options) {
       model: OPENAI_MODEL,
       engine: cashflow.BUILD,
       intent: INTENT_BUILD,
-      assistant: "assistant-ui-20260702-intent2",
+      assistant: "assistant-ui-20260702-intent3",
       bridge: "assistant-ai-bridge-20260702-4",
       assistantSource: "cashflow-engine-all-months",
       interpretation: "openai-intent-first",
+      intentValidator: "deterministic-period-guardrails",
       scriptLoader: "replace-script-by-id",
       projectionGuard: "enabled",
       envAccepted: ["OPENAI_API_KEY", "OPENAI_KEY", "CHATGPT_API_KEY"].filter(name => !!process.env[name])
@@ -218,7 +279,7 @@ module.exports = function registerAssistantApi(app, options) {
       if (!question) return res.status(400).json({ error: "Question is required" });
       const data = typeof readBillsData === "function" ? readBillsData() : {};
       const parsed = await parseIntentWithOpenAI(question, data).catch(err => ({ mode: "local", error: err && err.message ? err.message : "Intent parse failed", intent: localIntent(question) }));
-      res.json({ mode: parsed.mode, model: parsed.mode === "openai" ? OPENAI_MODEL : null, build: INTENT_BUILD, intent: parsed.intent || localIntent(question), answer: null, error: parsed.error || null });
+      res.json({ mode: parsed.mode, model: parsed.mode === "openai" ? OPENAI_MODEL : null, build: INTENT_BUILD, intent: correctIntent(question, parsed.intent || localIntent(question)), answer: null, error: parsed.error || null });
     } catch (err) {
       res.status(500).json({ error: err && err.message ? err.message : "Intent request failed" });
     }
