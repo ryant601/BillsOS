@@ -25,6 +25,7 @@
   function days(month) { return new Date(YEAR, month, 0).getDate(); }
   function iso(month, day) { return YEAR + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0'); }
   function rowKey(event) { return (event.originalDate || event.date) + '|' + event.name + '|' + event.amount; }
+  function escAttr(value) { return String(value || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   function installStylesheet(href, dataKey, dataValue) {
     if (document.querySelector('link[' + dataKey + '="' + dataValue + '"]')) return;
@@ -111,7 +112,7 @@
     const sweep = rules.sweep && typeof rules.sweep === 'object' ? rules.sweep : {};
     const targets = sweep.targets && typeof sweep.targets === 'object' && !Array.isArray(sweep.targets) ? sweep.targets : {};
     const target = targets[monthKey];
-    if (sweep.enabled !== false && monthKey !== '2026-06' && target && Number(target.amount) > 0) {
+    if (sweep.enabled !== false && target && Number(target.amount) > 0) {
       const day = Math.min(dim, Math.max(1, Number(target.day || dim)));
       push(day, target.label || sweep.label || 'Sweep transfer', -Math.abs(Number(target.amount || 0)), 'sweep system', 'rule');
     }
@@ -161,6 +162,37 @@
     return found ? found[0] : null;
   }
 
+  function selectedDayNode() {
+    const selected = document.querySelector('.day.selected');
+    if (selected && !selected.classList.contains('blank')) return selected;
+    const title = text(document.getElementById('detailTitle'));
+    const match = title.match(/Day\s+(\d+)/i);
+    if (!match) return null;
+    const day = Number(match[1]);
+    return Array.from(document.querySelectorAll('.day:not(.blank)')).find(function (node) { return Number(text(node.querySelector('.topline b')) || 0) === day; }) || null;
+  }
+
+  function getDoneMap() { try { return JSON.parse(localStorage.getItem('billsos-generated-done-v5') || '{}') || {}; } catch (_err) { return {}; } }
+  function dayNodeFor(day) { return Array.from(document.querySelectorAll('.day:not(.blank)')).find(function (node) { return Number(text(node.querySelector('.topline b')) || 0) === Number(day); }) || null; }
+
+  function ensureSweepCalendarRows(current) {
+    if (!current || !current.rows) return;
+    const done = getDoneMap();
+    document.querySelectorAll('[data-billsos-manual-sweep="1"]').forEach(function (node) { node.remove(); });
+    current.rows.filter(function (row) { return row.amount < 0 && /sweep/i.test(row.name); }).forEach(function (row) {
+      const key = rowKey(row);
+      if (document.querySelector('.day label.ev input[data-id="' + CSS.escape(key) + '"]')) return;
+      const day = dayNodeFor(row.day);
+      const events = day && day.querySelector('.events');
+      if (!events) return;
+      const label = document.createElement('label');
+      label.className = 'ev sweep system' + (done[key] ? ' done' : '');
+      label.setAttribute('data-billsos-manual-sweep', '1');
+      label.innerHTML = '<input type="checkbox" data-id="' + escAttr(key) + '"' + (done[key] ? ' checked' : '') + '><span>' + escAttr(row.name) + '</span><b>' + money(Math.abs(row.amount)) + '</b>';
+      events.appendChild(label);
+    });
+  }
+
   let balanceSyncTimer = 0;
   let balanceSyncBusy = false;
   let transferColorTimer = 0;
@@ -205,7 +237,6 @@
         item.classList.toggle('sweep', /sweep/i.test(key) || /sweep/i.test(text(item)));
       });
     } catch (_err) {
-      // Leave existing calendar styling unchanged if saved data cannot be read.
     } finally {
       transferColorBusy = false;
     }
@@ -226,6 +257,7 @@
       const model = buildModel(data || {});
       const current = model[monthKey];
       if (!current) return;
+      ensureSweepCalendarRows(current);
 
       const kbegin = document.getElementById('kbegin');
       const kin = document.getElementById('kin');
@@ -256,7 +288,6 @@
         if (endNode) endNode.textContent = money(running);
       });
     } catch (_err) {
-      // Leave rendered balances untouched if saved data cannot be read.
     } finally {
       balanceSyncBusy = false;
     }
@@ -276,6 +307,24 @@
     let removed = false;
     items.forEach(function (item) { if (isCalculationOnly(item)) { item.remove(); removed = true; } });
     if (removed && !detail.querySelector('.detailItem')) { detail.className = 'detailEmpty'; detail.textContent = 'No visible actions on this day.'; }
+  }
+
+  function ensureSweepDrawerRows() {
+    const node = selectedDayNode();
+    const detail = document.getElementById('detailContent');
+    if (!node || !detail || detail.classList.contains('detailEmpty')) return;
+    node.querySelectorAll('.ev.sweep input[data-id]').forEach(function (input) {
+      const key = input.getAttribute('data-id');
+      if (!key || detail.querySelector('.detailItem[data-detail-id="' + CSS.escape(key) + '"]')) return;
+      const row = input.closest('.ev');
+      const name = text(row.querySelector('span')) || 'Sweep transfer';
+      const amount = text(row.querySelector('b')) || '$0';
+      const item = document.createElement('div');
+      item.className = 'detailItem sweep';
+      item.setAttribute('data-detail-id', key);
+      item.innerHTML = '<div class="dir out">−</div><div class="detailMain"><div class="name">' + escAttr(name) + '</div></div><div class="amt">' + escAttr(amount) + '</div>';
+      detail.appendChild(item);
+    });
   }
 
   function drawerItems() {
@@ -309,16 +358,6 @@
     if (!existing) detail.insertBefore(summary, detail.firstChild);
   }
 
-  function selectedDayNode() {
-    const selected = document.querySelector('.day.selected');
-    if (selected && !selected.classList.contains('blank')) return selected;
-    const title = text(document.getElementById('detailTitle'));
-    const match = title.match(/Day\s+(\d+)/i);
-    if (!match) return null;
-    const day = Number(match[1]);
-    return Array.from(document.querySelectorAll('.day:not(.blank)')).find(function (node) { return Number(text(node.querySelector('.topline b')) || 0) === day; }) || null;
-  }
-
   function insertBalanceBridge() {
     const detail = document.getElementById('detailContent');
     if (!detail) return;
@@ -348,6 +387,7 @@
     scheduleTransferColorSync();
     removeCalendarCalculationOnlyRows();
     removeDrawerCalculationOnlyRows();
+    ensureSweepDrawerRows();
     insertDrawerNetSummary();
     insertBalanceBridge();
     const items = document.querySelectorAll('#detailContent .detailItem');
