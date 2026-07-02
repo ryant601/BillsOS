@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var BUILD='month-export-pdf-tab-20260702-3';
+  var BUILD='month-export-pdf-tab-20260702-4';
 
   function clean(v){return String(v||'').replace(/\s+/g,' ').trim()}
   function esc(v){return String(v||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -27,6 +27,13 @@
   function exportTitle(model){return filenameSafe('BillsOS '+model.title+' Action List '+timestamp())}
   function isCalculationOnly(ev){var s=clean(ev&&ev.textContent).toLowerCase();return s.indexOf('billsos action log')>=0||s.indexOf('balance correction')>=0}
 
+  function kpiAmount(id){
+    var node=document.getElementById(id);
+    if(!node)return null;
+    var value=amountFrom(node.textContent);
+    return isFinite(value)?Math.abs(value):null;
+  }
+
   function readMonth(){
     var rows=[],title=monthTitle();
     document.querySelectorAll('.cal .day').forEach(function(day){
@@ -50,7 +57,10 @@
   function summary(model){
     var income=0,outflow=0,open=0,done=0;
     model.rows.forEach(function(r){if(r.amount>0)income+=r.amount;else outflow+=Math.abs(r.amount);if(r.done)done++;else if(r.amount<0)open++;});
-    return {income:income,outflow:outflow,open:open,done:done,total:model.rows.length};
+    var heroIncome=kpiAmount('kin'),heroOutflow=kpiAmount('kout');
+    if(heroIncome!==null)income=heroIncome;
+    if(heroOutflow!==null)outflow=heroOutflow;
+    return {income:income,outflow:outflow,open:open,done:done,total:model.rows.length,source:(heroIncome!==null||heroOutflow!==null)?'dashboard':'rows'};
   }
   function rowHtml(r){
     var flow=r.amount>=0?'in':'out';
@@ -58,12 +68,12 @@
   }
 
   function pageCss(){
-    return '@page{size:letter portrait;margin:.35in}*{box-sizing:border-box}body{margin:0;background:#eef1ec;color:#17211d;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.toolbar{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 16px;background:rgba(245,244,239,.94);border-bottom:1px solid rgba(79,124,104,.18);backdrop-filter:blur(12px)}.toolbar b{font-size:14px}.toolbar span{display:block;color:#607069;font-size:12px;margin-top:2px}.toolbar button{border:1px solid rgba(79,124,104,.26);border-radius:999px;background:#4F7C68;color:#fff;font-weight:800;padding:9px 13px}.exportPage{width:min(8.5in,100%);margin:18px auto;background:#fff;padding:.35in;box-shadow:0 18px 44px rgba(45,66,55,.14)}.exportHead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #b9c4be;margin-bottom:10px;padding-bottom:8px}.exportHead p{margin:0;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:#66746f;font-weight:800}.exportHead h1{margin:2px 0 0;font-size:23px;letter-spacing:-.03em}.exportHead span{font-size:10px;color:#66746f}.exportStats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.exportStats div{border:1px solid #d8dfdb;border-radius:8px;padding:6px 8px;background:#f8faf7}.exportStats span{display:block;font-size:8px;text-transform:uppercase;color:#66746f;font-weight:800}.exportStats b{font-size:14px}.exportStats .income b{color:#2F855A}.exportStats .outflow b{color:#C53030}.exportTable{width:100%;border-collapse:collapse;font-size:9px}.exportTable th{background:#eef2ef;text-align:left;font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#52615b}.exportTable th,.exportTable td{border-bottom:1px solid #e2e8e4;padding:4px 5px;vertical-align:top}.exportTable td:nth-child(1){width:32px;font-weight:800}.exportTable td:nth-child(3),.exportTable td:nth-child(6){width:64px;color:#66746f}.exportTable td:nth-child(4),.exportTable td:nth-child(5){width:70px;text-align:right;white-space:nowrap;font-weight:800}.exportTable tr.in td:first-child{border-left:3px solid #2F855A}.exportTable tr.out td:first-child{border-left:3px solid #C53030}.exportTable .amt.in{color:#2F855A}.exportTable .amt.out{color:#C53030}.exportTable tr.done{opacity:.48;text-decoration:line-through}@media print{body{background:white}.toolbar{display:none!important}.exportPage{width:auto;margin:0;padding:0;box-shadow:none}}';
+    return '@page{size:letter portrait;margin:.35in}*{box-sizing:border-box}body{margin:0;background:#eef1ec;color:#17211d;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.toolbar{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 16px;background:rgba(245,244,239,.94);border-bottom:1px solid rgba(79,124,104,.18);backdrop-filter:blur(12px)}.toolbar b{font-size:14px}.toolbar span{display:block;color:#607069;font-size:12px;margin-top:2px}.toolbar button{border:1px solid rgba(79,124,104,.26);border-radius:999px;background:#4F7C68;color:#fff;font-weight:800;padding:9px 13px}.exportPage{width:min(8.5in,100%);margin:18px auto;background:#fff;padding:.35in;box-shadow:0 18px 44px rgba(45,66,55,.14)}.exportHead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #b9c4be;margin-bottom:10px;padding-bottom:8px}.exportHead p{margin:0;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:#66746f;font-weight:800}.exportHead h1{margin:2px 0 0;font-size:23px;letter-spacing:-.03em}.exportHead span{font-size:10px;color:#66746f}.exportStats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.exportStats div{border:1px solid #d8dfdb;border-radius:8px;padding:6px 8px;background:#f8faf7}.exportStats span{display:block;font-size:8px;text-transform:uppercase;color:#66746f;font-weight:800}.exportStats b{font-size:14px}.exportStats .income b{color:#2F855A}.exportStats .outflow b{color:#C53030}.exportNote{font-size:9px;color:#66746f;margin:-4px 0 8px}.exportTable{width:100%;border-collapse:collapse;font-size:9px}.exportTable th{background:#eef2ef;text-align:left;font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#52615b}.exportTable th,.exportTable td{border-bottom:1px solid #e2e8e4;padding:4px 5px;vertical-align:top}.exportTable td:nth-child(1){width:32px;font-weight:800}.exportTable td:nth-child(3),.exportTable td:nth-child(6){width:64px;color:#66746f}.exportTable td:nth-child(4),.exportTable td:nth-child(5){width:70px;text-align:right;white-space:nowrap;font-weight:800}.exportTable tr.in td:first-child{border-left:3px solid #2F855A}.exportTable tr.out td:first-child{border-left:3px solid #C53030}.exportTable .amt.in{color:#2F855A}.exportTable .amt.out{color:#C53030}.exportTable tr.done{opacity:.48;text-decoration:line-through}@media print{body{background:white}.toolbar{display:none!important}.exportPage{width:auto;margin:0;padding:0;box-shadow:none}}';
   }
 
   function printHtml(model){
-    var s=summary(model),title=exportTitle(model);
-    return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title)+'</title><style>'+pageCss()+'</style></head><body><div class="toolbar"><div><b>PDF Preview</b><span>Review first. Use the button when you are ready to print, save, or share.</span></div><button type="button" onclick="window.print()">Print / Save PDF</button></div><main class="exportPage"><div class="exportHead"><div><p>BillsOS action list</p><h1>'+esc(model.title)+'</h1></div><span>Generated '+esc(new Date().toLocaleDateString())+'</span></div><div class="exportStats"><div><span>Total</span><b>'+s.total+'</b></div><div><span>Open</span><b>'+s.open+'</b></div><div class="outflow"><span>Outflow</span><b>−'+dollarsAbs(s.outflow)+'</b></div><div class="income"><span>Income</span><b>+'+dollarsAbs(s.income)+'</b></div></div><table class="exportTable"><thead><tr><th>Day</th><th>Action</th><th>Type</th><th>Amount</th><th>Ending</th><th>Status</th></tr></thead><tbody>'+model.rows.map(rowHtml).join('')+'</tbody></table></main></body></html>';
+    var s=summary(model),title=exportTitle(model),note=s.source==='dashboard'?'<div class="exportNote">Summary totals match the dashboard hero row for this month.</div>':'';
+    return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title)+'</title><style>'+pageCss()+'</style></head><body><div class="toolbar"><div><b>PDF Preview</b><span>Review first. Use the button when you are ready to print, save, or share.</span></div><button type="button" onclick="window.print()">Print / Save PDF</button></div><main class="exportPage"><div class="exportHead"><div><p>BillsOS action list</p><h1>'+esc(model.title)+'</h1></div><span>Generated '+esc(new Date().toLocaleDateString())+'</span></div><div class="exportStats"><div><span>Total</span><b>'+s.total+'</b></div><div><span>Open</span><b>'+s.open+'</b></div><div class="outflow"><span>Outflow</span><b>−'+dollarsAbs(s.outflow)+'</b></div><div class="income"><span>Income</span><b>+'+dollarsAbs(s.income)+'</b></div></div>'+note+'<table class="exportTable"><thead><tr><th>Day</th><th>Action</th><th>Type</th><th>Amount</th><th>Ending</th><th>Status</th></tr></thead><tbody>'+model.rows.map(rowHtml).join('')+'</tbody></table></main></body></html>';
   }
 
   function openPdfTab(){
