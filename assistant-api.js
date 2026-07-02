@@ -55,10 +55,7 @@ function plainText(value) {
 
 function normalizeDashboardProjection(html) {
   if (typeof html !== "string") return html;
-  return html
-    .replace(/mm\[0\]==='june'\?0:bal/g, "bal")
-    .replace(/push\(Math\.min\(dim,Math\.max\(1,base\+add\)\),'Spending account funding',-Math\.abs\(Number\(sp\.amount\)\),'out system','rule'\)/g, "var fundDay=Math.min(dim,Math.max(1,base+add)),fundAmt=safeSweepAmount(fundDay,sp.amount);if(fundAmt>0)push(fundDay,'Spending account funding',-fundAmt,'out system','rule')")
-    .replace(/push\(base,'Spending account funding',-Math\.abs\(Number\(sp\.amount\)\),'out system','rule'\)/g, "var fundDay=base,fundAmt=safeSweepAmount(fundDay,sp.amount);if(fundAmt>0)push(fundDay,'Spending account funding',-fundAmt,'out system','rule')");
+  return html.replace(/mm\[0\]==='june'\?0:bal/g, "bal");
 }
 
 function replaceScriptById(html, id, src) {
@@ -265,7 +262,7 @@ module.exports = function registerAssistantApi(app, options) {
       interpretation: "openai-intent-first",
       intentValidator: "deterministic-period-guardrails",
       scriptLoader: "replace-script-by-id",
-      projectionGuard: "enabled",
+      projectionGuard: "sweep-only",
       envAccepted: ["OPENAI_API_KEY", "OPENAI_KEY", "CHATGPT_API_KEY"].filter(name => !!process.env[name])
     });
   });
