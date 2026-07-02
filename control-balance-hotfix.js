@@ -25,17 +25,17 @@
         if(meta)meta.textContent='Save functions are not ready. Reload Control Center.';
         return;
       }
-      if(meta)meta.textContent='Saving to One-time items...';
+      if(meta)meta.textContent='Saving calculation-only correction...';
       document.getElementById('oneId').value='';
       document.getElementById('oneName').value=note;
       document.getElementById('oneDate').value=date;
       document.getElementById('oneAmount').value=amount;
       document.getElementById('oneType').value=amount>=0?'income':'bill';
-      document.getElementById('oneNotes').value='Manual balance correction';
+      document.getElementById('oneNotes').value='Manual balance correction; calculation-only';
       window.saveOneFromForm();
       await window.saveData();
       if(typeof window.renderPreview==='function')window.renderPreview();
-      if(meta)meta.textContent='Saved to One-time items. Reload the live dashboard.';
+      if(meta)meta.textContent='Saved. It will affect balances without showing as a calendar action.';
     },true);
     return true;
   }
