@@ -1,16 +1,22 @@
 (function () {
   const CHECKBOX_SELECTOR = '.detailItem input[type="checkbox"]';
   const CALM_THEME_HREF = '/calm-household.css?v=20260702mobile1';
+  const MOBILE_FIT_HREF = '/mobile-fit.css?v=20260702fit1';
   const ACTION_LOG_LABEL = 'billsos action log';
   const BALANCE_CORRECTION_LABEL = 'balance correction';
 
-  function installCalmHouseholdTheme() {
-    if (document.querySelector('link[data-billsos-calm-household="1"]')) return;
+  function installStylesheet(href, dataKey, dataValue) {
+    if (document.querySelector('link[' + dataKey + '="' + dataValue + '"]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = CALM_THEME_HREF;
-    link.dataset.billsosCalmHousehold = '1';
+    link.href = href;
+    link.setAttribute(dataKey, dataValue);
     document.head.appendChild(link);
+  }
+
+  function installCalmHouseholdTheme() {
+    installStylesheet(CALM_THEME_HREF, 'data-billsos-calm-household', '1');
+    installStylesheet(MOBILE_FIT_HREF, 'data-billsos-mobile-fit', '1');
   }
 
   function text(el) {
