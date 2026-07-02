@@ -2,9 +2,9 @@
 
 const cashflow = require("./cashflow-engine");
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4.1-mini";
-const INTENT_BUILD = "assistant-intent-20260630-2";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.CHATGPT_API_KEY || "";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || process.env.CHATGPT_MODEL || "gpt-4.1-mini";
+const INTENT_BUILD = "assistant-intent-20260702-1";
 
 function compactBillsContext(data) {
   const src = data && typeof data === "object" ? data : {};
@@ -26,7 +26,7 @@ function compactBillsContext(data) {
       amount: Number(row.amount || 0),
       schedule: row.schedule || "manual"
     })),
-    oneTimeEvents: oneTimeEvents.filter(row => row && row.id !== "__billsos_system_rules__").slice(0, 60).map(row => ({
+    oneTimeEvents: oneTimeEvents.filter(row => row && row.id !== "__billsos_system_rules__" && row.id !== "__billsos_action_log__").slice(0, 60).map(row => ({
       name: row.name || "One-time item",
       amount: Number(row.amount || 0),
       date: row.date || null,
@@ -65,7 +65,7 @@ function injectBridge(html) {
   const scripts = [
     '<script id="billsosCashflowEngine" defer src="/cashflow-engine.js?v=20260630engine1"></script>',
     '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260630assistant9"></script>',
-    '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260630bridge7"></script>'
+    '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260702openai1"></script>'
   ].filter(script => !out.includes(script.match(/id="([^"]+)"/)[1])).join("\n");
   if (!scripts) return out;
   if (out.includes("</body>")) return out.replace("</body>", `${scripts}\n</body>`);
@@ -172,9 +172,10 @@ module.exports = function registerAssistantApi(app, options) {
       engine: cashflow.BUILD,
       intent: INTENT_BUILD,
       assistant: "assistant-ui-20260630-9",
-      bridge: "assistant-ai-bridge-20260630-7",
+      bridge: "assistant-ai-bridge-20260702-1",
       assistantSource: "rendered-calendar-all-months",
-      projectionGuard: "enabled"
+      projectionGuard: "enabled",
+      envAccepted: ["OPENAI_API_KEY", "OPENAI_KEY", "CHATGPT_API_KEY"].filter(name => !!process.env[name])
     });
   });
 
