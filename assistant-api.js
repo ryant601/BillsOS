@@ -4,7 +4,7 @@ const cashflow = require("./cashflow-engine");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.CHATGPT_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || process.env.CHATGPT_MODEL || "gpt-4.1-mini";
-const INTENT_BUILD = "assistant-intent-20260702-3";
+const INTENT_BUILD = "assistant-intent-20260702-4";
 
 function compactBillsContext(data) {
   const src = data && typeof data === "object" ? data : {};
@@ -90,7 +90,6 @@ async function openAIResponse(body) {
 async function callOpenAI({ question, deterministicAnswer, billsContext }) {
   const payload = await openAIResponse({
     model: OPENAI_MODEL,
-    temperature: 0.2,
     max_output_tokens: 450,
     instructions: [
       "You are the BillsOS assistant for a private household budget app.",
@@ -124,6 +123,7 @@ function localIntent(question) {
   else if (/upcoming|coming up|bills|due|next bill/.test(text)) intent = "upcoming_bills";
   else if (/lowest|low|minimum|floor|risk|buffer|projection/.test(text)) intent = "low_balance";
   else if (/summary|status|where.*stand|current read/.test(text)) intent = "summary";
+  else if (/average|avg|daily spend|spend per day/.test(text)) intent = "spend_average";
   const scope = cashflow.scopeFromQuestion(question);
   return {
     intent,
@@ -140,13 +140,12 @@ async function parseIntentWithOpenAI(question, data) {
   if (!OPENAI_API_KEY) return { mode: "local", intent: localIntent(question) };
   const payload = await openAIResponse({
     model: OPENAI_MODEL,
-    temperature: 0,
     max_output_tokens: 300,
     instructions: [
       "You parse BillsOS user requests into strict JSON only.",
       "Do not calculate balances. The BillsOS all-months cashflow engine calculates balances.",
       "Return only valid JSON with keys: intent, amount, dateStart, dateEnd, scopeLabel, target, constraints, requiresConfirmation, confidence, clarificationQuestion.",
-      "Allowed intent values: payment_timing, affordability, low_balance, upcoming_bills, summary, unknown.",
+      "Allowed intent values: payment_timing, affordability, low_balance, upcoming_bills, spend_average, summary, unknown.",
       "requiresConfirmation must be true only for data-changing requests, such as move, add, delete, mark paid, or change."
     ].join("\n"),
     input: [{ role: "user", content: [{ type: "input_text", text: JSON.stringify({ currentDate: cashflow.today(), userQuestion: question, billsContext: compactBillsContext(data) }) }] }]
