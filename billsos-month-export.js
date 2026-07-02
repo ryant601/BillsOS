@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var BUILD='month-export-list-20260630-3';
+  var BUILD='month-export-list-20260702-1';
   var printNode=null;
   var previousTitle=null;
 
@@ -17,6 +17,7 @@
   function exportTitle(model){return filenameSafe('BillsOS '+model.title+' Action List '+timestamp())}
   function preparePrintTitle(model){previousTitle=document.title;document.title=exportTitle(model)}
   function restorePrintTitle(){if(previousTitle!=null){document.title=previousTitle;previousTitle=null}}
+  function isCalculationOnly(ev){var s=clean(ev&&ev.textContent).toLowerCase();return s.indexOf('billsos action log')>=0||s.indexOf('balance correction')>=0}
 
   function readMonth(){
     var rows=[],title=monthTitle();
@@ -27,7 +28,7 @@
       if(!dayNum)return;
       var end=clean((day.querySelector('.endline b')||{}).textContent||'');
       day.querySelectorAll('.ev').forEach(function(ev){
-        if((ev.textContent||'').indexOf('BillsOS action log')>=0)return;
+        if(isCalculationOnly(ev))return;
         var amtNode=ev.querySelector('b:last-child')||ev.querySelector('b,.amt');
         var name=eventName(ev);
         if(!name)return;
