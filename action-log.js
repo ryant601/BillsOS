@@ -18,6 +18,33 @@
   function loadJs(id,src){if(document.getElementById(id))return;var s=document.createElement('script');s.id=id;s.src=src;s.defer=true;document.head.appendChild(s)}
   function loadDesign(){loadCss('billsosDesignCss','/billsos-design.css?v=20260629manrope1');loadCss('billsosImpactCss','/billsos-impact.css?v=20260630assistantbubble1');loadCss('billsosDarkA11yCss','/billsos-dark-a11y.css?v=20260629a11y1');loadJs('billsosWeekToggleJs','/billsos-week-toggle.js?v=20260629week2');loadJs('billsosCashflowEngine','/cashflow-engine.js?v=20260630engine1');loadJs('billsosAssistantUi','/assistant-ui.js?v=20260630assistant9');loadJs('billsosAssistantAiBridge','/assistant-ai-bridge.js?v=20260630bridge7');loadJs('billsosMonthExport','/billsos-month-export.js?v=20260630export3')}
 
+  function installSweepVisuals(){
+    if(document.getElementById('billsosSweepVisuals'))return;
+    var s=document.createElement('style');
+    s.id='billsosSweepVisuals';
+    s.textContent='.ev.sweep{background:#ede9fe!important;color:#5b21b6!important;border-color:rgba(91,33,182,.34)!important}.ev.sweep span,.ev.sweep b{color:#5b21b6!important}.ev.sweep .dot{background:#7c3aed!important;box-shadow:0 0 0 2px rgba(124,58,237,.18)!important}.ev.sweep.done{opacity:.58}.detailItem.sweep{background:#f3efff!important;border-color:rgba(91,33,182,.26)!important}.detailItem.sweep .amt,.detailItem.sweep .dir,.detailItem.sweep .name{color:#5b21b6!important}.week-strip .day .ev.sweep{background:#ede9fe!important;color:#5b21b6!important}.mobile-sheet .detailItem.sweep{background:#f3efff!important;border-color:rgba(91,33,182,.26)!important}';
+    document.head.appendChild(s);
+  }
+  function protectSweepRows(){
+    if(window.__billsosSweepRemoveProtected)return;
+    window.__billsosSweepRemoveProtected=true;
+    var nativeRemove=Element.prototype.remove;
+    Element.prototype.remove=function(){
+      try{
+        var txt=(this.textContent||'').toLowerCase();
+        if(this.matches&&this.matches('.ev,label.ev,.detailItem')&&txt.indexOf('sweep')>=0){this.classList.add('sweep');return;}
+      }catch(e){}
+      return nativeRemove.call(this);
+    };
+  }
+  function tagSweepRows(){
+    installSweepVisuals();
+    document.querySelectorAll('.ev,label.ev,.detailItem').forEach(function(el){
+      var txt=(el.textContent||'').toLowerCase();
+      if(txt.indexOf('sweep')>=0){el.classList.add('sweep');if(el.classList.contains('out'))el.classList.remove('out');}
+    });
+  }
+
   function applyTheme(){var dark=currentTheme()==='dark';document.documentElement.setAttribute('data-billsos-theme',dark?'dark':'light');var btn=document.getElementById('billsosThemeToggle');if(btn){btn.innerHTML='<span class="themeIcon">'+themeLabel()+'</span><span class="themeText">'+(dark?'Light':'Dark')+'</span>';btn.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode')}}
   function toggleTheme(){localStorage.setItem(THEME_KEY,currentTheme()==='dark'?'light':'dark');applyTheme()}
   function addThemeToggle(){if(document.getElementById('billsosThemeToggle'))return;var host=document.querySelector('.nav');if(!host)return;var btn=document.createElement('button');btn.id='billsosThemeToggle';btn.type='button';btn.className='billsosThemeToggle';btn.onclick=toggleTheme;host.appendChild(btn);applyTheme()}
@@ -36,7 +63,7 @@
   function readMeta(row){try{var parsed=JSON.parse(row&&row.notes||'[]');return Array.isArray(parsed)?parsed:[]}catch(e){return []}}
   function hideMetaRows(){document.querySelectorAll('tr').forEach(function(tr){if((tr.textContent||'').indexOf('BillsOS action log')>=0)tr.style.display='none'})}
   function moneyNumber(text){var n=Number(String(text||'').replace(/[^0-9.-]/g,''));return isFinite(n)?n:0}
-  function enhanceDashboard(){try{var now=new Date(),heading=document.querySelector('.monthHead h2'),monthText=heading?heading.textContent:'',isThisMonth=monthText.indexOf(now.getFullYear())>=0&&monthText.toLowerCase().indexOf(now.toLocaleString('en-US',{month:'long'}).toLowerCase())>=0;document.querySelectorAll('.ev').forEach(function(ev){if((ev.textContent||'').indexOf('BillsOS action log')>=0)ev.style.display='none'});document.querySelectorAll('.day').forEach(function(day){day.classList.remove('today','low','negative','has-more');var first=day.querySelector('.topline span:first-child b'),end=day.querySelector('.endline b'),events=day.querySelector('.events');if(first&&isThisMonth&&Number(first.textContent)===now.getDate())day.classList.add('today');if(end){var bal=moneyNumber(end.textContent);if(bal<0)day.classList.add('negative');else if(bal>0&&bal<1000)day.classList.add('low')}if(events&&events.scrollHeight>events.clientHeight+8)day.classList.add('has-more')})}catch(e){}}
+  function enhanceDashboard(){try{tagSweepRows();var now=new Date(),heading=document.querySelector('.monthHead h2'),monthText=heading?heading.textContent:'',isThisMonth=monthText.indexOf(now.getFullYear())>=0&&monthText.toLowerCase().indexOf(now.toLocaleString('en-US',{month:'long'}).toLowerCase())>=0;document.querySelectorAll('.ev').forEach(function(ev){var txt=(ev.textContent||'').toLowerCase();if(txt.indexOf('billsos action log')>=0)ev.style.display='none';if(txt.indexOf('sweep')>=0){ev.classList.add('sweep');ev.classList.remove('out')}});document.querySelectorAll('.day').forEach(function(day){day.classList.remove('today','low','negative','has-more');var first=day.querySelector('.topline span:first-child b'),end=day.querySelector('.endline b'),events=day.querySelector('.events');if(first&&isThisMonth&&Number(first.textContent)===now.getDate())day.classList.add('today');if(end){var bal=moneyNumber(end.textContent);if(bal<0)day.classList.add('negative');else if(bal>0&&bal<1000)day.classList.add('low')}if(events&&events.scrollHeight>events.clientHeight+8)day.classList.add('has-more')})}catch(e){}}
 
   function controlState(){try{if(location.pathname.indexOf('/control')!==0)return null;if(typeof state==='undefined'||!state||typeof state!=='object')return null;return {bills:Array.isArray(state.bills)?state.bills:[],oneTimeEvents:Array.isArray(state.oneTimeEvents)?state.oneTimeEvents:[],income:Array.isArray(state.income)?state.income:[],updatedAt:state.updatedAt||null}}catch(e){return null}}
   function mergeControlState(data){var current=controlState();if(!current)return data;data.bills=current.bills;data.oneTimeEvents=current.oneTimeEvents;data.income=current.income;data.updatedAt=current.updatedAt;return data}
@@ -51,6 +78,7 @@
   function wrap(name,makeText){var original=window[name];if(typeof original!=='function'||original.__actionWrapped)return;var wrapped=function(){var text='';try{text=makeText()}catch(e){}var result=original.apply(this,arguments);if(text)addLog(text);return result};wrapped.__actionWrapped=true;window[name]=wrapped}
   function wrapControl(){wrap('saveOneFromForm',function(){return 'Added one-time item: '+(val('oneName')||'One-time item')+' — '+fmt(val('oneAmount'))});wrap('saveBillFromForm',function(){return 'Added/updated bill: '+(val('billName')||'Bill')+' — '+fmt(val('billAmount'))});wrap('saveIncomeFromForm',function(){return 'Added/updated income: '+(val('incomeName')||'Income')+' — '+fmt(val('incomeAmount'))});wrap('saveBalanceCorrection',function(){return 'Added balance correction: '+(val('balNote')||'Balance correction')+' — '+fmt(val('balAmount'))})}
 
+  protectSweepRows();installSweepVisuals();
   document.addEventListener('change',function(e){var cb=e.target;if(!cb||cb.type!=='checkbox'||!cb.dataset||!cb.dataset.id)return;var label=cb.closest('label'),name=label&&label.querySelector('span')?label.querySelector('span').textContent.trim():'item',amt=label&&label.querySelector('b')?' — '+label.querySelector('b').textContent.trim():'';addLog((cb.checked?'Marked completed: ':'Reopened: ')+name+amt);setTimeout(function(){pushCheckmarks(doneFromDom())},0)},true);
-  document.addEventListener('DOMContentLoaded',function(){loadDesign();applyTheme();pullCloud();setTimeout(pullCheckmarks,200);setTimeout(pullCheckmarks,900);setTimeout(addThemeToggle,200);setTimeout(addPanel,300);setTimeout(addPanel,1200);setTimeout(wrapControl,500);setTimeout(wrapControl,1500);setTimeout(hideMetaRows,1800);setInterval(enhanceDashboard,500);setInterval(pullCheckmarks,15000)});
+  document.addEventListener('DOMContentLoaded',function(){protectSweepRows();installSweepVisuals();loadDesign();applyTheme();pullCloud();setTimeout(pullCheckmarks,200);setTimeout(pullCheckmarks,900);setTimeout(addThemeToggle,200);setTimeout(addPanel,300);setTimeout(addPanel,1200);setTimeout(wrapControl,500);setTimeout(wrapControl,1500);setTimeout(hideMetaRows,1800);setTimeout(tagSweepRows,300);setInterval(enhanceDashboard,500);setInterval(pullCheckmarks,15000)});
 })();
