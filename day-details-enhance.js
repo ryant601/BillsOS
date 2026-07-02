@@ -5,6 +5,7 @@
   const ACTION_LOG_LABEL = 'billsos action log';
   const BALANCE_CORRECTION_LABEL = 'balance correction';
   const SPENDING_FUNDING_LABEL = 'spending account funding';
+  const SWEEP_LABEL = 'sweep';
   const YEAR = 2026;
   const FIRST_BEGIN = 3671;
   const JULY_REBASE_DAY = 2;
@@ -17,7 +18,8 @@
   function isActionLogMeta(item) { return normalizedText(item).indexOf(ACTION_LOG_LABEL) >= 0; }
   function isBalanceCorrection(item) { return normalizedText(item).indexOf(BALANCE_CORRECTION_LABEL) >= 0; }
   function isAutoSpendingFunding(item) { return normalizedText(item).indexOf(SPENDING_FUNDING_LABEL) >= 0; }
-  function isCalculationOnly(item) { return isActionLogMeta(item) || isBalanceCorrection(item) || isAutoSpendingFunding(item); }
+  function isAutoSweep(item) { return normalizedText(item).indexOf(SWEEP_LABEL) >= 0; }
+  function isCalculationOnly(item) { return isActionLogMeta(item) || isBalanceCorrection(item) || isAutoSpendingFunding(item) || isAutoSweep(item); }
   function money(value) { return Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
   function signedMoney(value) { const n = Number(value || 0); return (n < 0 ? '−' : '+') + money(Math.abs(n)); }
   function parseMoney(value) { const n = Number(String(value || '').replace(/[−–—]/g, '-').replace(/[^0-9.-]/g, '')); return Number.isFinite(n) ? n : 0; }
@@ -39,24 +41,6 @@
     installStylesheet(MOBILE_FIT_HREF, 'data-billsos-mobile-fit', '1');
   }
 
-  function systemRules(data) {
-    const defaults = {
-      spendingFunding: { enabled: false, amount: 0, count: 0, timing: 'manual-only' },
-      sweep: { enabled: true, preferredBuffer: 1250, hardBuffer: 1000, day: 28, label: 'Sweep transfer', targets: { '2026-07': { day: 31, amount: 705.05, label: 'Sweep to savings / debt' }, '2026-09': { day: 30, amount: 1123.2, label: 'Sweep to savings / debt' } } }
-    };
-    try {
-      const row = (data.oneTimeEvents || []).find(function (item) { return item && item.id === RULE_ID; });
-      const parsed = row && row.notes ? JSON.parse(row.notes) : {};
-      // Spending funding is intentionally manual-only. Ignore any saved automatic spendingFunding settings.
-      if (parsed.sweep) Object.assign(defaults.sweep, parsed.sweep);
-      defaults.sweep.targets = Object.assign({}, defaults.sweep.targets, (parsed.sweep && parsed.sweep.targets) || {});
-    } catch (_err) {}
-    defaults.spendingFunding.enabled = false;
-    defaults.spendingFunding.amount = 0;
-    defaults.spendingFunding.count = 0;
-    return defaults;
-  }
-
   function oneDates(item, monthKey) {
     const out = [];
     const matches = String(item.notes || '').match(/20\d{2}-\d{2}-\d{2}/g) || [];
@@ -65,25 +49,13 @@
     return out;
   }
 
-  function generateRows(data, month, begin) {
+  function generateRows(data, month) {
     const monthKey = YEAR + '-' + String(month).padStart(2, '0');
     const dim = days(month);
     const rows = [];
     function push(day, name, amount, cls, type) {
       const n = Number(day || 0);
       if (n >= 1 && n <= dim) rows.push({ date: iso(month, n), day: n, name: name || 'Item', amount: Number(amount || 0), cls: cls || 'out', type: type || '' });
-    }
-    function safeSweepAmount(day, requested) {
-      const byDay = {};
-      let balance = Number(begin || 0);
-      let minAfter = null;
-      rows.forEach(function (row) { byDay[row.day] = (byDay[row.day] || 0) + Number(row.amount || 0); });
-      for (let d = 1; d <= dim; d += 1) {
-        balance += Number(byDay[d] || 0);
-        if (d >= day) minAfter = minAfter === null ? balance : Math.min(minAfter, balance);
-      }
-      const safe = Math.max(0, Math.floor(Number(minAfter || 0) * 100) / 100);
-      return Math.max(0, Math.min(Math.abs(Number(requested || 0)), safe));
     }
 
     (data.bills || []).forEach(function (bill) {
@@ -107,24 +79,6 @@
       else if (schedule === 'biweekly') [1, 15, 29].forEach(function (day) { if (day <= dim) push(day, name, amount, 'in', 'income'); });
       else push(1, name, amount, 'in', 'income');
     });
-
-    const rules = systemRules(data);
-    const sweep = rules.sweep;
-    const target = sweep.targets && sweep.targets[monthKey];
-    if (sweep.enabled !== false && monthKey !== '2026-06') {
-      if (target && Number(target.amount) > 0) {
-        const day = Math.min(dim, Number(target.day || dim));
-        const amount = safeSweepAmount(day, target.amount);
-        if (amount > 0) push(day, target.label || sweep.label || 'Sweep transfer', -amount, 'out system', 'rule');
-      } else {
-        const income = rows.filter(function (row) { return row.amount > 0; }).reduce(function (sum, row) { return sum + row.amount; }, 0);
-        const outflow = rows.filter(function (row) { return row.amount < 0; }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
-        const available = Number(begin || 0) + income - outflow - Number(sweep.preferredBuffer || 0);
-        const day = Math.min(dim, Math.max(1, Number(sweep.day || 28)));
-        const amount = safeSweepAmount(day, Math.round(available * 100) / 100);
-        if (available > 0 && amount > 0) push(day, sweep.label || 'Sweep transfer', -amount, 'out system', 'rule');
-      }
-    }
     return rows.sort(function (a, b) { return a.date.localeCompare(b.date) || b.amount - a.amount; });
   }
 
@@ -149,10 +103,10 @@
     let balance = FIRST_BEGIN;
     MONTHS.forEach(function (monthDef) {
       let begin = balance;
-      let rows = effectiveRows(generateRows(data, monthDef[1], begin), monthDef[1]);
+      let rows = effectiveRows(generateRows(data, monthDef[1]), monthDef[1]);
       if (monthDef[0] === 'july') {
         begin = JULY_REBASE_END;
-        rows = effectiveRows(generateRows(data, monthDef[1], begin), monthDef[1]).filter(function (row) { return row.day > JULY_REBASE_DAY; });
+        rows = effectiveRows(generateRows(data, monthDef[1]), monthDef[1]).filter(function (row) { return row.day > JULY_REBASE_DAY; });
       }
       const income = rows.filter(function (row) { return row.amount > 0; }).reduce(function (sum, row) { return sum + row.amount; }, 0);
       const outflow = rows.filter(function (row) { return row.amount < 0; }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
@@ -186,7 +140,6 @@
       const current = model[monthKey];
       if (!current) return;
 
-      const projectedSweep = current.rows.filter(function (row) { return row.amount < 0 && /sweep/i.test(row.name); }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
       const kbegin = document.getElementById('kbegin');
       const kin = document.getElementById('kin');
       const kout = document.getElementById('kout');
@@ -196,7 +149,7 @@
       if (kin) kin.textContent = money(current.income);
       if (kout) kout.textContent = money(current.outflow);
       if (kend) kend.textContent = money(current.end);
-      if (ksweep) ksweep.textContent = money(projectedSweep);
+      if (ksweep) ksweep.textContent = money(0);
 
       const byDay = {};
       current.rows.forEach(function (row) { byDay[row.day] = (byDay[row.day] || 0) + row.amount; });
