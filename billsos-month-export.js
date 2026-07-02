@@ -1,10 +1,21 @@
 (function(){
   'use strict';
-  var BUILD='month-export-pdf-tab-20260702-2';
+  var BUILD='month-export-pdf-tab-20260702-3';
 
   function clean(v){return String(v||'').replace(/\s+/g,' ').trim()}
   function esc(v){return String(v||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
   function amountFrom(text){var n=Number(String(text||'').replace(/[−–—]/g,'-').replace(/[^0-9.-]/g,''));return isFinite(n)?n:0}
+  function amountFromEvent(ev){
+    var input=ev&&ev.querySelector&&ev.querySelector('input[data-id]');
+    var id=input&&input.dataset&&input.dataset.id;
+    if(id&&id.indexOf('|')>=0){
+      var parts=id.split('|');
+      var n=Number(parts[parts.length-1]);
+      if(isFinite(n)&&n!==0)return n;
+    }
+    var amtNode=ev&&ev.querySelector&&ev.querySelector('b:last-child,.amt');
+    return amountFrom(amtNode&&amtNode.textContent);
+  }
   function dollarsAbs(v){return '$'+Math.abs(Number(v||0)).toLocaleString(undefined,{maximumFractionDigits:0})}
   function dollarsSigned(v){var n=Number(v||0),sign=n>=0?'+':'−';return sign+dollarsAbs(n)}
   function monthTitle(){var h=document.querySelector('.monthHead h2');return clean(h&&h.textContent)||'Monthly Action List'}
@@ -26,10 +37,10 @@
       var end=clean((day.querySelector('.endline b')||{}).textContent||'');
       day.querySelectorAll('.ev').forEach(function(ev){
         if(isCalculationOnly(ev))return;
-        var amtNode=ev.querySelector('b:last-child')||ev.querySelector('b,.amt');
         var name=eventName(ev);
         if(!name)return;
-        rows.push({day:dayNum,end:end,name:name,type:eventType(ev),amount:amountFrom(amtNode&&amtNode.textContent),done:/\bdone\b/.test(ev.className||'')});
+        var amount=amountFromEvent(ev);
+        rows.push({day:dayNum,end:end,name:name,type:eventType(ev),amount:amount,done:/\bdone\b/.test(ev.className||'')});
       });
     });
     rows.sort(function(a,b){return a.day-b.day||String(a.name).localeCompare(String(b.name))});
