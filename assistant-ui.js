@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var BUILD='assistant-ui-20260702-allmonths1';
+  var BUILD='assistant-ui-20260702-allmonths2';
   var engine=null;
   window.BillsOSModules=window.BillsOSModules||{};
 
@@ -93,15 +93,25 @@
   function lowDay(cal,sc){return daysIn(cal,sc).reduce(function(a,b){return !a||b.ending<a.ending?b:a},null)}
   function nearby(cal,iso){return cal.events.filter(function(e){var diff=Math.round((new Date(e.iso+'T12:00:00')-new Date(iso+'T12:00:00'))/86400000);return !e.income&&!e.done&&Math.abs(diff)<=3&&Math.abs(e.amount)>=300})}
   function bestDay(cal,amt,sc){var ds=daysIn(cal,sc);if(!ds.length)return null;return ds.map(function(d){var after=Math.max(0,d.ending-amt),buffer=after-1000,near=nearby(cal,d.iso),same=cal.events.filter(function(e){return e.iso===d.iso&&!e.income&&!e.done}),wknd=[0,6].indexOf(new Date(d.iso+'T12:00:00').getDay())>-1,score=buffer-near.length*175-same.length*90-(wknd?40:0);return {iso:d.iso,balance:d.ending,after:after,buffer:buffer,near:near,score:score}}).sort(function(a,b){return b.score-a.score})[0]}
+  function averageSpend(cal,sc){
+    var billEvents=cal.events.filter(function(e){return e.iso>=sc.start&&e.iso<=sc.end&&!e.income&&!e.done&&Number(e.amount||0)<0});
+    var total=billEvents.reduce(function(sum,e){return sum+Math.abs(Number(e.amount||0))},0);
+    var start=new Date(sc.start+'T12:00:00'),end=new Date(sc.end+'T12:00:00');
+    var days=Math.max(1,Math.round((end-start)/86400000)+1);
+    var avg=total/days;
+    var largest=billEvents.slice().sort(function(a,b){return Math.abs(b.amount)-Math.abs(a.amount)}).slice(0,4);
+    return {total:total,days:days,average:avg,items:billEvents.length,largest:largest};
+  }
 
   async function answer(q){
     var cal=await readCalendar(q);if(!cal.loaded)return '<b>I could not read the calendar model.</b><p>Refresh the dashboard and try again.</p>';
     var sc=scope(q,cal),s=String(q||'').toLowerCase(),amt=parseAmount(q),available=daysIn(cal,sc),source=cal.source==='cashflow-engine-all-months'?'all months model':'rendered view';
     if(!available.length)return '<b>No calendar balances found for '+esc(sc.label)+'.</b><p>The assistant checked '+esc(source)+'.</p>';
+    if(/average|avg|daily spend|spend per day/.test(s)){var a=averageSpend(cal,sc);return '<b>Average daily outflow: '+money(a.average)+'</b><ul><li>Period reviewed: '+esc(sc.label)+'</li><li>Source: '+esc(source)+'</li><li>Total scheduled outflow: <b>'+money(a.total)+'</b></li><li>Days included: <b>'+a.days+'</b></li><li>Items included: <b>'+a.items+'</b></li>'+(a.largest.length?'<li>Largest items: '+a.largest.map(function(e){return esc(e.name)+' '+money(Math.abs(e.amount))+' on '+fmt(e.iso)}).join(', ')+'</li>':'')+'</ul>'}
     if((/best|when|day|date|pay|payment|safest/.test(s))&&amt){var b=bestDay(cal,amt,sc),l=lowDay(cal,sc);if(!b)return '<b>I could not find calendar days for '+esc(sc.label)+'.</b>';return '<b>'+(b.buffer>=0?'Best fit: ':'Needs review: ')+fmt(b.iso)+'</b><ul><li>Period reviewed: '+esc(sc.label)+'</li><li>Source: '+esc(source)+'</li><li>Payment: <b>'+money(amt)+'</b></li><li>Ending balance that day: <b>'+money(b.balance)+'</b></li><li>After payment: <b>'+money(b.after)+'</b></li><li>Buffer vs $1,000: <b>'+signed(b.buffer)+'</b></li>'+(l?'<li>Lowest ending balance in period: '+money(l.ending)+' on '+fmt(l.iso)+'</li>':'')+(b.near.length?'<li>Nearby large items: '+b.near.slice(0,3).map(function(e){return esc(e.name)+' on '+fmt(e.iso)}).join(', ')+'</li>':'<li>No large bill cluster within 3 days.</li>')+'</ul>'}
     if(/lowest|low|minimum|floor|risk|buffer|projection/.test(s)){var low=lowDay(cal,sc);return low?'<b>Lowest calendar balance</b><ul><li>Period reviewed: '+esc(sc.label)+'</li><li>Source: '+esc(source)+'</li><li>'+fmt(low.iso)+': <b>'+money(low.ending)+'</b></li></ul>':'<b>No balances found for '+esc(sc.label)+'.</b>'}
     if(/upcoming|coming up|bills|due|next bill/.test(s)){var items=cal.events.filter(function(e){return e.iso>=sc.start&&e.iso<=sc.end&&!e.income&&!e.done}).slice(0,8);return '<b>Upcoming items</b><ul><li>Period reviewed: '+esc(sc.label)+'</li><li>Source: '+esc(source)+'</li>'+(items.length?items.map(function(e){return '<li>'+fmt(e.iso)+' · '+esc(e.name)+' · <b>'+money(Math.abs(e.amount))+'</b></li>'}).join(''):'<li>No open bill items found.</li>')+'</ul>'}
-    return '<b>I can answer from all months in the BillsOS model.</b><ul><li>Loaded months: '+esc((cal.months||[]).join(', '))+'</li><li>“Lowest balance in October”</li><li>“Best day to pay $500 in the next 3 weeks”</li><li>“What bills are coming up next month?”</li></ul>';
+    return '<b>I can answer from all months in the BillsOS model.</b><ul><li>Loaded months: '+esc((cal.months||[]).join(', '))+'</li><li>“Lowest balance in October”</li><li>“Best day to pay $500 in the next 3 weeks”</li><li>“What bills are coming up next month?”</li><li>“What’s the average daily spend in November?”</li></ul>';
   }
 
   async function parseIntent(q){try{await fetch('/api/assistant/intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})})}catch(_e){}}
