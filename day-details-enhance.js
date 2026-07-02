@@ -5,7 +5,6 @@
   const ACTION_LOG_LABEL = 'billsos action log';
   const BALANCE_CORRECTION_LABEL = 'balance correction';
   const SPENDING_FUNDING_LABEL = 'spending account funding';
-  const SWEEP_LABEL = 'sweep';
   const YEAR = 2026;
   const FIRST_BEGIN = 3671;
   const JULY_REBASE_DAY = 2;
@@ -18,8 +17,7 @@
   function isActionLogMeta(item) { return normalizedText(item).indexOf(ACTION_LOG_LABEL) >= 0; }
   function isBalanceCorrection(item) { return normalizedText(item).indexOf(BALANCE_CORRECTION_LABEL) >= 0; }
   function isAutoSpendingFunding(item) { return normalizedText(item).indexOf(SPENDING_FUNDING_LABEL) >= 0; }
-  function isAutoSweep(item) { return normalizedText(item).indexOf(SWEEP_LABEL) >= 0; }
-  function isCalculationOnly(item) { return isActionLogMeta(item) || isBalanceCorrection(item) || isAutoSpendingFunding(item) || isAutoSweep(item); }
+  function isCalculationOnly(item) { return isActionLogMeta(item) || isBalanceCorrection(item) || isAutoSpendingFunding(item); }
   function money(value) { return Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
   function signedMoney(value) { const n = Number(value || 0); return (n < 0 ? '−' : '+') + money(Math.abs(n)); }
   function parseMoney(value) { const n = Number(String(value || '').replace(/[−–—]/g, '-').replace(/[^0-9.-]/g, '')); return Number.isFinite(n) ? n : 0; }
@@ -53,9 +51,20 @@
       '.week-strip .day .ev.xfer{background:#fff1a8!important;color:#5f4300!important}',
       '.detailItem.xfer{background:#fff7cf!important;border-color:rgba(176,124,0,.32)!important}',
       '.detailItem.xfer .amt,.detailItem.xfer .dir{color:#7a5600!important}',
-      '.mobile-sheet .detailItem.xfer{background:#fff7cf!important;border-color:rgba(176,124,0,.32)!important}'
+      '.mobile-sheet .detailItem.xfer{background:#fff7cf!important;border-color:rgba(176,124,0,.32)!important}',
+      '.ev.sweep{background:#ede9fe!important;color:#5b21b6!important;border-color:rgba(91,33,182,.34)!important}',
+      '.ev.sweep span,.ev.sweep b{color:#5b21b6!important}',
+      '.ev.sweep .dot{background:#7c3aed!important;box-shadow:0 0 0 2px rgba(124,58,237,.18)!important}',
+      '.detailItem.sweep{background:#f3efff!important;border-color:rgba(91,33,182,.26)!important}',
+      '.detailItem.sweep .amt,.detailItem.sweep .dir,.detailItem.sweep .name{color:#5b21b6!important}'
     ].join('');
     document.head.appendChild(style);
+  }
+
+  function readSystemRules(data) {
+    const row = (data.oneTimeEvents || []).find(function (item) { return item && item.id === RULE_ID; });
+    if (!row || !row.notes) return {};
+    try { return JSON.parse(row.notes) || {}; } catch (_err) { return {}; }
   }
 
   function oneDates(item, monthKey) {
@@ -97,6 +106,16 @@
       else if (schedule === 'biweekly') [1, 15, 29].forEach(function (day) { if (day <= dim) push(day, name, amount, 'in', 'income'); });
       else push(1, name, amount, 'in', 'income');
     });
+
+    const rules = readSystemRules(data);
+    const sweep = rules.sweep && typeof rules.sweep === 'object' ? rules.sweep : {};
+    const targets = sweep.targets && typeof sweep.targets === 'object' && !Array.isArray(sweep.targets) ? sweep.targets : {};
+    const target = targets[monthKey];
+    if (sweep.enabled !== false && monthKey !== '2026-06' && target && Number(target.amount) > 0) {
+      const day = Math.min(dim, Math.max(1, Number(target.day || dim)));
+      push(day, target.label || sweep.label || 'Sweep transfer', -Math.abs(Number(target.amount || 0)), 'sweep system', 'rule');
+    }
+
     return rows.sort(function (a, b) { return a.date.localeCompare(b.date) || b.amount - a.amount; });
   }
 
@@ -128,8 +147,9 @@
       }
       const income = rows.filter(function (row) { return row.amount > 0; }).reduce(function (sum, row) { return sum + row.amount; }, 0);
       const outflow = rows.filter(function (row) { return row.amount < 0; }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
+      const sweep = rows.filter(function (row) { return row.amount < 0 && /sweep/i.test(row.name); }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
       const end = begin + income - outflow;
-      model[monthDef[0]] = { month: monthDef, begin: begin, rows: rows, income: income, outflow: outflow, end: end, rebaseDay: monthDef[0] === 'july' ? JULY_REBASE_DAY : null, rebaseEnd: monthDef[0] === 'july' ? JULY_REBASE_END : null };
+      model[monthDef[0]] = { month: monthDef, begin: begin, rows: rows, income: income, outflow: outflow, sweep: sweep, end: end, rebaseDay: monthDef[0] === 'july' ? JULY_REBASE_DAY : null, rebaseEnd: monthDef[0] === 'july' ? JULY_REBASE_END : null };
       balance = end;
     });
     return model;
@@ -171,13 +191,18 @@
       const keys = oneTimeTransferKeys(await response.json());
       document.querySelectorAll('.day label.ev input[data-id], .day .ev input[data-id]').forEach(function (input) {
         const row = input.closest('.ev');
-        const isTransfer = keys.has(input.getAttribute('data-id'));
+        const dataId = input.getAttribute('data-id') || '';
+        const isTransfer = keys.has(dataId);
+        const isSweep = /sweep/i.test(dataId) || (row && /sweep/i.test(text(row)));
         if (!row) return;
         row.classList.toggle('xfer', isTransfer);
-        if (isTransfer) row.classList.remove('out');
+        row.classList.toggle('sweep', isSweep);
+        if (isTransfer || isSweep) row.classList.remove('out');
       });
       document.querySelectorAll('#detailContent .detailItem[data-detail-id], .mobile-sheet .detailItem[data-detail-id]').forEach(function (item) {
-        item.classList.toggle('xfer', keys.has(item.getAttribute('data-detail-id')));
+        const key = item.getAttribute('data-detail-id') || '';
+        item.classList.toggle('xfer', keys.has(key));
+        item.classList.toggle('sweep', /sweep/i.test(key) || /sweep/i.test(text(item)));
       });
     } catch (_err) {
       // Leave existing calendar styling unchanged if saved data cannot be read.
@@ -211,7 +236,7 @@
       if (kin) kin.textContent = money(current.income);
       if (kout) kout.textContent = money(current.outflow);
       if (kend) kend.textContent = money(current.end);
-      if (ksweep) ksweep.textContent = money(0);
+      if (ksweep) ksweep.textContent = money(current.sweep || 0);
 
       const byDay = {};
       current.rows.forEach(function (row) { byDay[row.day] = (byDay[row.day] || 0) + row.amount; });
@@ -333,7 +358,10 @@
       const row = match ? match.closest('.ev') : null;
       const existing = item.querySelector(CHECKBOX_SELECTOR);
       const checked = !!(match && match.checked);
-      if (row) item.classList.toggle('xfer', row.classList.contains('xfer'));
+      if (row) {
+        item.classList.toggle('xfer', row.classList.contains('xfer'));
+        item.classList.toggle('sweep', row.classList.contains('sweep'));
+      }
       if (!existing && match) {
         const box = document.createElement('input');
         box.type = 'checkbox';
