@@ -4,7 +4,7 @@ const cashflow = require("./cashflow-engine");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.CHATGPT_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || process.env.CHATGPT_MODEL || "gpt-4.1-mini";
-const INTENT_BUILD = "assistant-intent-20260702-5";
+const INTENT_BUILD = "assistant-intent-20260702-6";
 
 function compactBillsContext(data) {
   const src = data && typeof data === "object" ? data : {};
@@ -64,8 +64,8 @@ function injectBridge(html) {
   if (typeof out !== "string") return out;
   const scripts = [
     '<script id="billsosCashflowEngine" defer src="/cashflow-engine.js?v=20260630engine1"></script>',
-    '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260702avg1"></script>',
-    '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260702model1"></script>'
+    '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260702qavg1"></script>',
+    '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260702bridge3"></script>'
   ].filter(script => !out.includes(script.match(/id="([^"]+)"/)[1])).join("\n");
   if (!scripts) return out;
   if (out.includes("</body>")) return out.replace("</body>", `${scripts}\n</body>`);
@@ -123,7 +123,7 @@ function localIntent(question) {
   else if (/upcoming|coming up|bills|due|next bill/.test(text)) intent = "upcoming_bills";
   else if (/lowest|low|minimum|floor|risk|buffer|projection/.test(text)) intent = "low_balance";
   else if (/summary|status|where.*stand|current read/.test(text)) intent = "summary";
-  else if (/average|avg|daily spend|spend per day/.test(text)) intent = "spend_average";
+  else if (/average|avg|daily spend|monthly spend|spend per day|spend per month|quarter|q[1-4]/.test(text)) intent = "spend_average";
   const scope = cashflow.scopeFromQuestion(question);
   return {
     intent,
@@ -170,8 +170,8 @@ module.exports = function registerAssistantApi(app, options) {
       model: OPENAI_MODEL,
       engine: cashflow.BUILD,
       intent: INTENT_BUILD,
-      assistant: "assistant-ui-20260702-allmonths2",
-      bridge: "assistant-ai-bridge-20260702-2",
+      assistant: "assistant-ui-20260702-qavg1",
+      bridge: "assistant-ai-bridge-20260702-3",
       assistantSource: "cashflow-engine-all-months",
       projectionGuard: "enabled",
       envAccepted: ["OPENAI_API_KEY", "OPENAI_KEY", "CHATGPT_API_KEY"].filter(name => !!process.env[name])
