@@ -59,6 +59,18 @@
     });
   }
 
+  function signedMoney(value) {
+    const n = Number(value || 0);
+    return (n < 0 ? '−' : '+') + money(Math.abs(n));
+  }
+
+  function parseMoney(value) {
+    const raw = String(value || '').replace(/[−–—]/g, '-').replace(/[^0-9.-]/g, '');
+    if (!raw) return 0;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? Math.abs(parsed) : 0;
+  }
+
   function days(month) {
     return new Date(YEAR, month, 0).getDate();
   }
@@ -327,10 +339,51 @@
     }
   }
 
+  function insertDrawerNetSummary() {
+    const detail = document.getElementById('detailContent');
+    if (!detail) return;
+
+    const existing = detail.querySelector('.drawerNetSummary');
+    const items = Array.from(detail.children).filter(function (child) {
+      return child.classList && child.classList.contains('detailItem') && !isCalculationOnly(child);
+    });
+
+    if (!items.length) {
+      if (existing) existing.remove();
+      return;
+    }
+
+    let inflow = 0;
+    let outflow = 0;
+    items.forEach(function (item) {
+      const amount = parseMoney(text(item.querySelector('.amt')));
+      const direction = item.querySelector('.dir');
+      const isInflow = direction && direction.classList.contains('in');
+      if (isInflow) inflow += amount;
+      else outflow += amount;
+    });
+
+    const net = inflow - outflow;
+    const signature = [items.length, inflow, outflow, net].join('|');
+    if (existing && existing.dataset.summarySignature === signature) return;
+
+    const summary = existing || document.createElement('div');
+    summary.className = 'drawerNetSummary';
+    summary.dataset.summarySignature = signature;
+    summary.style.cssText = 'display:grid;grid-template-columns:1fr;gap:7px;margin:0 0 10px;padding:10px 11px;border:1px solid rgba(31,58,61,.18);border-radius:14px;background:rgba(251,247,239,.9);font-size:12px';
+    summary.innerHTML =
+      '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">Inflows</span><b style="color:var(--green)">' + money(inflow) + '</b></div>' +
+      '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">Outflows</span><b style="color:var(--outflow)">' + money(outflow) + '</b></div>' +
+      '<div style="display:flex;justify-content:space-between;gap:10px;border-top:1px solid rgba(20,35,55,.1);padding-top:7px"><span style="font-weight:900">Net</span><b style="font-size:13px">' + signedMoney(net) + '</b></div>';
+
+    if (!existing) detail.insertBefore(summary, detail.firstChild);
+  }
+
   function syncDrawer() {
     scheduleBalanceSync();
     removeCalendarCalculationOnlyRows();
     removeDrawerCalculationOnlyRows();
+    insertDrawerNetSummary();
 
     const items = document.querySelectorAll('#detailContent .detailItem');
     if (!items.length) return;
