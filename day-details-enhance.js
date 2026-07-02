@@ -6,6 +6,8 @@
   const BALANCE_CORRECTION_LABEL = 'balance correction';
   const YEAR = 2026;
   const FIRST_BEGIN = 3671;
+  const JULY_REBASE_DAY = 2;
+  const JULY_REBASE_END = 2310;
   const RULE_ID = '__billsos_system_rules__';
   const MONTHS = [['june', 6, 'June'], ['july', 7, 'July'], ['aug', 8, 'August'], ['sep', 9, 'September'], ['oct', 10, 'October'], ['nov', 11, 'November'], ['dec', 12, 'December']];
 
@@ -153,12 +155,16 @@
     const model = {};
     let balance = FIRST_BEGIN;
     MONTHS.forEach(function (monthDef) {
-      const begin = balance;
-      const rows = effectiveRows(generateRows(data, monthDef[1], begin), monthDef[1]);
+      let begin = balance;
+      let rows = effectiveRows(generateRows(data, monthDef[1], begin), monthDef[1]);
+      if (monthDef[0] === 'july') {
+        begin = JULY_REBASE_END;
+        rows = effectiveRows(generateRows(data, monthDef[1], begin), monthDef[1]).filter(function (row) { return row.day > JULY_REBASE_DAY; });
+      }
       const income = rows.filter(function (row) { return row.amount > 0; }).reduce(function (sum, row) { return sum + row.amount; }, 0);
       const outflow = rows.filter(function (row) { return row.amount < 0; }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
       const end = begin + income - outflow;
-      model[monthDef[0]] = { month: monthDef, begin: begin, rows: rows, income: income, outflow: outflow, end: end };
+      model[monthDef[0]] = { month: monthDef, begin: begin, rows: rows, income: income, outflow: outflow, end: end, rebaseDay: monthDef[0] === 'july' ? JULY_REBASE_DAY : null, rebaseEnd: monthDef[0] === 'july' ? JULY_REBASE_END : null };
       balance = end;
     });
     return model;
@@ -212,6 +218,11 @@
         const startNode = dayNode.querySelector('.topline span:last-child b');
         const endNode = dayNode.querySelector('.endline b');
         if (startNode) startNode.textContent = money(running);
+        if (monthKey === 'july' && dayNum <= JULY_REBASE_DAY) {
+          if (endNode) endNode.textContent = money(JULY_REBASE_END);
+          running = JULY_REBASE_END;
+          return;
+        }
         running += Number(byDay[dayNum] || 0);
         if (endNode) endNode.textContent = money(running);
       });
@@ -298,7 +309,7 @@
     bridge.className = 'drawerBalanceBridge';
     bridge.dataset.bridgeSignature = sig;
     bridge.style.cssText = 'display:grid;gap:7px;margin:0 0 10px;padding:10px 11px;border:1px solid rgba(31,58,61,.18);border-radius:14px;background:#fff;font-size:12px';
-    bridge.innerHTML = '<div style="font-weight:900;margin-bottom:1px">Balance bridge</div>' + '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">Month start</span><b>' + money(monthStart) + '</b></div>' + '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">Before this day</span><b>' + signedMoney(beforeNet) + '</b></div>' + '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">This day</span><b>' + signedMoney(todayNet) + '</b></div>' + '<div style="display:flex;justify-content:space-between;gap:10px;border-top:1px solid rgba(20,35,55,.1);padding-top:7px"><span style="font-weight:900">Ending balance</span><b>' + money(dayEnd) + '</b></div>';
+    bridge.innerHTML = '<div style="font-weight:900;margin-bottom:1px">Balance bridge</div>' + '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">Anchor</span><b>' + money(monthStart) + '</b></div>' + '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">Before this day</span><b>' + signedMoney(beforeNet) + '</b></div>' + '<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mut);font-weight:800">This day</span><b>' + signedMoney(todayNet) + '</b></div>' + '<div style="display:flex;justify-content:space-between;gap:10px;border-top:1px solid rgba(20,35,55,.1);padding-top:7px"><span style="font-weight:900">Ending balance</span><b>' + money(dayEnd) + '</b></div>';
     const after = detail.querySelector('.drawerNetSummary');
     if (!existing) detail.insertBefore(bridge, after ? after.nextSibling : detail.firstChild);
   }
