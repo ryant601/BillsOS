@@ -4,7 +4,7 @@ const cashflow = require("./cashflow-engine");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.CHATGPT_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || process.env.CHATGPT_MODEL || "gpt-4.1-mini";
-const INTENT_BUILD = "assistant-intent-20260702-6";
+const INTENT_BUILD = "assistant-intent-20260702-7";
 
 function compactBillsContext(data) {
   const src = data && typeof data === "object" ? data : {};
@@ -13,6 +13,8 @@ function compactBillsContext(data) {
   const oneTimeEvents = Array.isArray(src.oneTimeEvents) ? src.oneTimeEvents : [];
   return {
     updatedAt: src.updatedAt || null,
+    planningYear: 2026,
+    availableMonths: ["2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"],
     bills: bills.filter(row => row && row.active !== false).slice(0, 80).map(row => ({
       name: row.name || "Bill",
       amount: Number(row.amount || 0),
@@ -64,7 +66,7 @@ function injectBridge(html) {
   if (typeof out !== "string") return out;
   const scripts = [
     '<script id="billsosCashflowEngine" defer src="/cashflow-engine.js?v=20260630engine1"></script>',
-    '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260702qavg1"></script>',
+    '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260702modelintent1"></script>',
     '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260702bridge3"></script>'
   ].filter(script => !out.includes(script.match(/id="([^"]+)"/)[1])).join("\n");
   if (!scripts) return out;
@@ -118,12 +120,12 @@ function localIntent(question) {
   const text = String(question || "").toLowerCase();
   const amount = cashflow.parseAmount(question);
   let intent = "unknown";
-  if (/afford|spend|buy|can i/.test(text) && amount) intent = "affordability";
+  if (/average|avg|daily spend|monthly spend|spend per day|spend per month|quarter|q[1-4]/.test(text)) intent = "spend_average";
+  else if (/afford|spend|buy|can i/.test(text) && amount) intent = "affordability";
   else if (/best|when|day|date|pay|payment|safest/.test(text) && amount) intent = "payment_timing";
   else if (/upcoming|coming up|bills|due|next bill/.test(text)) intent = "upcoming_bills";
   else if (/lowest|low|minimum|floor|risk|buffer|projection/.test(text)) intent = "low_balance";
   else if (/summary|status|where.*stand|current read/.test(text)) intent = "summary";
-  else if (/average|avg|daily spend|monthly spend|spend per day|spend per month|quarter|q[1-4]/.test(text)) intent = "spend_average";
   const scope = cashflow.scopeFromQuestion(question);
   return {
     intent,
@@ -131,6 +133,8 @@ function localIntent(question) {
     dateStart: scope.start,
     dateEnd: scope.end,
     scopeLabel: scope.label,
+    target: null,
+    constraints: {},
     confidence: intent === "unknown" ? 0.35 : 0.7,
     requiresConfirmation: false
   };
@@ -140,15 +144,22 @@ async function parseIntentWithOpenAI(question, data) {
   if (!OPENAI_API_KEY) return { mode: "local", intent: localIntent(question) };
   const payload = await openAIResponse({
     model: OPENAI_MODEL,
-    max_output_tokens: 300,
+    max_output_tokens: 350,
     instructions: [
       "You parse BillsOS user requests into strict JSON only.",
-      "Do not calculate balances. The BillsOS all-months cashflow engine calculates balances.",
+      "Do not calculate balances or totals. BillsOS calculates numbers after your parse.",
+      "Your primary job is natural-language interpretation: date ranges, periods, metrics, aggregation, and user intent.",
+      "Use planning year 2026 unless the user explicitly gives another year.",
+      "BillsOS currently has month data from 2026-06 through 2026-12.",
+      "Interpret quarters normally: Q1 Jan-Mar, Q2 Apr-Jun, Q3 Jul-Sep, Q4 Oct-Dec. For 'Q4' return 2026-10-01 through 2026-12-31.",
+      "For named months, holidays, phrases like 'first half of November', 'after Thanksgiving', 'before Christmas', and 'next month', return concrete ISO dateStart/dateEnd.",
+      "Do not default broad named periods like Q4, October, or December to next 30 days.",
       "Return only valid JSON with keys: intent, amount, dateStart, dateEnd, scopeLabel, target, constraints, requiresConfirmation, confidence, clarificationQuestion.",
       "Allowed intent values: payment_timing, affordability, low_balance, upcoming_bills, spend_average, summary, unknown.",
+      "For average spend questions, use intent spend_average and put aggregation in constraints.aggregation as daily, weekly, monthly, or period_total when clear.",
       "requiresConfirmation must be true only for data-changing requests, such as move, add, delete, mark paid, or change."
     ].join("\n"),
-    input: [{ role: "user", content: [{ type: "input_text", text: JSON.stringify({ currentDate: cashflow.today(), userQuestion: question, billsContext: compactBillsContext(data) }) }] }]
+    input: [{ role: "user", content: [{ type: "input_text", text: JSON.stringify({ currentDate: cashflow.today(), planningYear: 2026, userQuestion: question, billsContext: compactBillsContext(data) }) }] }]
   });
   return { mode: "openai", intent: extractJson(outputText(payload)) || localIntent(question) };
 }
@@ -170,9 +181,10 @@ module.exports = function registerAssistantApi(app, options) {
       model: OPENAI_MODEL,
       engine: cashflow.BUILD,
       intent: INTENT_BUILD,
-      assistant: "assistant-ui-20260702-qavg1",
+      assistant: "assistant-ui-20260702-modelintent1",
       bridge: "assistant-ai-bridge-20260702-3",
       assistantSource: "cashflow-engine-all-months",
+      interpretation: "openai-intent-first",
       projectionGuard: "enabled",
       envAccepted: ["OPENAI_API_KEY", "OPENAI_KEY", "CHATGPT_API_KEY"].filter(name => !!process.env[name])
     });
