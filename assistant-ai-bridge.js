@@ -1,83 +1,18 @@
 (function(){
   'use strict';
-  var BUILD='assistant-ai-bridge-20260702-3';
+  var BUILD='assistant-ai-bridge-20260702-4';
   window.BillsOSModules=window.BillsOSModules||{};
   var state={loaded:true,build:BUILD,at:new Date().toISOString(),observing:false,requests:0,successes:0,failures:0,lastStatus:'initializing',lastError:null,model:null};
   window.BillsOSModules.assistantAiBridge=state;
-
   function cleanText(node){return String(node&&node.textContent||'').replace(/\s+/g,' ').trim()}
   function esc(v){return String(v||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-  function userQuestionFor(node){
-    var cur=node&&node.previousElementSibling;
-    while(cur){
-      if(cur.classList&&cur.classList.contains('billsos-msg')&&cur.classList.contains('user'))return cleanText(cur);
-      cur=cur.previousElementSibling;
-    }
-    return '';
-  }
-  function source(node,text,kind){
-    var p=node.querySelector('.billsos-ai-source');
-    if(!p){p=document.createElement('p');p.className='billsos-ai-source';p.style.cssText='margin-top:8px;color:#64748b;font-size:11px';node.appendChild(p)}
-    p.textContent=text;
-    if(kind)p.dataset.kind=kind;
-  }
-  function answerHtml(text){
-    var raw=String(text||'').trim();
-    if(!raw)return '';
-    var parts=raw.split(/\n{2,}/).map(function(p){return p.trim()}).filter(Boolean);
-    if(!parts.length)parts=[raw];
-    return parts.map(function(part){
-      var lines=part.split(/\n/).map(function(x){return x.trim()}).filter(Boolean);
-      if(lines.length>1&&lines.slice(1).every(function(x){return /^[-*•]\s+/.test(x)})){
-        return '<b>'+esc(lines[0].replace(/^[-*•]\s+/,''))+'</b><ul>'+lines.slice(1).map(function(x){return '<li>'+esc(x.replace(/^[-*•]\s+/,''))+'</li>'}).join('')+'</ul>';
-      }
-      if(lines.every(function(x){return /^[-*•]\s+/.test(x)}))return '<ul>'+lines.map(function(x){return '<li>'+esc(x.replace(/^[-*•]\s+/,''))+'</li>'}).join('')+'</ul>';
-      return '<p>'+esc(part)+'</p>';
-    }).join('');
-  }
-  async function rewrite(node,question,deterministic){
-    state.requests++;
-    state.lastStatus='requesting-openai';
-    try{
-      var res=await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:question,deterministicAnswer:deterministic})});
-      var data=await res.json().catch(function(){return {}});
-      if(!res.ok||!data||!data.answer)throw new Error(data&&data.error?data.error:'OpenAI assistant response failed');
-      state.successes++;
-      state.model=data.model||null;
-      state.lastStatus='openai-response-applied';
-      state.lastError=null;
-      node.innerHTML=answerHtml(data.answer);
-      source(node,'ChatGPT response · '+(data.model||'model unspecified')+' · BillsOS math', 'openai');
-    }catch(e){
-      state.failures++;
-      state.lastStatus='local-response-kept';
-      state.lastError=String(e&&e.message||e);
-      source(node,'Local BillsOS answer · ChatGPT unavailable: '+state.lastError, 'local');
-    }
-  }
-  function mark(node){
-    if(!node||!node.classList||node.classList.contains('user')||node.dataset.aiBridge==='1')return;
-    var text=cleanText(node);
-    if(!text||/checking billsos/i.test(text)||/ask:\s*“?lowest balance/i.test(text))return;
-    node.dataset.aiBridge='1';
-    var question=userQuestionFor(node);
-    if(!question){source(node,'Local BillsOS answer · no user question found','local');return;}
-    var deterministic=node.innerHTML||text;
-    source(node,'Sending to ChatGPT · model from OPENAI_MODEL · BillsOS math is source of truth','pending');
-    rewrite(node,question,deterministic);
-  }
+  function userQuestionFor(node){var cur=node&&node.previousElementSibling;while(cur){if(cur.classList&&cur.classList.contains('billsos-msg')&&cur.classList.contains('user'))return cleanText(cur);cur=cur.previousElementSibling}return ''}
+  function source(node,text,kind){var p=node.querySelector('.billsos-ai-source');if(!p){p=document.createElement('p');p.className='billsos-ai-source';p.style.cssText='margin-top:8px;color:#64748b;font-size:11px';node.appendChild(p)}p.textContent=text;if(kind)p.dataset.kind=kind}
+  function answerHtml(text){var raw=String(text||'').trim();if(!raw)return '';var parts=raw.split(/\n{2,}/).map(function(p){return p.trim()}).filter(Boolean);if(!parts.length)parts=[raw];return parts.map(function(part){var lines=part.split(/\n/).map(function(x){return x.trim()}).filter(Boolean);if(lines.length>1&&lines.slice(1).every(function(x){return /^[-*•]\s+/.test(x)})){return '<b>'+esc(lines[0].replace(/^[-*•]\s+/,''))+'</b><ul>'+lines.slice(1).map(function(x){return '<li>'+esc(x.replace(/^[-*•]\s+/,''))+'</li>'}).join('')+'</ul>'}if(lines.every(function(x){return /^[-*•]\s+/.test(x)}))return '<ul>'+lines.map(function(x){return '<li>'+esc(x.replace(/^[-*•]\s+/,''))+'</li>'}).join('')+'</ul>';return '<p>'+esc(part)+'</p>'}).join('')}
+  async function rewrite(node,question,deterministic){state.requests++;state.lastStatus='requesting-openai';try{var res=await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:question,deterministicAnswer:deterministic})});var data=await res.json().catch(function(){return {}});if(!res.ok||!data||!data.answer)throw new Error(data&&data.error?data.error:'OpenAI assistant response failed');state.successes++;state.model=data.model||null;state.lastStatus='openai-response-applied';state.lastError=null;node.innerHTML=answerHtml(data.answer);source(node,'ChatGPT response · '+(data.model||'model unspecified')+' · BillsOS math','openai')}catch(e){state.failures++;state.lastStatus='local-response-kept';state.lastError=String(e&&e.message||e);source(node,'Local BillsOS answer · ChatGPT unavailable: '+state.lastError,'local')}}
+  function mark(node){if(!node||!node.classList||node.classList.contains('user')||node.dataset.aiBridge==='1')return;if(node.dataset&&node.dataset.billsosIntro==='1')return;var text=cleanText(node);if(!text||/checking billsos/i.test(text)||/ask:\s*“?/i.test(text))return;var question=userQuestionFor(node);if(!question)return;node.dataset.aiBridge='1';var deterministic=node.innerHTML||text;source(node,'Sending to ChatGPT · model from OPENAI_MODEL · BillsOS math is source of truth','pending');rewrite(node,question,deterministic)}
   function scan(){document.querySelectorAll('#billsosAiLog .billsos-msg:not(.user)').forEach(mark)}
-  function observe(){
-    var log=document.getElementById('billsosAiLog');
-    if(!log)return false;
-    if(log.dataset.aiBridgeObserver==='1')return true;
-    log.dataset.aiBridgeObserver='1';
-    new MutationObserver(function(records){records.forEach(function(record){Array.prototype.forEach.call(record.addedNodes||[],function(node){if(node&&node.nodeType===1&&node.classList&&node.classList.contains('billsos-msg'))setTimeout(function(){mark(node)},80)})})}).observe(log,{childList:true,subtree:false});
-    state.observing=true;
-    state.lastStatus='observing-assistant-responses';
-    scan();
-    return true;
-  }
+  function observe(){var log=document.getElementById('billsosAiLog');if(!log)return false;if(log.dataset.aiBridgeObserver==='1')return true;log.dataset.aiBridgeObserver='1';new MutationObserver(function(records){records.forEach(function(record){Array.prototype.forEach.call(record.addedNodes||[],function(node){if(node&&node.nodeType===1&&node.classList&&node.classList.contains('billsos-msg'))setTimeout(function(){mark(node)},80)})})}).observe(log,{childList:true,subtree:false});state.observing=true;state.lastStatus='observing-assistant-responses';scan();return true}
   function init(){if(observe())return;setTimeout(observe,500);setTimeout(observe,1500);setTimeout(observe,3000)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
