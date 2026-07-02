@@ -4,7 +4,7 @@ const cashflow = require("./cashflow-engine");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.CHATGPT_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || process.env.CHATGPT_MODEL || "gpt-4.1-mini";
-const INTENT_BUILD = "assistant-intent-20260702-4";
+const INTENT_BUILD = "assistant-intent-20260702-5";
 
 function compactBillsContext(data) {
   const src = data && typeof data === "object" ? data : {};
@@ -64,7 +64,7 @@ function injectBridge(html) {
   if (typeof out !== "string") return out;
   const scripts = [
     '<script id="billsosCashflowEngine" defer src="/cashflow-engine.js?v=20260630engine1"></script>',
-    '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260702allmonths1"></script>',
+    '<script id="billsosAssistantUi" defer src="/assistant-ui.js?v=20260702avg1"></script>',
     '<script id="billsosAssistantAiBridge" defer src="/assistant-ai-bridge.js?v=20260702model1"></script>'
   ].filter(script => !out.includes(script.match(/id="([^"]+)"/)[1])).join("\n");
   if (!scripts) return out;
@@ -170,7 +170,7 @@ module.exports = function registerAssistantApi(app, options) {
       model: OPENAI_MODEL,
       engine: cashflow.BUILD,
       intent: INTENT_BUILD,
-      assistant: "assistant-ui-20260702-allmonths1",
+      assistant: "assistant-ui-20260702-allmonths2",
       bridge: "assistant-ai-bridge-20260702-2",
       assistantSource: "cashflow-engine-all-months",
       projectionGuard: "enabled",
