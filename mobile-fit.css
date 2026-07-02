@@ -67,6 +67,92 @@ input[type="range"]{
   max-width:100%!important;
 }
 
+/* Calendar event pill hardening: prevent vertical letter wrapping/collapse */
+.day .events{
+  min-width:0!important;
+  width:100%!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+}
+.day .ev,
+.day label.ev,
+.week-strip .ev,
+.week-strip label.ev{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:18px minmax(0,1fr) auto!important;
+  align-items:start!important;
+  column-gap:7px!important;
+  overflow:hidden!important;
+  white-space:normal!important;
+  word-break:normal!important;
+  overflow-wrap:normal!important;
+  text-wrap:normal!important;
+}
+.day .ev input[type="checkbox"],
+.day label.ev input[type="checkbox"],
+.week-strip .ev input[type="checkbox"],
+.week-strip label.ev input[type="checkbox"]{
+  width:16px!important;
+  height:16px!important;
+  min-width:16px!important;
+  max-width:16px!important;
+  margin:1px 0 0!important;
+  grid-column:1!important;
+}
+.day .ev span,
+.day label.ev span,
+.day .ev .nm,
+.day label.ev .nm,
+.week-strip .ev span,
+.week-strip label.ev span,
+.week-strip .ev .nm,
+.week-strip label.ev .nm{
+  grid-column:2!important;
+  min-width:0!important;
+  max-width:100%!important;
+  width:100%!important;
+  display:-webkit-box!important;
+  -webkit-box-orient:vertical!important;
+  -webkit-line-clamp:3!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:normal!important;
+  word-break:normal!important;
+  overflow-wrap:break-word!important;
+  hyphens:none!important;
+  line-height:1.12!important;
+}
+.day .ev b,
+.day label.ev b,
+.day .ev .amt,
+.day label.ev .amt,
+.week-strip .ev b,
+.week-strip label.ev b,
+.week-strip .ev .amt,
+.week-strip label.ev .amt{
+  grid-column:3!important;
+  min-width:max-content!important;
+  max-width:72px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  justify-self:end!important;
+}
+.day .ev .moveBtn,
+.day label.ev .moveBtn,
+.week-strip .ev .moveBtn,
+.week-strip label.ev .moveBtn{
+  position:absolute!important;
+  right:5px!important;
+  bottom:5px!important;
+  width:14px!important;
+  min-width:14px!important;
+  height:14px!important;
+}
+
 .billsos-ai-sheet{
   max-width:calc(100vw - 24px)!important;
   right:12px!important;
@@ -148,6 +234,36 @@ input[type="range"]{
   .day{
     min-width:0!important;
     max-width:100%!important;
+  }
+  .day .ev,
+  .day label.ev,
+  .week-strip .ev,
+  .week-strip label.ev{
+    grid-template-columns:17px minmax(0,1fr) minmax(38px,max-content)!important;
+    gap:6px!important;
+    padding-right:20px!important;
+  }
+  .day .ev span,
+  .day label.ev span,
+  .day .ev .nm,
+  .day label.ev .nm,
+  .week-strip .ev span,
+  .week-strip label.ev span,
+  .week-strip .ev .nm,
+  .week-strip label.ev .nm{
+    -webkit-line-clamp:3!important;
+    font-size:clamp(11px,3.1vw,13px)!important;
+  }
+  .day .ev b,
+  .day label.ev b,
+  .day .ev .amt,
+  .day label.ev .amt,
+  .week-strip .ev b,
+  .week-strip label.ev b,
+  .week-strip .ev .amt,
+  .week-strip label.ev .amt{
+    font-size:clamp(10px,2.7vw,12px)!important;
+    max-width:58px!important;
   }
   .billsos-ai-sheet{
     position:fixed!important;
