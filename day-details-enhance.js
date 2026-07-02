@@ -4,6 +4,8 @@
   const MOBILE_FIT_HREF = '/mobile-fit.css?v=20260702fit3';
   const ACTION_LOG_LABEL = 'billsos action log';
   const BALANCE_CORRECTION_LABEL = 'balance correction';
+  const GENERATED_OPENING_BALANCE = 3671;
+  const BALANCE_PATCH_FLAG = 'data-billsos-balance-under-carry-fixed';
 
   function installStylesheet(href, dataKey, dataValue) {
     if (document.querySelector('link[' + dataKey + '="' + dataValue + '"]')) return;
@@ -39,6 +41,56 @@
     return isActionLogMeta(item) || isBalanceCorrection(item);
   }
 
+  function parseCurrency(value) {
+    const raw = String(value || '').replace(/[−–—]/g, '-').replace(/[^0-9.-]/g, '');
+    if (!raw) return null;
+    const num = Number(raw);
+    return Number.isFinite(num) ? num : null;
+  }
+
+  function formatCurrency(value) {
+    return Number(value || 0).toLocaleString(undefined, {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    });
+  }
+
+  function addToCurrencyNode(node, amount) {
+    if (!node || node.hasAttribute(BALANCE_PATCH_FLAG)) return;
+    const current = parseCurrency(node.textContent);
+    if (current === null) return;
+    node.textContent = formatCurrency(current + amount);
+    node.setAttribute(BALANCE_PATCH_FLAG, '1');
+  }
+
+  function patchGeneratedBalanceUnderCarry() {
+    const pill = document.querySelector('.pill');
+    const mount = document.getElementById('mount');
+    if (!pill || !mount) return;
+    if (document.documentElement.hasAttribute(BALANCE_PATCH_FLAG)) return;
+    if (text(pill).indexOf('v01565') < 0) return;
+
+    const visibleMonthTitle = document.querySelector('.monthHead h2');
+    const firstStarting = mount.querySelector('.day:not(.blank) .topline span:last-child b');
+    if (!visibleMonthTitle || !firstStarting) return;
+
+    const startValue = parseCurrency(firstStarting.textContent);
+    if (startValue === null) return;
+
+    // The generated model currently starts June at $0, then carries that under-stated result forward.
+    // When that condition is present, every rendered running balance is low by the configured opening balance.
+    const shouldPatch = /June|July|August|September|October|November|December/i.test(text(visibleMonthTitle)) && startValue < GENERATED_OPENING_BALANCE;
+    if (!shouldPatch) return;
+
+    mount.querySelectorAll('.topline span:last-child b, .endline b').forEach(function (node) {
+      addToCurrencyNode(node, GENERATED_OPENING_BALANCE);
+    });
+    addToCurrencyNode(document.getElementById('kbegin'), GENERATED_OPENING_BALANCE);
+    addToCurrencyNode(document.getElementById('kend'), GENERATED_OPENING_BALANCE);
+    document.documentElement.setAttribute(BALANCE_PATCH_FLAG, '1');
+  }
+
   function removeCalendarCalculationOnlyRows() {
     document.querySelectorAll('.day label.ev, .day .ev').forEach(function (item) {
       if (!isCalculationOnly(item)) return;
@@ -67,6 +119,7 @@
   }
 
   function syncDrawer() {
+    patchGeneratedBalanceUnderCarry();
     removeCalendarCalculationOnlyRows();
     removeDrawerCalculationOnlyRows();
 
