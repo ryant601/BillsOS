@@ -4,6 +4,7 @@
   const MOBILE_FIT_HREF = '/mobile-fit.css?v=20260702fit3';
   const ACTION_LOG_LABEL = 'billsos action log';
   const BALANCE_CORRECTION_LABEL = 'balance correction';
+  const SPENDING_FUNDING_LABEL = 'spending account funding';
   const YEAR = 2026;
   const FIRST_BEGIN = 3671;
   const JULY_REBASE_DAY = 2;
@@ -15,7 +16,8 @@
   function normalizedText(el) { return text(el).toLowerCase(); }
   function isActionLogMeta(item) { return normalizedText(item).indexOf(ACTION_LOG_LABEL) >= 0; }
   function isBalanceCorrection(item) { return normalizedText(item).indexOf(BALANCE_CORRECTION_LABEL) >= 0; }
-  function isCalculationOnly(item) { return isActionLogMeta(item) || isBalanceCorrection(item); }
+  function isAutoSpendingFunding(item) { return normalizedText(item).indexOf(SPENDING_FUNDING_LABEL) >= 0; }
+  function isCalculationOnly(item) { return isActionLogMeta(item) || isBalanceCorrection(item) || isAutoSpendingFunding(item); }
   function money(value) { return Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
   function signedMoney(value) { const n = Number(value || 0); return (n < 0 ? '−' : '+') + money(Math.abs(n)); }
   function parseMoney(value) { const n = Number(String(value || '').replace(/[−–—]/g, '-').replace(/[^0-9.-]/g, '')); return Number.isFinite(n) ? n : 0; }
@@ -39,17 +41,19 @@
 
   function systemRules(data) {
     const defaults = {
-      spendingFunding: { enabled: true, amount: 1500, count: 2, timing: 'same-day-income' },
+      spendingFunding: { enabled: false, amount: 0, count: 0, timing: 'manual-only' },
       sweep: { enabled: true, preferredBuffer: 1250, hardBuffer: 1000, day: 28, label: 'Sweep transfer', targets: { '2026-07': { day: 31, amount: 705.05, label: 'Sweep to savings / debt' }, '2026-09': { day: 30, amount: 1123.2, label: 'Sweep to savings / debt' } } }
     };
     try {
       const row = (data.oneTimeEvents || []).find(function (item) { return item && item.id === RULE_ID; });
       const parsed = row && row.notes ? JSON.parse(row.notes) : {};
-      if (parsed.spendingFunding) Object.assign(defaults.spendingFunding, parsed.spendingFunding);
+      // Spending funding is intentionally manual-only. Ignore any saved automatic spendingFunding settings.
       if (parsed.sweep) Object.assign(defaults.sweep, parsed.sweep);
       defaults.sweep.targets = Object.assign({}, defaults.sweep.targets, (parsed.sweep && parsed.sweep.targets) || {});
-      if (defaults.spendingFunding.timing === 'after-income') defaults.spendingFunding.timing = 'same-day-income';
     } catch (_err) {}
+    defaults.spendingFunding.enabled = false;
+    defaults.spendingFunding.amount = 0;
+    defaults.spendingFunding.count = 0;
     return defaults;
   }
 
@@ -105,17 +109,6 @@
     });
 
     const rules = systemRules(data);
-    const spending = rules.spendingFunding;
-    if (spending.enabled !== false && Number(spending.amount) > 0) {
-      let incomeDays = rows.filter(function (row) { return row.amount > 0 && /alissa|humc/i.test(row.name); }).map(function (row) { return row.day; }).sort(function (a, b) { return a - b; });
-      if (!incomeDays.length) incomeDays = rows.filter(function (row) { return row.amount > 0; }).map(function (row) { return row.day; }).sort(function (a, b) { return a - b; });
-      for (let i = 0; i < Number(spending.count || 0); i += 1) {
-        const base = spending.timing === 'fixed-1-15' ? (i ? 15 : 1) : (incomeDays[i] || [1, 15, 29][i] || 1);
-        const add = spending.timing === 'day-after-income' ? 1 : 0;
-        push(Math.min(dim, Math.max(1, base + add)), 'Spending account funding', -Math.abs(Number(spending.amount)), 'out system', 'rule');
-      }
-    }
-
     const sweep = rules.sweep;
     const target = sweep.targets && sweep.targets[monthKey];
     if (sweep.enabled !== false && monthKey !== '2026-06') {
@@ -178,7 +171,6 @@
 
   let balanceSyncTimer = 0;
   let balanceSyncBusy = false;
-  let balanceSyncSignature = '';
 
   async function syncVisibleBalancesFromData() {
     if (balanceSyncBusy) return;
@@ -193,9 +185,6 @@
       const model = buildModel(data || {});
       const current = model[monthKey];
       if (!current) return;
-      const signature = monthKey + '|' + current.begin + '|' + current.income + '|' + current.outflow + '|' + current.end + '|' + (data.updatedAt || '');
-      if (signature === balanceSyncSignature) return;
-      balanceSyncSignature = signature;
 
       const projectedSweep = current.rows.filter(function (row) { return row.amount < 0 && /sweep/i.test(row.name); }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
       const kbegin = document.getElementById('kbegin');
@@ -347,8 +336,8 @@
   const observer = new MutationObserver(scheduleSync);
   observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true });
   window.addEventListener('load', function () { installCalmHouseholdTheme(); scheduleSync(); scheduleBalanceSync(); });
-  window.addEventListener('hashchange', function () { balanceSyncSignature = ''; scheduleSync(); scheduleBalanceSync(); });
-  document.addEventListener('click', function (event) { if (event.target && event.target.closest('#tabs button')) { balanceSyncSignature = ''; scheduleBalanceSync(); } });
+  window.addEventListener('hashchange', function () { scheduleSync(); scheduleBalanceSync(); });
+  document.addEventListener('click', function (event) { if (event.target && event.target.closest('#tabs button')) { scheduleBalanceSync(); } });
   scheduleSync();
   scheduleBalanceSync();
 })();
