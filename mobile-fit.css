@@ -11,7 +11,7 @@ body{
   max-width:100%;
   min-width:0!important;
   overflow-x:hidden!important;
-  touch-action:pan-y;
+  touch-action:auto;
 }
 *,*::before,*::after{box-sizing:border-box}
 
@@ -31,6 +31,35 @@ img,svg,canvas,video,iframe,table{
 .tabs,.nav,.hero .nav{
   max-width:100%!important;
   min-width:0!important;
+}
+
+.toggle,
+.week-strip,
+.tablewrap,
+input[type="range"]{
+  touch-action:pan-x pan-y!important;
+}
+
+.toggle{
+  width:100%!important;
+  max-width:100%!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-x:contain;
+  scrollbar-width:none!important;
+}
+.toggle::-webkit-scrollbar{display:none!important}
+.toggle .tabs{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  width:max-content!important;
+  min-width:max-content!important;
+  max-width:none!important;
+}
+.toggle .tabs button{
+  flex:0 0 auto!important;
+  white-space:nowrap!important;
 }
 
 .kpis,.grid,.cal,.calendar,.events,.week{
@@ -83,10 +112,25 @@ img,svg,canvas,video,iframe,table{
     gap:10px!important;
     overflow:visible!important;
   }
+  .toggle .tabs{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    width:max-content!important;
+    min-width:max-content!important;
+    max-width:none!important;
+    gap:8px!important;
+    overflow:visible!important;
+  }
   .tabs button,.tab{
     width:100%!important;
     min-width:0!important;
     max-width:100%!important;
+  }
+  .toggle .tabs button{
+    width:auto!important;
+    min-width:72px!important;
+    max-width:none!important;
+    flex:0 0 auto!important;
   }
   .kpis{
     width:100%!important;
