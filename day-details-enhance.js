@@ -1,5 +1,15 @@
 (function () {
   const CHECKBOX_SELECTOR = '.detailItem input[type="checkbox"]';
+  const CALM_THEME_HREF = '/calm-household.css?v=20260702calm1';
+
+  function installCalmHouseholdTheme() {
+    if (document.querySelector('link[data-billsos-calm-household="1"]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = CALM_THEME_HREF;
+    link.dataset.billsosCalmHousehold = '1';
+    document.head.appendChild(link);
+  }
 
   function text(el) {
     return (el && el.textContent ? el.textContent : '').replace(/\s+/g, ' ').trim();
@@ -43,10 +53,15 @@
     timer = window.setTimeout(syncDrawer, 50);
   }
 
+  installCalmHouseholdTheme();
+
   const observer = new MutationObserver(scheduleSync);
   observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true });
 
-  window.addEventListener('load', scheduleSync);
+  window.addEventListener('load', function () {
+    installCalmHouseholdTheme();
+    scheduleSync();
+  });
   window.addEventListener('hashchange', scheduleSync);
   scheduleSync();
 })();
