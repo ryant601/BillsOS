@@ -108,6 +108,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{out
 input[type="checkbox"]{accent-color:#4F7C68}
 .tablewrap,table,th,td{border-color:var(--line2)!important}th{background:#EEF2ED!important;color:var(--mut)!important}td{color:var(--ink)!important}
 .bar,.pbar,.conf-bar{background:rgba(79,124,104,.13)!important}.bar i,.pbar i,.conf-bar i{background:linear-gradient(90deg,#4F7C68,#7FB59D)!important}
+.drawerBalanceBridge{display:none!important}
 
 @media(max-width:760px){
   .hero{display:grid!important;grid-template-columns:1fr!important;gap:16px!important;padding:18px!important}
