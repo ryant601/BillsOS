@@ -167,7 +167,6 @@ html[data-billsos-theme="dark"] .banner{
   border-color:var(--billsos-line)!important;
   color:var(--billsos-muted)!important;
 }
-html[data-billsos-theme="dark"] .day.has-more:after,
 html[data-billsos-theme="dark"] .day.today .topline span:first-child:after{
   background:rgba(60,43,31,.96)!important;
   border-color:rgba(240,180,126,.26)!important;
