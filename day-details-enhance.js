@@ -1,6 +1,6 @@
 (function () {
   const CHECKBOX_SELECTOR = '.detailItem input[type="checkbox"]';
-  const CALM_THEME_HREF = '/calm-household.css?v=20260702mobile1';
+  const CALM_THEME_HREF = '/calm-household.css?v=20260703pill1';
   const MOBILE_FIT_HREF = '/mobile-fit.css?v=20260702fit3';
   const ACTION_LOG_LABEL = 'billsos action log';
   const BALANCE_CORRECTION_LABEL = 'balance correction';
@@ -45,19 +45,25 @@
     const style = document.createElement('style');
     style.id = 'oneTimeTransferStyles';
     style.textContent = [
-      '.ev.xfer{background:#fff1a8!important;color:#5f4300!important;border-color:rgba(176,124,0,.38)!important}',
-      '.ev.xfer .nm,.ev.xfer span{color:#5f4300!important}',
-      '.ev.xfer .dot{background:#d8a100!important;box-shadow:0 0 0 2px rgba(216,161,0,.18)!important}',
+      '.ev.xfer{background:#E4F1EA!important;color:#276749!important;border:1px solid rgba(47,133,90,.24)!important;outline:none!important}',
+      '.ev.xfer .nm,.ev.xfer span,.ev.xfer b{color:#276749!important}',
+      '.ev.xfer .dot{background:#2F855A!important;box-shadow:0 0 0 2px rgba(47,133,90,.16)!important}',
       '.ev.xfer.done{opacity:.58}',
-      '.week-strip .day .ev.xfer{background:#fff1a8!important;color:#5f4300!important}',
-      '.detailItem.xfer{background:#fff7cf!important;border-color:rgba(176,124,0,.32)!important}',
-      '.detailItem.xfer .amt,.detailItem.xfer .dir{color:#7a5600!important}',
-      '.mobile-sheet .detailItem.xfer{background:#fff7cf!important;border-color:rgba(176,124,0,.32)!important}',
-      '.ev.sweep{background:#ede9fe!important;color:#5b21b6!important;border-color:rgba(91,33,182,.34)!important}',
-      '.ev.sweep span,.ev.sweep b{color:#5b21b6!important}',
-      '.ev.sweep .dot{background:#7c3aed!important;box-shadow:0 0 0 2px rgba(124,58,237,.18)!important}',
-      '.detailItem.sweep{background:#f3efff!important;border-color:rgba(91,33,182,.26)!important}',
-      '.detailItem.sweep .amt,.detailItem.sweep .dir,.detailItem.sweep .name{color:#5b21b6!important}'
+      '.week-strip .day .ev.xfer{background:#E4F1EA!important;color:#276749!important;border-color:rgba(47,133,90,.24)!important}',
+      '.detailItem.xfer{background:#F0F8F3!important;border-color:rgba(47,133,90,.22)!important}',
+      '.detailItem.xfer .amt,.detailItem.xfer .dir,.detailItem.xfer .name{color:#276749!important}',
+      '.mobile-sheet .detailItem.xfer{background:#F0F8F3!important;border-color:rgba(47,133,90,.22)!important}',
+      '.ev.sweep{background:#F5EBDD!important;color:#7A4D16!important;border:1px solid rgba(192,86,33,.24)!important;outline:none!important}',
+      '.ev.sweep span,.ev.sweep b{color:#7A4D16!important}',
+      '.ev.sweep .dot{background:#C05621!important;box-shadow:0 0 0 2px rgba(192,86,33,.16)!important}',
+      '.detailItem.sweep{background:#FBF4EA!important;border-color:rgba(192,86,33,.22)!important}',
+      '.detailItem.sweep .amt,.detailItem.sweep .dir,.detailItem.sweep .name{color:#7A4D16!important}',
+      'html[data-billsos-theme="dark"] .ev.xfer{background:rgba(38,74,52,.88)!important;color:#BFF2D4!important;border-color:rgba(104,211,145,.24)!important}',
+      'html[data-billsos-theme="dark"] .ev.xfer span,html[data-billsos-theme="dark"] .ev.xfer b{color:#BFF2D4!important}',
+      'html[data-billsos-theme="dark"] .detailItem.xfer{background:rgba(38,74,52,.66)!important;border-color:rgba(104,211,145,.22)!important}',
+      'html[data-billsos-theme="dark"] .ev.sweep{background:rgba(70,50,28,.88)!important;color:#FFE1B2!important;border-color:rgba(246,173,85,.24)!important}',
+      'html[data-billsos-theme="dark"] .ev.sweep span,html[data-billsos-theme="dark"] .ev.sweep b{color:#FFE1B2!important}',
+      'html[data-billsos-theme="dark"] .detailItem.sweep{background:rgba(70,50,28,.66)!important;border-color:rgba(246,173,85,.22)!important}'
     ].join('');
     document.head.appendChild(style);
   }
