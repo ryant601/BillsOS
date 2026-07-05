@@ -5,6 +5,7 @@
   const ACTION_LOG_LABEL = 'billsos action log';
   const BALANCE_CORRECTION_LABEL = 'balance correction';
   const SPENDING_FUNDING_LABEL = 'spending account funding';
+  const AMOUNT_ADJUST_STORE = 'billsos-amount-adjust-v1';
   const YEAR = 2026;
   const FIRST_BEGIN = 3671;
   const JULY_REBASE_DAY = 2;
@@ -19,6 +20,7 @@
   function isAutoSpendingFunding(item) { return normalizedText(item).indexOf(SPENDING_FUNDING_LABEL) >= 0; }
   function isCalculationOnly(item) { return isActionLogMeta(item) || isBalanceCorrection(item) || isAutoSpendingFunding(item); }
   function money(value) { return Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
+  function moneyCents(value) { return Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function signedMoney(value) { const n = Number(value || 0); return (n < 0 ? '−' : '+') + money(Math.abs(n)); }
   function parseMoney(value) { const n = Number(String(value || '').replace(/[−–—]/g, '-').replace(/[^0-9.-]/g, '')); return Number.isFinite(n) ? n : 0; }
   function absMoney(value) { return Math.abs(parseMoney(value)); }
@@ -26,6 +28,44 @@
   function iso(month, day) { return YEAR + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0'); }
   function rowKey(event) { return (event.originalDate || event.date) + '|' + event.name + '|' + event.amount; }
   function escAttr(value) { return String(value || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function cssEscape(value) { return window.CSS && CSS.escape ? CSS.escape(value) : String(value || '').replace(/["\\]/g, '\\$&'); }
+
+  function amountFromKey(key) {
+    const parts = String(key || '').split('|');
+    const raw = parts.length ? Number(parts[parts.length - 1]) : NaN;
+    return Number.isFinite(raw) ? raw : 0;
+  }
+  function readAmountAdjustments() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(AMOUNT_ADJUST_STORE) || '{}') || {};
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (_err) {
+      return {};
+    }
+  }
+  function writeAmountAdjustments(adjustments) {
+    try { localStorage.setItem(AMOUNT_ADJUST_STORE, JSON.stringify(adjustments || {})); } catch (_err) {}
+  }
+  function adjustedSignedAmount(key, fallbackAmount) {
+    const base = Number.isFinite(Number(fallbackAmount)) ? Number(fallbackAmount) : amountFromKey(key);
+    const edit = readAmountAdjustments()[key];
+    const amount = edit && Number.isFinite(Number(edit.amount)) ? Math.abs(Number(edit.amount)) : Math.abs(base);
+    return base < 0 ? -amount : amount;
+  }
+  function hasAmountAdjustment(key) {
+    const edit = readAmountAdjustments()[key];
+    return !!(edit && Number.isFinite(Number(edit.amount)));
+  }
+  function saveAmountAdjustment(key, amount) {
+    const cleanAmount = Math.round(Math.abs(Number(amount || 0)) * 100) / 100;
+    if (!Number.isFinite(cleanAmount) || cleanAmount < 0) return false;
+    const baseAmount = Math.abs(amountFromKey(key));
+    const adjustments = readAmountAdjustments();
+    if (Math.abs(cleanAmount - baseAmount) < 0.005) delete adjustments[key];
+    else adjustments[key] = { amount: cleanAmount, updatedAt: new Date().toISOString() };
+    writeAmountAdjustments(adjustments);
+    return true;
+  }
 
   function installStylesheet(href, dataKey, dataValue) {
     if (document.querySelector('link[' + dataKey + '="' + dataValue + '"]')) return;
@@ -64,6 +104,32 @@
       'html[data-billsos-theme="dark"] .ev.sweep{background:rgba(70,50,28,.88)!important;color:#FFE1B2!important;border-color:rgba(246,173,85,.24)!important}',
       'html[data-billsos-theme="dark"] .ev.sweep span,html[data-billsos-theme="dark"] .ev.sweep b{color:#FFE1B2!important}',
       'html[data-billsos-theme="dark"] .detailItem.sweep{background:rgba(70,50,28,.66)!important;border-color:rgba(246,173,85,.22)!important}'
+    ].join('');
+    document.head.appendChild(style);
+  }
+
+  function installAmountEditStyles() {
+    if (document.getElementById('amountEditStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'amountEditStyles';
+    style.textContent = [
+      '.amountEditBtn{border:1px solid rgba(20,35,55,.16);background:rgba(255,255,255,.78);color:inherit;border-radius:999px;padding:3px 7px;font:inherit;font-size:11px;font-weight:900;line-height:1;white-space:nowrap;cursor:pointer;box-shadow:none}',
+      '.amountEditBtn:hover,.amountEditBtn:focus{background:#fff;border-color:rgba(31,58,61,.34);outline:none}',
+      '.ev.amount-edited .amountEditBtn,.detailItem.amount-edited .amt{box-shadow:0 0 0 2px rgba(168,101,26,.13);border-color:rgba(168,101,26,.35)!important}',
+      '.detailItem .amt.amountEditable{cursor:pointer;border:1px solid rgba(20,35,55,.12);border-radius:999px;padding:4px 7px;background:rgba(255,255,255,.72)}',
+      '.amountEditPopover{position:fixed;z-index:80;width:min(270px,calc(100vw - 24px));background:#fff;border:1px solid rgba(20,35,55,.18);border-radius:16px;padding:12px;box-shadow:0 18px 48px rgba(20,35,55,.22);display:grid;gap:9px;color:#14202c}',
+      '.amountEditPopover label{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#5f6b7a}',
+      '.amountEditPopover input{width:100%;border:1px solid rgba(20,35,55,.18);border-radius:12px;padding:10px 11px;font:inherit;font-weight:800;color:#14202c}',
+      '.amountEditPopover .amountEditActions{display:grid;grid-template-columns:1fr 1fr;gap:7px}',
+      '.amountEditPopover button{border:1px solid rgba(20,35,55,.14);border-radius:999px;background:#fff;padding:8px 10px;font-size:12px;font-weight:900;color:#14202c;cursor:pointer}',
+      '.amountEditPopover button.primary{background:#14202c;color:#fff;border-color:#14202c}',
+      '.amountEditPopover button.clear{grid-column:1 / -1;color:#7A4D16;background:#FBF4EA;border-color:rgba(168,101,26,.24)}',
+      '.amountEditPopover .amountEditMeta{font-size:11px;line-height:1.35;color:#5f6b7a}',
+      'html[data-billsos-theme="dark"] .amountEditBtn{background:rgba(15,23,42,.65);border-color:rgba(226,232,240,.18)}',
+      'html[data-billsos-theme="dark"] .amountEditPopover{background:#111827;color:#f8fafc;border-color:rgba(226,232,240,.16)}',
+      'html[data-billsos-theme="dark"] .amountEditPopover input{background:#020617;color:#f8fafc;border-color:rgba(226,232,240,.18)}',
+      'html[data-billsos-theme="dark"] .amountEditPopover button{background:#1f2937;color:#f8fafc;border-color:rgba(226,232,240,.16)}',
+      'html[data-billsos-theme="dark"] .amountEditPopover button.primary{background:#f8fafc;color:#111827}'
     ].join('');
     document.head.appendChild(style);
   }
@@ -128,15 +194,22 @@
 
   function effectiveRows(rows, month) {
     const monthKey = YEAR + '-' + String(month).padStart(2, '0');
+    const amountAdjustments = readAmountAdjustments();
     let adjust = {};
     try { adjust = JSON.parse(localStorage.getItem('billsos-pay-adjust-v1') || '{}') || {}; } catch (_err) {}
     return rows.map(function (row) {
       const event = Object.assign({}, row);
       const key = rowKey(event);
       const move = adjust[key];
+      const amountEdit = amountAdjustments[key];
       event.originalKey = key;
       event.originalDate = event.date;
       event.originalDay = event.day;
+      if (amountEdit && Number.isFinite(Number(amountEdit.amount))) {
+        event.originalAmount = event.amount;
+        event.amount = (event.amount < 0 ? -1 : 1) * Math.abs(Number(amountEdit.amount));
+        event.amountAdjusted = true;
+      }
       if (move && move.date) { event.date = move.date; event.day = Number(move.date.slice(8, 10)); event.adjusted = move; }
       return event;
     }).filter(function (event) { return event.date.slice(0, 7) === monthKey; }).sort(function (a, b) { return a.date.localeCompare(b.date) || b.amount - a.amount; });
@@ -186,15 +259,15 @@
     const done = getDoneMap();
     document.querySelectorAll('[data-billsos-manual-sweep="1"]').forEach(function (node) { node.remove(); });
     current.rows.filter(function (row) { return row.amount < 0 && /sweep/i.test(row.name); }).forEach(function (row) {
-      const key = rowKey(row);
-      if (document.querySelector('.day label.ev input[data-id="' + CSS.escape(key) + '"]')) return;
+      const key = row.originalKey || rowKey(row);
+      if (document.querySelector('.day label.ev input[data-id="' + cssEscape(key) + '"]')) return;
       const day = dayNodeFor(row.day);
       const events = day && day.querySelector('.events');
       if (!events) return;
       const label = document.createElement('label');
       label.className = 'ev sweep system' + (done[key] ? ' done' : '');
       label.setAttribute('data-billsos-manual-sweep', '1');
-      label.innerHTML = '<input type="checkbox" data-id="' + escAttr(key) + '"' + (done[key] ? ' checked' : '') + '><span>' + escAttr(row.name) + '</span><b>' + money(Math.abs(row.amount)) + '</b>';
+      label.innerHTML = '<input type="checkbox" data-id="' + escAttr(key) + '"' + (done[key] ? ' checked' : '') + '><span>' + escAttr(row.name) + '</span><b>' + moneyCents(Math.abs(row.amount)) + '</b>';
       events.appendChild(label);
     });
   }
@@ -203,6 +276,7 @@
   let balanceSyncBusy = false;
   let transferColorTimer = 0;
   let transferColorBusy = false;
+  let lastKnownData = null;
 
   function oneTimeTransferKeys(data) {
     const keys = new Set();
@@ -226,7 +300,9 @@
       installOneTimeTransferStyles();
       const response = await fetch('/api/bills?transferColor=' + Date.now(), { cache: 'no-store' });
       if (!response.ok) throw new Error('HTTP ' + response.status);
-      const keys = oneTimeTransferKeys(await response.json());
+      const data = await response.json();
+      lastKnownData = data;
+      const keys = oneTimeTransferKeys(data);
       document.querySelectorAll('.day label.ev input[data-id], .day .ev input[data-id]').forEach(function (input) {
         const row = input.closest('.ev');
         const dataId = input.getAttribute('data-id') || '';
@@ -260,10 +336,12 @@
       const response = await fetch('/api/bills?balanceSync=' + Date.now(), { cache: 'no-store' });
       if (!response.ok) throw new Error('HTTP ' + response.status);
       const data = await response.json();
+      lastKnownData = data;
       const model = buildModel(data || {});
       const current = model[monthKey];
       if (!current) return;
       ensureSweepCalendarRows(current);
+      syncAmountEditors();
 
       const kbegin = document.getElementById('kbegin');
       const kin = document.getElementById('kin');
@@ -321,16 +399,147 @@
     if (!node || !detail || detail.classList.contains('detailEmpty')) return;
     node.querySelectorAll('.ev.sweep input[data-id]').forEach(function (input) {
       const key = input.getAttribute('data-id');
-      if (!key || detail.querySelector('.detailItem[data-detail-id="' + CSS.escape(key) + '"]')) return;
+      if (!key || detail.querySelector('.detailItem[data-detail-id="' + cssEscape(key) + '"]')) return;
       const row = input.closest('.ev');
       const name = text(row.querySelector('span')) || 'Sweep transfer';
-      const amount = text(row.querySelector('b')) || '$0';
+      const amount = adjustedSignedAmount(key);
       const item = document.createElement('div');
       item.className = 'detailItem sweep';
       item.setAttribute('data-detail-id', key);
-      item.innerHTML = '<div class="dir out">−</div><div class="detailMain"><div class="name">' + escAttr(name) + '</div></div><div class="amt">' + escAttr(amount) + '</div>';
+      item.innerHTML = '<div class="dir out">−</div><div class="detailMain"><div class="name">' + escAttr(name) + '</div></div><div class="amt">' + escAttr(moneyCents(Math.abs(amount))) + '</div>';
       detail.appendChild(item);
     });
+  }
+
+  function shouldAllowAmountEdit(key, item) {
+    if (!key || isCalculationOnly(item)) return false;
+    const amount = amountFromKey(key);
+    return amount < 0;
+  }
+
+  function syncCalendarAmountEditors() {
+    const adjustments = readAmountAdjustments();
+    document.querySelectorAll('.day label.ev input[data-id], .day .ev input[data-id]').forEach(function (input) {
+      const row = input.closest('.ev');
+      const key = input.getAttribute('data-id') || '';
+      if (!row || !shouldAllowAmountEdit(key, row)) return;
+      const amount = adjustedSignedAmount(key);
+      let btn = row.querySelector('.amountEditBtn');
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'amountEditBtn';
+        btn.setAttribute('aria-label', 'Edit amount');
+        btn.addEventListener('click', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          openAmountEditor(key, btn);
+        });
+        const move = row.querySelector('.moveBtn');
+        if (move && move.parentNode === row) row.insertBefore(btn, move);
+        else row.appendChild(btn);
+      }
+      btn.dataset.amountKey = key;
+      btn.textContent = moneyCents(Math.abs(amount));
+      row.classList.toggle('amount-edited', !!adjustments[key]);
+      const existingAmount = row.querySelector('b:not(.ignoreAmount)');
+      if (existingAmount && existingAmount !== btn) existingAmount.textContent = moneyCents(Math.abs(amount));
+    });
+  }
+
+  function syncDrawerAmountEditors() {
+    const adjustments = readAmountAdjustments();
+    document.querySelectorAll('#detailContent .detailItem[data-detail-id], .mobile-sheet .detailItem[data-detail-id]').forEach(function (item) {
+      const key = item.getAttribute('data-detail-id') || '';
+      const amountNode = item.querySelector('.amt');
+      if (!amountNode || !shouldAllowAmountEdit(key, item)) return;
+      const amount = adjustedSignedAmount(key);
+      amountNode.textContent = moneyCents(Math.abs(amount));
+      amountNode.classList.add('amountEditable');
+      amountNode.setAttribute('role', 'button');
+      amountNode.setAttribute('tabindex', '0');
+      amountNode.setAttribute('aria-label', 'Edit amount');
+      amountNode.dataset.amountKey = key;
+      item.classList.toggle('amount-edited', !!adjustments[key]);
+    });
+  }
+
+  function syncAmountEditors() {
+    installAmountEditStyles();
+    syncCalendarAmountEditors();
+    syncDrawerAmountEditors();
+  }
+
+  function closeAmountEditor() {
+    const existing = document.querySelector('.amountEditPopover');
+    if (existing) existing.remove();
+  }
+
+  function openAmountEditor(key, anchor) {
+    if (!key || !anchor) return;
+    closeAmountEditor();
+    const base = Math.abs(amountFromKey(key));
+    const current = Math.abs(adjustedSignedAmount(key));
+    const popover = document.createElement('div');
+    popover.className = 'amountEditPopover';
+    popover.innerHTML =
+      '<label>Amount</label>' +
+      '<input inputmode="decimal" autocomplete="off" value="' + escAttr(current.toFixed(2)) + '">' +
+      '<div class="amountEditActions">' +
+      '<button type="button" class="primary" data-action="save">Save</button>' +
+      '<button type="button" data-action="cancel">Cancel</button>' +
+      (hasAmountAdjustment(key) ? '<button type="button" class="clear" data-action="clear">Reset to estimate</button>' : '') +
+      '</div>' +
+      '<div class="amountEditMeta">Original estimate: ' + escAttr(moneyCents(base)) + '</div>';
+    document.body.appendChild(popover);
+
+    const rect = anchor.getBoundingClientRect();
+    const top = Math.min(window.innerHeight - popover.offsetHeight - 12, Math.max(12, rect.bottom + 8));
+    const left = Math.min(window.innerWidth - popover.offsetWidth - 12, Math.max(12, rect.left));
+    popover.style.top = top + 'px';
+    popover.style.left = left + 'px';
+
+    const input = popover.querySelector('input');
+    const meta = popover.querySelector('.amountEditMeta');
+    const save = function () {
+      const next = parseMoney(input.value);
+      if (!Number.isFinite(next) || next < 0) {
+        meta.textContent = 'Enter a valid amount.';
+        return;
+      }
+      if (!saveAmountAdjustment(key, next)) {
+        meta.textContent = 'Amount could not be saved.';
+        return;
+      }
+      closeAmountEditor();
+      syncAmountEditors();
+      scheduleBalanceSync();
+      scheduleTransferColorSync();
+      scheduleSync();
+    };
+    popover.addEventListener('click', function (event) {
+      const action = event.target && event.target.getAttribute && event.target.getAttribute('data-action');
+      if (!action) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (action === 'save') save();
+      if (action === 'cancel') closeAmountEditor();
+      if (action === 'clear') {
+        const adjustments = readAmountAdjustments();
+        delete adjustments[key];
+        writeAmountAdjustments(adjustments);
+        closeAmountEditor();
+        syncAmountEditors();
+        scheduleBalanceSync();
+        scheduleTransferColorSync();
+        scheduleSync();
+      }
+    });
+    input.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') { event.preventDefault(); save(); }
+      if (event.key === 'Escape') { event.preventDefault(); closeAmountEditor(); }
+    });
+    setTimeout(function () { input.focus(); input.select(); }, 0);
   }
 
   function drawerItems() {
@@ -394,13 +603,14 @@
     removeCalendarCalculationOnlyRows();
     removeDrawerCalculationOnlyRows();
     ensureSweepDrawerRows();
+    syncAmountEditors();
     insertDrawerNetSummary();
     insertBalanceBridge();
     const items = document.querySelectorAll('#detailContent .detailItem');
     if (!items.length) return;
     items.forEach(function (item) {
       const key = item.getAttribute('data-detail-id');
-      const match = key ? document.querySelector('.day label.ev input[data-id="' + CSS.escape(key) + '"]') : null;
+      const match = key ? document.querySelector('.day label.ev input[data-id="' + cssEscape(key) + '"]') : null;
       const row = match ? match.closest('.ev') : null;
       const existing = item.querySelector(CHECKBOX_SELECTOR);
       const checked = !!(match && match.checked);
@@ -424,13 +634,37 @@
   let timer = 0;
   function scheduleSync() { window.clearTimeout(timer); timer = window.setTimeout(syncDrawer, 50); }
 
+  document.addEventListener('click', function (event) {
+    const amountTarget = event.target && event.target.closest && event.target.closest('.amountEditable');
+    if (amountTarget && amountTarget.dataset.amountKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      openAmountEditor(amountTarget.dataset.amountKey, amountTarget);
+      return;
+    }
+    if (event.target && event.target.closest && !event.target.closest('.amountEditPopover') && !event.target.closest('.amountEditBtn') && !event.target.closest('.amountEditable')) closeAmountEditor();
+  }, true);
+  document.addEventListener('keydown', function (event) {
+    const target = event.target && event.target.closest && event.target.closest('.amountEditable');
+    if (target && target.dataset.amountKey && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      openAmountEditor(target.dataset.amountKey, target);
+    }
+  }, true);
+
   installCalmHouseholdTheme();
   installOneTimeTransferStyles();
+  installAmountEditStyles();
   const observer = new MutationObserver(scheduleSync);
   observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true });
-  window.addEventListener('load', function () { installCalmHouseholdTheme(); installOneTimeTransferStyles(); scheduleSync(); scheduleBalanceSync(); scheduleTransferColorSync(); });
+  window.addEventListener('load', function () { installCalmHouseholdTheme(); installOneTimeTransferStyles(); installAmountEditStyles(); scheduleSync(); scheduleBalanceSync(); scheduleTransferColorSync(); });
   window.addEventListener('hashchange', function () { scheduleSync(); scheduleBalanceSync(); scheduleTransferColorSync(); });
-  document.addEventListener('click', function (event) { if (event.target && event.target.closest('#tabs button')) { scheduleBalanceSync(); scheduleTransferColorSync(); } });
+  document.addEventListener('click', function (event) { if (event.target && event.target.closest('#tabs button')) { closeAmountEditor(); scheduleBalanceSync(); scheduleTransferColorSync(); } });
+  window.BillsOSAmountAdjustments = {
+    read: readAmountAdjustments,
+    save: saveAmountAdjustment,
+    clear: function (key) { const adjustments = readAmountAdjustments(); delete adjustments[key]; writeAmountAdjustments(adjustments); scheduleSync(); scheduleBalanceSync(); }
+  };
   scheduleSync();
   scheduleBalanceSync();
   scheduleTransferColorSync();
