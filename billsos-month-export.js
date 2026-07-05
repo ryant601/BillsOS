@@ -111,3 +111,105 @@
   setTimeout(addButton,800);
   setTimeout(addButton,1800);
 })();
+
+(function(){
+  'use strict';
+  var AMOUNT_KEY='billsos-amount-adjust-v1';
+  var JULY_REBASE_DAY=2;
+  var JULY_REBASE_END=2310;
+  var timer=0;
+  var busy=false;
+
+  function text(el){return String(el&&el.textContent||'').replace(/\s+/g,' ').trim()}
+  function money(v){return Number(v||0).toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0})}
+  function moneyCents(v){return Number(v||0).toLocaleString(undefined,{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2})}
+  function parseMoney(v){var n=Number(String(v||'').replace(/[−–—]/g,'-').replace(/[^0-9.-]/g,''));return isFinite(n)?n:0}
+  function readMap(){try{var map=JSON.parse(localStorage.getItem(AMOUNT_KEY)||'{}');return map&&typeof map==='object'&&!Array.isArray(map)?map:{}}catch(e){return {}}}
+  function amountFromKey(key){var parts=String(key||'').split('|'),n=Number(parts[parts.length-1]);return isFinite(n)?n:0}
+  function adjustedAmount(key,map){var base=amountFromKey(key),edit=map&&map[key],abs=edit&&isFinite(Number(edit.amount))?Math.abs(Number(edit.amount)):Math.abs(base);return base<0?-abs:abs}
+  function isCalcOnly(ev){var s=text(ev).toLowerCase();return s.indexOf('billsos action log')>=0||s.indexOf('balance correction')>=0||s.indexOf('spending account funding')>=0}
+  function dayNumber(day){var n=day&&day.querySelector&&day.querySelector('.topline span:first-child b,.topline b');return Number(text(n)||0)}
+  function visibleMonth(){var h=text(document.querySelector('.monthHead h2')).toLowerCase(),months={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};for(var k in months){if(h.indexOf(k)>=0)return {name:k,num:months[k]}}return null}
+  function setText(node,value){if(node&&node.textContent!==value)node.textContent=value}
+  function startNode(day){return day&&day.querySelector&&day.querySelector('.topline span:last-child b')}
+  function endNode(day){return day&&day.querySelector&&day.querySelector('.endline b')}
+  function eventRows(day){return Array.prototype.slice.call(day.querySelectorAll('.ev')).filter(function(ev){return !isCalcOnly(ev)&&ev.querySelector('input[data-id]')})}
+  function applyEventAmount(ev,amount,edited){
+    var display=moneyCents(Math.abs(amount));
+    var btn=ev.querySelector('.amountEditBtn');
+    var strong=ev.querySelector('b:not(.ignoreAmount)');
+    if(btn)setText(btn,display);
+    if(strong&&strong!==btn)setText(strong,display);
+    ev.classList.toggle('amount-edited',!!edited);
+  }
+  function refreshDrawerForSelected(){
+    var selected=document.querySelector('.day.selected'),sub=document.getElementById('detailSub');
+    if(!selected||!sub)return;
+    var start=text(startNode(selected))||'—',end=text(endNode(selected))||'—';
+    sub.textContent=sub.textContent.replace(/Starting .+ · Ending .+/,'Starting '+start+' · Ending '+end);
+  }
+  function recalc(){
+    if(busy)return;
+    var mount=document.getElementById('mount');
+    var month=visibleMonth();
+    if(!mount||!month)return;
+    var days=Array.prototype.slice.call(mount.querySelectorAll('.day:not(.blank)')).filter(function(day){return !!dayNumber(day)}).sort(function(a,b){return dayNumber(a)-dayNumber(b)});
+    if(!days.length)return;
+    busy=true;
+    try{
+      var map=readMap();
+      var isJuly=month.name==='july';
+      var kbegin=document.getElementById('kbegin'),kin=document.getElementById('kin'),kout=document.getElementById('kout'),kend=document.getElementById('kend'),ksweep=document.getElementById('ksweep'),kopen=document.getElementById('kopen');
+      var anchor=isJuly?JULY_REBASE_END:parseMoney(text(kbegin)||text(startNode(days[0])));
+      var running=anchor,income=0,outflow=0,sweep=0,open=0,total=0,done=0;
+      days.forEach(function(day){
+        var n=dayNumber(day);
+        setText(startNode(day),money(running));
+        if(isJuly&&n<=JULY_REBASE_DAY){setText(endNode(day),money(JULY_REBASE_END));running=JULY_REBASE_END;return;}
+        var delta=0;
+        eventRows(day).forEach(function(ev){
+          var input=ev.querySelector('input[data-id]'),key=input&&input.getAttribute('data-id');
+          if(!key)return;
+          var amt=adjustedAmount(key,map),edited=!!(map[key]&&isFinite(Number(map[key].amount)));
+          applyEventAmount(ev,amt,edited);
+          delta+=amt;
+          total++;
+          if(input.checked||ev.classList.contains('done'))done++;
+          if(amt>0)income+=amt;else{outflow+=Math.abs(amt);if(!input.checked&&!ev.classList.contains('done'))open++;if(/sweep/i.test(key)||/sweep/i.test(text(ev)))sweep+=Math.abs(amt)}
+        });
+        running+=delta;
+        setText(endNode(day),money(running));
+      });
+      setText(kbegin,money(anchor));
+      setText(kin,money(income));
+      setText(kout,money(outflow));
+      setText(kend,money(running));
+      setText(ksweep,money(sweep));
+      if(kopen)setText(kopen,String(open));
+      var progress=document.querySelector('.progress');
+      if(progress){
+        var b=progress.querySelectorAll('b'),bar=progress.querySelector('.bar i');
+        if(b[0])setText(b[0],String(done));
+        if(b[1])setText(b[1],String(total));
+        if(bar)bar.style.width=(total?Math.round(done/total*100):0)+'%';
+      }
+      refreshDrawerForSelected();
+    }catch(e){}finally{busy=false;}
+  }
+  function schedule(){clearTimeout(timer);timer=setTimeout(recalc,80)}
+  if(!window.__billsosAmountBalanceLocalStoragePatch){
+    window.__billsosAmountBalanceLocalStoragePatch=true;
+    var nativeSet=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(key,value){var result=nativeSet.apply(this,arguments);if(key===AMOUNT_KEY)setTimeout(schedule,0);return result};
+  }
+  window.BillsOSRecalculateVisibleBalances=recalc;
+  document.addEventListener('click',schedule,true);
+  document.addEventListener('change',schedule,true);
+  window.addEventListener('load',schedule);
+  window.addEventListener('hashchange',schedule);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule);else schedule();
+  setTimeout(schedule,300);
+  setTimeout(schedule,1200);
+  setInterval(schedule,2000);
+  try{new MutationObserver(schedule).observe(document.getElementById('mount')||document.documentElement,{subtree:true,childList:true,characterData:true})}catch(e){}
+})();
