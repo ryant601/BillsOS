@@ -213,3 +213,12 @@
   setInterval(schedule,2000);
   try{new MutationObserver(schedule).observe(document.getElementById('mount')||document.documentElement,{subtree:true,childList:true,characterData:true})}catch(e){}
 })();
+
+(function(){
+  if(document.getElementById('billsosDueDateEditorJs'))return;
+  var script=document.createElement('script');
+  script.id='billsosDueDateEditorJs';
+  script.src='/billsos-due-date-editor.js?v=20260706due1';
+  script.defer=true;
+  document.head.appendChild(script);
+})();
