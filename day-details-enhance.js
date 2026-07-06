@@ -56,6 +56,22 @@
     const edit = readAmountAdjustments()[key];
     return !!(edit && Number.isFinite(Number(edit.amount)));
   }
+  function currentDueDate(key) {
+    const original = String(key || '').split('|')[0] || '';
+    try {
+      const moves = JSON.parse(localStorage.getItem('billsos-pay-adjust-v1') || '{}') || {};
+      const moved = moves[key] && moves[key].date;
+      return /^20\d{2}-\d{2}-\d{2}$/.test(String(moved || '')) ? moved : original;
+    } catch (_err) {
+      return original;
+    }
+  }
+  function shortDueDate(key) {
+    const value = currentDueDate(key);
+    if (!/^20\d{2}-\d{2}-\d{2}$/.test(value)) return '';
+    const date = new Date(value + 'T12:00:00');
+    return (date.getMonth() + 1) + '/' + date.getDate();
+  }
   function saveAmountAdjustment(key, amount) {
     const cleanAmount = Math.round(Math.abs(Number(amount || 0)) * 100) / 100;
     if (!Number.isFinite(cleanAmount) || cleanAmount < 0) return false;
@@ -113,7 +129,12 @@
     const style = document.createElement('style');
     style.id = 'amountEditStyles';
     style.textContent = [
-      '.amountEditBtn{border:1px solid rgba(20,35,55,.16);background:rgba(255,255,255,.78);color:inherit;border-radius:999px;padding:3px 7px;font:inherit;font-size:11px;font-weight:900;line-height:1;white-space:nowrap;cursor:pointer;box-shadow:none}',
+      '.day .ev:has(.amountEditBtn),.day label.ev:has(.amountEditBtn){display:grid!important;grid-template-columns:18px minmax(0,1fr) 18px!important;grid-template-rows:auto auto!important;column-gap:7px!important;row-gap:5px!important;align-items:start!important;min-height:60px!important;padding:8px 7px!important}',
+      '.day .ev:has(.amountEditBtn)>input[type="checkbox"],.day label.ev:has(.amountEditBtn)>input[type="checkbox"]{grid-column:1!important;grid-row:1!important}',
+      '.day .ev:has(.amountEditBtn)>span,.day label.ev:has(.amountEditBtn)>span{grid-column:2!important;grid-row:1!important;display:block!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-weight:750!important;line-height:1.2!important}',
+      '.day .ev:has(.amountEditBtn)>.amountEditBtn,.day label.ev:has(.amountEditBtn)>.amountEditBtn{grid-column:1 / -1!important;grid-row:2!important;justify-self:stretch!important;max-width:100%!important;text-align:left!important}',
+      '.day .ev:has(.amountEditBtn)>.moveBtn,.day label.ev:has(.amountEditBtn)>.moveBtn{right:7px!important;top:7px!important;bottom:auto!important;width:18px!important;height:18px!important;min-width:18px!important;opacity:.42!important}',
+      '.amountEditBtn{border:1px solid rgba(20,35,55,.12);background:rgba(255,255,255,.66);color:inherit;border-radius:8px;padding:4px 7px;font:inherit;font-size:10px;font-weight:800;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;box-shadow:none}',
       '.amountEditBtn:hover,.amountEditBtn:focus{background:#fff;border-color:rgba(31,58,61,.34);outline:none}',
       '.ev.amount-edited .amountEditBtn,.detailItem.amount-edited .amt{box-shadow:0 0 0 2px rgba(168,101,26,.13);border-color:rgba(168,101,26,.35)!important}',
       '.detailItem .amt.amountEditable{cursor:pointer;border:1px solid rgba(20,35,55,.12);border-radius:999px;padding:4px 7px;background:rgba(255,255,255,.72)}',
@@ -440,7 +461,10 @@
         else row.appendChild(btn);
       }
       btn.dataset.amountKey = key;
-      btn.textContent = moneyCents(Math.abs(amount));
+      const due = shortDueDate(key);
+      const label = moneyCents(Math.abs(amount)) + (due ? '  ·  ' + due : '');
+      if (btn.textContent !== label) btn.textContent = label;
+      btn.setAttribute('aria-label', 'Edit amount and due date for ' + text(row.querySelector(':scope > span')));
       row.classList.toggle('amount-edited', !!adjustments[key]);
       const existingAmount = row.querySelector('b:not(.ignoreAmount)');
       if (existingAmount && existingAmount !== btn) existingAmount.textContent = moneyCents(Math.abs(amount));

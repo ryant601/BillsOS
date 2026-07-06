@@ -138,7 +138,7 @@
     var display=moneyCents(Math.abs(amount));
     var btn=ev.querySelector('.amountEditBtn');
     var strong=ev.querySelector('b:not(.ignoreAmount)');
-    if(btn)setText(btn,display);
+    if(btn&&!btn.dataset.amountKey)setText(btn,display);
     if(strong&&strong!==btn)setText(strong,display);
     ev.classList.toggle('amount-edited',!!edited);
   }
