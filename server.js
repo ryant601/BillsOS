@@ -202,7 +202,7 @@ function generatedDashboardHtml() {
   );
 
   if (!html.includes('/day-details-enhance.js')) {
-    html = html.replace('</body>', '<script defer src="/day-details-enhance.js?v=20260706card3"></script></body>');
+    html = html.replace('</body>', '<script defer src="/day-details-enhance.js?v=20260706sweep1"></script></body>');
   }
 
   return html;

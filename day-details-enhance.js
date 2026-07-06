@@ -401,7 +401,12 @@
     }
   }
 
-  function scheduleBalanceSync() { window.clearTimeout(balanceSyncTimer); balanceSyncTimer = window.setTimeout(syncVisibleBalancesFromData, 120); }
+  function scheduleBalanceSync() {
+    window.clearTimeout(balanceSyncTimer);
+    balanceSyncTimer = window.setTimeout(function () {
+      if (typeof window.BillsOSRecalculateVisibleBalances === 'function') window.BillsOSRecalculateVisibleBalances();
+    }, 120);
+  }
 
   function removeCalendarCalculationOnlyRows() {
     document.querySelectorAll('.day label.ev, .day .ev').forEach(function (item) { if (isCalculationOnly(item)) item.remove(); });
