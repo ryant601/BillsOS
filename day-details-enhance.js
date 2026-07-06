@@ -129,9 +129,9 @@
     const style = document.createElement('style');
     style.id = 'amountEditStyles';
     style.textContent = [
-      '.day .ev:has(.amountEditBtn),.day label.ev:has(.amountEditBtn){display:grid!important;grid-template-columns:18px minmax(0,1fr) 18px!important;grid-template-rows:auto auto!important;column-gap:7px!important;row-gap:5px!important;align-items:start!important;min-height:60px!important;padding:8px 7px!important}',
+      '.day .ev:has(.amountEditBtn),.day label.ev:has(.amountEditBtn){display:grid!important;grid-template-columns:16px minmax(0,1fr)!important;grid-template-rows:auto auto!important;column-gap:5px!important;row-gap:5px!important;align-items:start!important;min-height:66px!important;padding:7px!important}',
       '.day .ev:has(.amountEditBtn)>input[type="checkbox"],.day label.ev:has(.amountEditBtn)>input[type="checkbox"]{grid-column:1!important;grid-row:1!important}',
-      '.day .ev:has(.amountEditBtn)>span,.day label.ev:has(.amountEditBtn)>span{grid-column:2!important;grid-row:1!important;display:block!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-weight:750!important;line-height:1.2!important}',
+      '.day .ev:has(.amountEditBtn)>span,.day label.ev:has(.amountEditBtn)>span{grid-column:2!important;grid-row:1!important;display:-webkit-box!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;white-space:normal!important;overflow-wrap:anywhere!important;padding-right:18px!important;font-size:9px!important;font-weight:700!important;line-height:1.15!important}',
       '.day .ev:has(.amountEditBtn)>.amountEditBtn,.day label.ev:has(.amountEditBtn)>.amountEditBtn{grid-column:1 / -1!important;grid-row:2!important;justify-self:stretch!important;max-width:100%!important;text-align:left!important}',
       '.day .ev:has(.amountEditBtn)>.moveBtn,.day label.ev:has(.amountEditBtn)>.moveBtn{right:7px!important;top:7px!important;bottom:auto!important;width:18px!important;height:18px!important;min-width:18px!important;opacity:.42!important}',
       '.amountEditBtn{border:1px solid rgba(20,35,55,.12);background:rgba(255,255,255,.66);color:inherit;border-radius:8px;padding:4px 7px;font:inherit;font-size:10px;font-weight:800;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;box-shadow:none}',
@@ -464,7 +464,10 @@
       const due = shortDueDate(key);
       const label = moneyCents(Math.abs(amount)) + (due ? '  ·  ' + due : '');
       if (btn.textContent !== label) btn.textContent = label;
-      btn.setAttribute('aria-label', 'Edit amount and due date for ' + text(row.querySelector(':scope > span')));
+      const nameNode = row.querySelector(':scope > span');
+      const name = text(nameNode);
+      if (nameNode) nameNode.title = name;
+      btn.setAttribute('aria-label', 'Edit amount and due date for ' + name);
       row.classList.toggle('amount-edited', !!adjustments[key]);
       const existingAmount = row.querySelector('b:not(.ignoreAmount)');
       if (existingAmount && existingAmount !== btn) existingAmount.textContent = moneyCents(Math.abs(amount));
