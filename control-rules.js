@@ -1,9 +1,9 @@
 (function(){
   var RULE_ID='__billsos_system_rules__';
-  var DEFAULT_RULES={spendingFunding:{enabled:true,amount:1500,count:2,timing:'same-day-income'},sweep:{enabled:true,preferredBuffer:1250,hardBuffer:1000,day:28,label:'Sweep transfer',startingBalance:0}};
+  var DEFAULT_RULES={spendingFunding:{enabled:true,amount:1500,count:2,timing:'same-day-income'},sweep:{enabled:false,targets:{}}};
   function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function clone(o){return JSON.parse(JSON.stringify(o));}
-  function mergeRules(r){var d=clone(DEFAULT_RULES);r=r&&typeof r==='object'?r:{};d.spendingFunding=Object.assign(d.spendingFunding,r.spendingFunding||{});if(d.spendingFunding.timing==='after-income')d.spendingFunding.timing='same-day-income';d.sweep=Object.assign(d.sweep,r.sweep||{});return d;}
+  function mergeRules(r){var d=clone(DEFAULT_RULES);r=r&&typeof r==='object'?r:{};d.spendingFunding=Object.assign(d.spendingFunding,r.spendingFunding||{});if(d.spendingFunding.timing==='after-income')d.spendingFunding.timing='same-day-income';d.sweep={enabled:false,targets:{}};return d;}
   function findRuleRow(data){return (data.oneTimeEvents||[]).find(function(x){return x&&x.id===RULE_ID;});}
   function rulesFromData(data){try{var row=findRuleRow(data);return mergeRules(row&&row.notes?JSON.parse(row.notes):null);}catch(e){return mergeRules(null);}}
   function putRulesIntoData(data,rules){data.oneTimeEvents=Array.isArray(data.oneTimeEvents)?data.oneTimeEvents:[];var clean=data.oneTimeEvents.filter(function(x){return x.id!==RULE_ID;});clean.push({id:RULE_ID,name:'BillsOS system rules',date:'2099-12-31',amount:0,type:'transfer',notes:JSON.stringify(mergeRules(rules))});data.oneTimeEvents=clean;return data;}

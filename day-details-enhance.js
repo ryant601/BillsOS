@@ -204,15 +204,6 @@
       else push(1, name, amount, 'in', 'income');
     });
 
-    const rules = readSystemRules(data);
-    const sweep = rules.sweep && typeof rules.sweep === 'object' ? rules.sweep : {};
-    const targets = sweep.targets && typeof sweep.targets === 'object' && !Array.isArray(sweep.targets) ? sweep.targets : {};
-    const target = targets[monthKey];
-    if (sweep.enabled !== false && target && Number(target.amount) > 0) {
-      const day = Math.min(dim, Math.max(1, Number(target.day || dim)));
-      push(day, target.label || sweep.label || 'Sweep transfer', -Math.abs(Number(target.amount || 0)), 'sweep system', 'rule');
-    }
-
     return rows.sort(function (a, b) { return a.date.localeCompare(b.date) || b.amount - a.amount; });
   }
 
@@ -299,10 +290,11 @@
   function dedupeSweepRows() {
     document.querySelectorAll('.day:not(.blank)').forEach(function (day) {
       const sweeps = Array.from(day.querySelectorAll('.ev')).filter(function (row) { return /sweep/i.test(text(row)); });
-      if (sweeps.length < 2) return;
-      const keep = sweeps.find(function (row) { return !row.hasAttribute('data-billsos-sweep') && !row.hasAttribute('data-billsos-manual-sweep') && !row.classList.contains('system'); }) ||
-        sweeps.find(function (row) { return !row.hasAttribute('data-billsos-sweep') && !row.hasAttribute('data-billsos-manual-sweep'); }) || sweeps[0];
-      sweeps.forEach(function (row) { if (row !== keep) row.remove(); });
+      sweeps.filter(function (row) { return row.classList.contains('system'); }).forEach(function (row) { row.remove(); });
+      const manualSweeps = sweeps.filter(function (row) { return !row.classList.contains('system'); });
+      if (manualSweeps.length < 2) return;
+      const keep = manualSweeps[0];
+      manualSweeps.forEach(function (row) { if (row !== keep) row.remove(); });
     });
   }
 
