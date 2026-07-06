@@ -296,6 +296,16 @@
     });
   }
 
+  function dedupeSweepRows() {
+    document.querySelectorAll('.day:not(.blank)').forEach(function (day) {
+      const sweeps = Array.from(day.querySelectorAll('.ev')).filter(function (row) { return /sweep/i.test(text(row)); });
+      if (sweeps.length < 2) return;
+      const keep = sweeps.find(function (row) { return !row.hasAttribute('data-billsos-sweep') && !row.hasAttribute('data-billsos-manual-sweep') && !row.classList.contains('system'); }) ||
+        sweeps.find(function (row) { return !row.hasAttribute('data-billsos-sweep') && !row.hasAttribute('data-billsos-manual-sweep'); }) || sweeps[0];
+      sweeps.forEach(function (row) { if (row !== keep) row.remove(); });
+    });
+  }
+
   let balanceSyncTimer = 0;
   let balanceSyncBusy = false;
   let transferColorTimer = 0;
@@ -633,6 +643,7 @@
   }
 
   function syncDrawer() {
+    dedupeSweepRows();
     scheduleBalanceSync();
     scheduleTransferColorSync();
     removeCalendarCalculationOnlyRows();
