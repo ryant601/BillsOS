@@ -1,21 +1,12 @@
 (function(){
 'use strict';
-var BUILD='visible-balance-chain-20260707-3';
-var VERSION='20260707visiblechain3';
-var MONTHS=['june','july','aug','sep','oct','nov','dec'];
-var timer=null,completed=null,applying=false;
+var BUILD='no-runtime-balance-override-20260707-4';
+var VERSION='20260707noruntimebalance4';
+var completed=null,applying=false;
 window.BillsOSModules=window.BillsOSModules||{};
 window.BillsOSModules.bootstrap={loaded:true,build:BUILD,at:new Date().toISOString(),modules:[]};
+window.BillsOSModules.balanceChain={loaded:false,build:BUILD,disabled:true,reason:'Static month files are the source of truth for opening balances.',at:new Date().toISOString()};
 function clean(v){return String(v||'').replace(/\s+/g,' ').trim();}
-function num(v){var n=Number(String(v||'').replace(/[−–—]/g,'-').replace(/[^0-9.\-]/g,''));return isNaN(n)?null:n;}
-function money(v){return v==null||isNaN(v)?'—':'$'+Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
-function eventDelta(ev){if(!ev||ev.classList.contains('note'))return 0;var raw=clean((ev.querySelector('.amt')||{}).textContent);var amount=num(raw);if(amount==null)return 0;amount=Math.abs(amount);return ev.classList.contains('in')?amount:-amount;}
-function updateChip(panel,label,value){var key=[].slice.call(panel.querySelectorAll('.chip .k')).find(function(el){return clean(el.textContent).toLowerCase()===label.toLowerCase();});var v=key&&key.closest('.chip')&&key.closest('.chip').querySelector('.v');if(v)v.textContent=value;}
-function monthDays(panel){return [].slice.call(panel.querySelectorAll('.day[data-day]')).sort(function(a,b){return Number(a.dataset.day)-Number(b.dataset.day);});}
-function lastEnding(panel){var days=monthDays(panel);for(var i=days.length-1;i>=0;i--){var b=days[i].querySelector('.eod b');var v=num(b&&b.textContent);if(v!=null)return v;}return null;}
-function rebuildMonth(panel,opening){var days=monthDays(panel);if(!days.length)return opening;var running=opening;if(running==null){var first=days[0].querySelector('.bod b');running=num(first&&first.textContent);}if(running==null)return opening;var start=running,income=0,outflow=0,sweep=0;days.forEach(function(day){var bod=day.querySelector('.bod b');if(bod)bod.textContent=money(running);var delta=0;day.querySelectorAll('.ev').forEach(function(ev){var d=eventDelta(ev);var name=clean((ev.querySelector('.nm')||{}).textContent).toLowerCase();if(d>0)income+=d;if(d<0)outflow+=Math.abs(d);if(d<0&&ev.classList.contains('xfer')&&name.indexOf('sweep')>-1)sweep+=Math.abs(d);delta+=d;});running+=delta;var eod=day.querySelector('.eod b');if(eod)eod.textContent=money(running);day.classList.toggle('is-warn',running<1250);});updateChip(panel,'Starting',money(start));updateChip(panel,'Opening',money(start));updateChip(panel,'Income',money(income));updateChip(panel,'Money in',money(income));updateChip(panel,'Outflow',money(outflow));updateChip(panel,'Money out',money(outflow));if(sweep>0)updateChip(panel,'Sweep',money(sweep));panel.dataset.balanceChained='visible-prior-ending';return running;}
-function chainVisibleMonths(){var carry=null;MONTHS.forEach(function(month,i){var panel=document.getElementById('panel-'+month);if(!panel)return;if(i>0){var prev=document.getElementById('panel-'+MONTHS[i-1]);var prevEnd=prev?lastEnding(prev):null;if(prevEnd!=null)carry=prevEnd;}carry=rebuildMonth(panel,carry);});window.BillsOSModules.balanceChain={loaded:true,build:BUILD,mode:'visible-prior-ending',at:new Date().toISOString()};}
-function scheduleChain(){clearTimeout(timer);timer=setTimeout(chainVisibleMonths,150);}
 function readJson(k,f){try{return JSON.parse(localStorage.getItem(k)||'null')||f;}catch(e){return f;}}
 function writeJson(k,v){try{localStorage.setItem(k,JSON.stringify(v||{}));}catch(e){}}
 function evId(ev){var day=ev.closest('.day'),panel=ev.closest('.month-panel');return (panel&&panel.id?panel.id.replace('panel-',''):'month')+'|'+(day?day.dataset.day:'x')+'|'+clean((ev.querySelector('.nm')||{}).textContent)+'|'+clean((ev.querySelector('.amt')||{}).textContent);}
@@ -25,6 +16,6 @@ function applyCompleted(c){if(!c)return;applying=true;document.querySelectorAll(
 async function loadCompleted(){var local=readJson('billsos-completed-events-v1',{});try{var r=await fetch('/api/checkmarks',{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error('HTTP '+r.status);var data=await r.json();var remote=data&&data.completed&&typeof data.completed==='object'?data.completed:{};completed=Object.keys(remote).length?remote:local;writeJson('billsos-completed-events-v1',completed);applyCompleted(completed);window.BillsOSModules.checkmarkSync={loaded:true,build:BUILD,at:new Date().toISOString()};}catch(e){completed=local;applyCompleted(local);window.BillsOSModules.checkmarkSync={loaded:false,build:BUILD,error:String(e&&e.message||e),fallback:'localStorage',at:new Date().toISOString()};}}
 function bindChecks(){document.addEventListener('change',function(e){var t=e.target;if(applying||!t||!t.matches||!t.matches('.month-panel .ev input[type="checkbox"]'))return;setTimeout(function(){var c=collectCompleted();writeJson('billsos-completed-events-v1',c);completed=c;try{fetch('/api/checkmarks',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({completed:c})});}catch(err){}},0);},true);}
 function loadModule(src,name){var s=document.createElement('script');s.src=src+'?v='+VERSION;s.async=false;s.onload=function(){window.BillsOSModules.bootstrap.modules.push({name:name,loaded:true,at:new Date().toISOString()});};s.onerror=function(){window.BillsOSModules.bootstrap.modules.push({name:name,loaded:false,at:new Date().toISOString()});};document.head.appendChild(s);}
-function init(){bindChecks();loadCompleted();scheduleChain();var target=document.getElementById('month-panels')||document.body;new MutationObserver(function(){if(completed)applyCompleted(completed);scheduleChain();}).observe(target,{childList:true,subtree:true});setInterval(loadCompleted,30000);setInterval(scheduleChain,1500);loadModule('/mobile-ui.js','mobile-ui');loadModule('/dashboard-sync.js','dashboard-sync');loadModule('/assistant-ui.js','assistant-ui');}
+function init(){bindChecks();loadCompleted();var target=document.getElementById('month-panels')||document.body;new MutationObserver(function(){if(completed)applyCompleted(completed);}).observe(target,{childList:true,subtree:true});setInterval(loadCompleted,30000);loadModule('/mobile-ui.js','mobile-ui');loadModule('/dashboard-sync.js','dashboard-sync');loadModule('/assistant-ui.js','assistant-ui');}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
