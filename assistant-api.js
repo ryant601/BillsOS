@@ -4,7 +4,7 @@ const cashflow = require("./cashflow-engine");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.CHATGPT_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || process.env.CHATGPT_MODEL || "gpt-4.1-mini";
-const INTENT_BUILD = "assistant-intent-20260707-income-start-date";
+const INTENT_BUILD = "assistant-intent-20260707-balance-corrections";
 
 function compactBillsContext(data) {
   const src = data && typeof data === "object" ? data : {};
@@ -32,7 +32,7 @@ function compactBillsContext(data) {
     oneTimeEvents: oneTimeEvents.filter(row => row && !String(row.id || "").startsWith("__billsos_")).slice(0, 60).map(row => ({
       name: row.name || "One-time item",
       amount: Number(row.amount || 0),
-      date: row.date || null,
+      date: row.date || row.iso || row.startDate || row.effectiveDate || null,
       type: row.type || null,
       notes: row.notes || ""
     }))
@@ -70,7 +70,7 @@ function replaceScriptById(html, id, src) {
 function injectBridge(html) {
   let out = normalizeDashboardProjection(html);
   if (typeof out !== "string") return out;
-  out = replaceScriptById(out, "billsosCashflowEngine", "/cashflow-engine.js?v=20260707incomestart1");
+  out = replaceScriptById(out, "billsosCashflowEngine", "/cashflow-engine.js?v=20260707corrections1");
   out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260702intent4");
   out = replaceScriptById(out, "billsosAssistantAiBridge", "/assistant-ai-bridge.js?v=20260702bridge4");
   return out;
@@ -187,20 +187,7 @@ module.exports = function registerAssistantApi(app, options) {
 
   app.get("/api/assistant/status", (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
-    res.json({
-      configured: !!OPENAI_API_KEY,
-      model: OPENAI_MODEL,
-      engine: cashflow.BUILD,
-      intent: INTENT_BUILD,
-      assistant: "assistant-ui-20260702-intent4",
-      bridge: "assistant-ai-bridge-20260702-4",
-      assistantSource: "cashflow-engine-all-months",
-      interpretation: "openai-intent-first",
-      intentValidator: "deterministic-period-guardrails",
-      scriptLoader: "replace-script-by-id",
-      projectionGuard: "control-center-source",
-      envAccepted: ["OPENAI_API_KEY", "OPENAI_KEY", "CHATGPT_API_KEY"].filter(name => !!process.env[name])
-    });
+    res.json({ configured: !!OPENAI_API_KEY, model: OPENAI_MODEL, engine: cashflow.BUILD, intent: INTENT_BUILD });
   });
 
   app.get("/api/assistant/test", async (_req, res) => {
