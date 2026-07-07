@@ -29,6 +29,9 @@
   function resetDate(key){var map=read(DATE_KEY);delete map[key];write(DATE_KEY,map)}
   function rowKey(row){var cb=row&&row.querySelector&&row.querySelector('input[data-id]');return (cb&&cb.getAttribute('data-id'))||row.getAttribute('data-id')||row.getAttribute('data-key')||''}
   function rowName(row){return text(row.querySelector('.nm'))||text(row.querySelector('span:not(.dot)'))||'Bill'}
+  function setText(el,value){if(el&&el.textContent!==value)el.textContent=value}
+  function setAttr(el,name,value){if(el&&el.getAttribute(name)!==String(value))el.setAttribute(name,String(value))}
+  function setClass(el,name,on){if(el&&el.classList.contains(name)!==!!on)el.classList.toggle(name,!!on)}
 
   function installStyle(){
     if(document.getElementById('billsosCardEditorStyle'))return;
@@ -71,41 +74,41 @@
 
   function normalizeLegacyEditButtons(row,key){
     row.querySelectorAll('.amountEditBtn').forEach(function(btn){
-      btn.className='billsosCardEditBtn';
-      btn.dataset.key=key;
-      btn.dataset.amountKey=key;
-      btn.textContent='✎';
-      btn.title='Edit amount or due date';
-      btn.setAttribute('aria-label','Edit amount and due date for '+rowName(row));
+      if(!btn.classList.contains('billsosCardEditBtn'))btn.className='billsosCardEditBtn';
+      if(btn.dataset.key!==key)btn.dataset.key=key;
+      if(btn.dataset.amountKey!==key)btn.dataset.amountKey=key;
+      setText(btn,'✎');
+      if(btn.title!=='Edit amount or due date')btn.title='Edit amount or due date';
+      setAttr(btn,'aria-label','Edit amount and due date for '+rowName(row));
     });
   }
   function sync(){
     installStyle();
-    var done=readDone();
+    var done=readDone(),amountMap=read(AMOUNT_KEY);
     document.querySelectorAll('.ev').forEach(function(row){
       var key=rowKey(row),amount=amountFromKey(key);if(!key||amount>=0)return;
       normalizeLegacyEditButtons(row,key);
       var cb=row.querySelector('.billsosDoneCheck');
       if(!cb){cb=document.createElement('input');cb.type='checkbox';cb.className='billsosDoneCheck';row.insertBefore(cb,row.firstChild)}
-      cb.dataset.id=key;cb.checked=!!done[key];row.classList.toggle('done',!!done[key]);
+      if(cb.dataset.id!==key)cb.dataset.id=key;
+      var checked=!!done[key];if(cb.checked!==checked)cb.checked=checked;setClass(row,'done',checked);
       var btn=row.querySelector('.billsosCardEditBtn');
       if(!btn){btn=document.createElement('button');btn.type='button';btn.className='billsosCardEditBtn';row.appendChild(btn)}
-      btn.dataset.key=key;btn.dataset.amountKey=key;btn.textContent='✎';btn.title='Edit amount or due date';btn.setAttribute('aria-label','Edit amount and due date for '+rowName(row));
-      row.classList.toggle('amount-edited',!!read(AMOUNT_KEY)[key]);row.classList.toggle('date-edited',isMoved(key,row));
-      var amt=row.querySelector('.amt');if(amt)amt.textContent=(amount<0?'−':'')+money(amountFor(key));
+      if(btn.dataset.key!==key)btn.dataset.key=key;if(btn.dataset.amountKey!==key)btn.dataset.amountKey=key;setText(btn,'✎');if(btn.title!=='Edit amount or due date')btn.title='Edit amount or due date';setAttr(btn,'aria-label','Edit amount and due date for '+rowName(row));
+      setClass(row,'amount-edited',!!amountMap[key]);setClass(row,'date-edited',isMoved(key,row));
+      var amt=row.querySelector('.amt'),newAmount=(amount<0?'−':'')+money(amountFor(key));if(amt&&amt.textContent!==newAmount)amt.textContent=newAmount;
     });
   }
-  function schedule(){clearTimeout(timer);timer=setTimeout(sync,60)}
+  function schedule(){clearTimeout(timer);timer=setTimeout(sync,80)}
   function doneFromDom(){var done=readDone();document.querySelectorAll('.billsosDoneCheck[data-id]').forEach(function(cb){if(cb.checked)done[cb.dataset.id]=1;else delete done[cb.dataset.id]});return cleanDone(done)}
-  function applyDone(done){done=cleanDone(done);writeDone(done);document.querySelectorAll('.billsosDoneCheck[data-id]').forEach(function(cb){var checked=!!done[cb.dataset.id];cb.checked=checked;var row=cb.closest('.ev');if(row)row.classList.toggle('done',checked)})}
+  function applyDone(done){done=cleanDone(done);writeDone(done);document.querySelectorAll('.billsosDoneCheck[data-id]').forEach(function(cb){var checked=!!done[cb.dataset.id];if(cb.checked!==checked)cb.checked=checked;var row=cb.closest('.ev');setClass(row,'done',checked)})}
   async function pullCheckmarks(){try{var r=await fetch('/api/checkmarks?pull='+Date.now(),{cache:'no-store'});if(!r.ok)return;var data=await r.json();if(!data||!data.completed)return;if(data.updatedAt&&data.updatedAt===lastCheckmarkUpdatedAt)return;lastCheckmarkUpdatedAt=data.updatedAt||lastCheckmarkUpdatedAt;applyDone(data.completed)}catch(e){}}
   async function pushCheckmarks(done){if(checkmarkSyncing)return;checkmarkSyncing=true;done=cleanDone(done||doneFromDom());writeDone(done);try{var r=await fetch('/api/checkmarks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({completed:done})});if(r.ok){var data=await r.json();lastCheckmarkUpdatedAt=data.updatedAt||lastCheckmarkUpdatedAt}}catch(e){}finally{checkmarkSyncing=false}}
 
   document.addEventListener('click',function(ev){var btn=ev.target&&ev.target.closest&&ev.target.closest('.billsosCardEditBtn,.amountEditBtn');if(btn){var key=btn.dataset.key||btn.dataset.amountKey||rowKey(btn.closest('.ev'));if(key){ev.preventDefault();ev.stopPropagation();openEditor(key,btn);return}}if(ev.target&&ev.target.closest&&!ev.target.closest('.billsosCardEditPopover'))closeEditor()},true);
-  document.addEventListener('change',function(ev){var cb=ev.target;if(!cb||!cb.classList||!cb.classList.contains('billsosDoneCheck'))return;var done=doneFromDom();writeDone(done);var row=cb.closest('.ev');if(row)row.classList.toggle('done',!!cb.checked);pushCheckmarks(done)},true);
-  try{new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true})}catch(e){}
+  document.addEventListener('change',function(ev){var cb=ev.target;if(!cb||!cb.classList||!cb.classList.contains('billsosDoneCheck'))return;var done=doneFromDom();writeDone(done);var row=cb.closest('.ev');setClass(row,'done',!!cb.checked);pushCheckmarks(done)},true);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){schedule();pullCheckmarks()});else{schedule();pullCheckmarks()}
   window.addEventListener('load',function(){schedule();pullCheckmarks()});
   window.addEventListener('hashchange',schedule);
-  setTimeout(schedule,200);setTimeout(schedule,700);setTimeout(schedule,1500);setInterval(schedule,1800);setInterval(pullCheckmarks,15000);
+  setTimeout(schedule,250);setTimeout(schedule,900);setTimeout(schedule,1800);setInterval(pullCheckmarks,30000);
 })();
