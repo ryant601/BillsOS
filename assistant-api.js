@@ -4,7 +4,7 @@ const cashflow = require("./cashflow-engine");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.CHATGPT_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || process.env.CHATGPT_MODEL || "gpt-4.1-mini";
-const INTENT_BUILD = "assistant-intent-20260702-10";
+const INTENT_BUILD = "assistant-intent-20260707-income-start-date";
 
 function compactBillsContext(data) {
   const src = data && typeof data === "object" ? data : {};
@@ -26,9 +26,10 @@ function compactBillsContext(data) {
     income: income.filter(row => row && row.active !== false).slice(0, 20).map(row => ({
       name: row.name || "Income",
       amount: Number(row.amount || 0),
-      schedule: row.schedule || "manual"
+      schedule: row.schedule || "manual",
+      startDate: row.startDate || row.start || row.anchorDate || null
     })),
-    oneTimeEvents: oneTimeEvents.filter(row => row && row.id !== "__billsos_system_rules__" && row.id !== "__billsos_action_log__").slice(0, 60).map(row => ({
+    oneTimeEvents: oneTimeEvents.filter(row => row && !String(row.id || "").startsWith("__billsos_")).slice(0, 60).map(row => ({
       name: row.name || "One-time item",
       amount: Number(row.amount || 0),
       date: row.date || null,
@@ -69,7 +70,7 @@ function replaceScriptById(html, id, src) {
 function injectBridge(html) {
   let out = normalizeDashboardProjection(html);
   if (typeof out !== "string") return out;
-  out = replaceScriptById(out, "billsosCashflowEngine", "/cashflow-engine.js?v=20260630engine1");
+  out = replaceScriptById(out, "billsosCashflowEngine", "/cashflow-engine.js?v=20260707incomestart1");
   out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260702intent4");
   out = replaceScriptById(out, "billsosAssistantAiBridge", "/assistant-ai-bridge.js?v=20260702bridge4");
   return out;
@@ -107,6 +108,34 @@ async function callOpenAI({ question, deterministicAnswer, billsContext }) {
   return outputText(payload) || deterministicAnswer;
 }
 
+function validIso(value) {
+  return /^20\d{2}-\d{2}-\d{2}$/.test(String(value || ""));
+}
+
+function localIntent(question) {
+  const text = String(question || "").toLowerCase();
+  const amount = cashflow.parseAmount(question);
+  let intent = "unknown";
+  if (/average|avg|daily spend|monthly spend|spend per day|spend per month|quarter|q[1-4]/.test(text)) intent = "spend_average";
+  else if (/afford|spend|buy|can i/.test(text) && amount) intent = "affordability";
+  else if (/best|when|day|date|pay|payment|safest/.test(text) && amount) intent = "payment_timing";
+  else if (/upcoming|coming up|bills|due|next bill|outflow|outflows/.test(text)) intent = "upcoming_bills";
+  else if (/lowest|low|minimum|floor|risk|buffer|projection/.test(text)) intent = "low_balance";
+  else if (/summary|status|where.*stand|current read/.test(text)) intent = "summary";
+  const scope = cashflow.scopeFromQuestion(question);
+  return {
+    intent,
+    amount: amount || null,
+    dateStart: scope.start,
+    dateEnd: scope.end,
+    scopeLabel: scope.label,
+    target: null,
+    constraints: {},
+    requiresConfirmation: /move|add|delete|mark paid|change|save|edit/.test(text),
+    confidence: intent === "unknown" ? 0.35 : 0.7
+  };
+}
+
 function extractJson(text) {
   const raw = String(text || "").trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
   try { return JSON.parse(raw); } catch (_err) {}
@@ -117,97 +146,15 @@ function extractJson(text) {
   return null;
 }
 
-function validIso(value) {
-  return /^20\d{2}-\d{2}-\d{2}$/.test(String(value || ""));
-}
-
-function wordNumber(value) {
-  const text = String(value || "").toLowerCase();
-  const words = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
-  if (/^\d+$/.test(text)) return Number(text);
-  return words[text] || null;
-}
-
-function fixedScopeIntent(intent, start, end, label, patchReason) {
-  return {
-    ...(intent || {}),
-    dateStart: start,
-    dateEnd: end,
-    scopeLabel: label,
-    constraints: { ...((intent && intent.constraints) || {}), scopePatch: patchReason },
-    confidence: Math.max(Number((intent && intent.confidence) || 0), 0.95)
-  };
-}
-
 function correctIntent(question, intent) {
-  const text = String(question || "").toLowerCase();
-  let out = intent && typeof intent === "object" ? { ...intent } : localIntent(question, false);
-
-  const q = text.match(/\bq([1-4])\b|\b([1-4])(?:st|nd|rd|th)?\s+quarter\b/);
-  if (q) {
-    const quarter = Number(q[1] || q[2]);
-    const startMonth = (quarter - 1) * 3 + 1;
-    const endMonth = startMonth + 2;
-    const year = 2026;
-    const start = `${year}-${String(startMonth).padStart(2, "0")}-01`;
-    const end = `${year}-${String(endMonth).padStart(2, "0")}-${String(new Date(year, endMonth, 0).getDate()).padStart(2, "0")}`;
-    out = fixedScopeIntent(out, start, end, `Q${quarter}`, "deterministic-quarter");
-    if (/average|avg|spend|outflow|monthly|daily/.test(text)) out.intent = "spend_average";
-    if (/monthly|per month/.test(text)) out.constraints = { ...(out.constraints || {}), aggregation: "monthly" };
-  }
-
-  if (text.includes("thanksgiving")) {
-    const day = "2026-11-26";
-    const window = text.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+days?\s+before\s+and\s+after/) || text.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+days?\s+around/);
-    if (window) {
-      const n = wordNumber(window[1]) || 0;
-      const start = cashflow.addDays ? cashflow.addDays(day, -n) : day;
-      const end = cashflow.addDays ? cashflow.addDays(day, n) : day;
-      out = fixedScopeIntent(out, start, end, `Thanksgiving ± ${n} days`, "deterministic-holiday-window");
-    } else {
-      out = fixedScopeIntent(out, day, day, "Thanksgiving Day", "deterministic-holiday");
-    }
-    if (/outflow|outflows|item|items|bill|bills|projected|that day|coming up|due/.test(text)) {
-      out.intent = "upcoming_bills";
-      out.constraints = { ...(out.constraints || {}), flow: "outflow" };
-    }
-  }
-
+  const fallback = localIntent(question);
+  const out = intent && typeof intent === "object" ? { ...fallback, ...intent } : fallback;
   if (!validIso(out.dateStart) || !validIso(out.dateEnd)) {
-    const fallback = cashflow.scopeFromQuestion(question);
-    out.dateStart = fallback.start;
-    out.dateEnd = fallback.end;
-    out.scopeLabel = fallback.label;
-    out.constraints = { ...(out.constraints || {}), scopePatch: "fallback-scope" };
+    out.dateStart = fallback.dateStart;
+    out.dateEnd = fallback.dateEnd;
+    out.scopeLabel = fallback.scopeLabel;
   }
-
   return out;
-}
-
-function localIntent(question, applyCorrection = true) {
-  const text = String(question || "").toLowerCase();
-  const amount = cashflow.parseAmount(question);
-  let intent = "unknown";
-  if (/outflow|outflows|projected.*that day|that day|specific day|thanksgiving|christmas/.test(text)) intent = "upcoming_bills";
-  else if (/average|avg|daily spend|monthly spend|spend per day|spend per month|quarter|q[1-4]/.test(text)) intent = "spend_average";
-  else if (/afford|spend|buy|can i/.test(text) && amount) intent = "affordability";
-  else if (/best|when|day|date|pay|payment|safest/.test(text) && amount) intent = "payment_timing";
-  else if (/upcoming|coming up|bills|due|next bill/.test(text)) intent = "upcoming_bills";
-  else if (/lowest|low|minimum|floor|risk|buffer|projection/.test(text)) intent = "low_balance";
-  else if (/summary|status|where.*stand|current read/.test(text)) intent = "summary";
-  const scope = cashflow.scopeFromQuestion(question);
-  const base = {
-    intent,
-    amount: amount || null,
-    dateStart: scope.start,
-    dateEnd: scope.end,
-    scopeLabel: scope.label,
-    target: null,
-    constraints: {},
-    confidence: intent === "unknown" ? 0.35 : 0.7,
-    requiresConfirmation: false
-  };
-  return applyCorrection ? correctIntent(question, base) : base;
 }
 
 async function parseIntentWithOpenAI(question, data) {
@@ -218,21 +165,10 @@ async function parseIntentWithOpenAI(question, data) {
     instructions: [
       "You parse BillsOS user requests into strict JSON only.",
       "Do not calculate balances or totals. BillsOS calculates numbers after your parse.",
-      "Your primary job is natural-language interpretation: date ranges, periods, metrics, aggregation, and user intent.",
       "Use planning year 2026 unless the user explicitly gives another year.",
       "BillsOS currently has month data from 2026-06 through 2026-12.",
-      "Interpret quarters normally: Q1 Jan-Mar, Q2 Apr-Jun, Q3 Jul-Sep, Q4 Oct-Dec. For Q4 return 2026-10-01 through 2026-12-31.",
-      "For Thanksgiving 2026, use 2026-11-26. For Christmas 2026, use 2026-12-25.",
-      "Normalize spelled numbers in date windows: one=1, two=2, three=3, four=4, five=5, etc.",
-      "For two days before and after Thanksgiving, return 2026-11-24 through 2026-11-28.",
-      "For three days before and after Thanksgiving, return 2026-11-23 through 2026-11-29.",
-      "For named months, holidays, phrases like first half of November, after Thanksgiving, before Christmas, and next month, return concrete ISO dateStart/dateEnd.",
-      "Do not default broad named periods like Q4, October, December, or Thanksgiving to next 30 days.",
       "Return only valid JSON with keys: intent, amount, dateStart, dateEnd, scopeLabel, target, constraints, requiresConfirmation, confidence, clarificationQuestion.",
-      "Allowed intent values: payment_timing, affordability, low_balance, upcoming_bills, spend_average, summary, unknown.",
-      "For outflow/list questions about a day or window, use intent upcoming_bills and constraints.flow='outflow'.",
-      "For average spend questions, use intent spend_average and put aggregation in constraints.aggregation as daily, weekly, monthly, or period_total when clear.",
-      "requiresConfirmation must be true only for data-changing requests, such as move, add, delete, mark paid, or change."
+      "Allowed intent values: payment_timing, affordability, low_balance, upcoming_bills, spend_average, summary, unknown."
     ].join("\n"),
     input: [{ role: "user", content: [{ type: "input_text", text: JSON.stringify({ currentDate: cashflow.today(), planningYear: 2026, userQuestion: question, billsContext: compactBillsContext(data) }) }] }]
   });
@@ -262,7 +198,7 @@ module.exports = function registerAssistantApi(app, options) {
       interpretation: "openai-intent-first",
       intentValidator: "deterministic-period-guardrails",
       scriptLoader: "replace-script-by-id",
-      projectionGuard: "sweep-only",
+      projectionGuard: "control-center-source",
       envAccepted: ["OPENAI_API_KEY", "OPENAI_KEY", "CHATGPT_API_KEY"].filter(name => !!process.env[name])
     });
   });
