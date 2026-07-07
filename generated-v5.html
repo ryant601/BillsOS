@@ -23,7 +23,7 @@ var shortIds={june:'june',july:'july',august:'aug',september:'sep',october:'oct'
 var mount=document.getElementById('mount'),tabs=document.getElementById('tabs');
 function money(v){return '$'+Number(v||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
 function signed(v){return (v>=0?'+':'−')+Number(Math.abs(v)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
-function esc(s){return String(s==null?'':s).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function days(month){return new Date(2026,month,0).getDate()}
 function iso(month,day){return '2026-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0')}
 function todayIso(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
@@ -39,5 +39,6 @@ async function load(){try{var engine=await waitForEngine(),data=await loadBillsD
 load();
 })();
 </script>
+<script id="billsosCardEditor" defer src="/billsos-due-date-editor.js?v=20260707cardrestore2"></script>
 </body>
 </html>
