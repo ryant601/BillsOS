@@ -100,17 +100,19 @@
     installStyle();
     var done=readDone(),amountMap=read(AMOUNT_KEY);
     document.querySelectorAll('.ev').forEach(function(row){
-      var key=rowKey(row),amount=amountFromKey(key);if(!key||amount>=0)return;
-      normalizeLegacyEditButtons(row,key);
+      var key=rowKey(row),amount=amountFromKey(key);if(!key)return;
       var cb=row.querySelector('.billsosDoneCheck');
       if(!cb){cb=document.createElement('input');cb.type='checkbox';cb.className='billsosDoneCheck';row.insertBefore(cb,row.firstChild)}
       if(cb.dataset.id!==key)cb.dataset.id=key;
       var checked=!!done[key];if(cb.checked!==checked)cb.checked=checked;setClass(row,'done',checked);
-      var btn=row.querySelector('.billsosCardEditBtn');
-      if(!btn){btn=document.createElement('button');btn.type='button';btn.className='billsosCardEditBtn';row.appendChild(btn)}
-      if(btn.dataset.key!==key)btn.dataset.key=key;if(btn.dataset.amountKey!==key)btn.dataset.amountKey=key;setText(btn,'✎');if(btn.title!=='Edit amount or due date')btn.title='Edit amount or due date';setAttr(btn,'aria-label','Edit amount and due date for '+rowName(row));
-      setClass(row,'amount-edited',!!amountMap[key]);setClass(row,'date-edited',isMoved(key,row));
-      var amt=row.querySelector('.amt'),newAmount=(amount<0?'−':'')+money(amountFor(key));if(amt&&amt.textContent!==newAmount)amt.textContent=newAmount;
+      if(amount<0){
+        normalizeLegacyEditButtons(row,key);
+        var btn=row.querySelector('.billsosCardEditBtn');
+        if(!btn){btn=document.createElement('button');btn.type='button';btn.className='billsosCardEditBtn';row.appendChild(btn)}
+        if(btn.dataset.key!==key)btn.dataset.key=key;if(btn.dataset.amountKey!==key)btn.dataset.amountKey=key;setText(btn,'✎');if(btn.title!=='Edit amount or due date')btn.title='Edit amount or due date';setAttr(btn,'aria-label','Edit amount and due date for '+rowName(row));
+        setClass(row,'amount-edited',!!amountMap[key]);setClass(row,'date-edited',isMoved(key,row));
+        var amt=row.querySelector('.amt'),newAmount='−'+money(amountFor(key));if(amt&&amt.textContent!==newAmount)amt.textContent=newAmount;
+      }
     });
   }
   function schedule(){clearTimeout(timer);timer=setTimeout(sync,80)}
