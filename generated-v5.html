@@ -14,7 +14,7 @@
 <section class="hero"><div><div class="eyebrow">BillsOS</div><h1>Bills Dashboard</h1><div class="sub">This view renders from Control Center data. No hidden paychecks, action logs, or system rule rows are used.</div></div><div class="nav"><a href="/">Live Dashboard</a><a href="/control">Control Center</a><a href="/legacy">Legacy</a></div></section>
 <div class="tabs" id="tabs"></div><div id="mount"><div class="loader">Loading calendar…</div></div>
 </div>
-<script id="billsosCashflowEngine" defer src="/cashflow-engine.js?v=20260707nohiddenrules1"></script>
+<script id="billsosCashflowEngineSync" src="/cashflow-engine.js?v=20260710sync1"></script>
 <script>
 (function(){'use strict';
 var VERSION='20260707cardedits1',AMOUNT_KEY='billsos-amount-adjust-v1',DATE_KEY='billsos-pay-adjust-v1';
@@ -32,7 +32,7 @@ function readMap(k){try{var parsed=JSON.parse(localStorage.getItem(k)||'{}');ret
 function rowKey(r){return (r.iso||r.date)+'|'+r.name+'|'+r.amount}
 function applyCardEdits(rows,targetMonth){var amountMap=readMap(AMOUNT_KEY),dateMap=readMap(DATE_KEY),mv='2026-'+String(targetMonth).padStart(2,'0');return rows.map(function(row){var key=rowKey(row),out=Object.assign({},row),amountEdit=amountMap[key],dateEdit=dateMap[key],sign=Number(out.amount||0)<0?-1:1;if(amountEdit&&isFinite(Number(amountEdit.amount)))out.amount=sign*Math.abs(Number(amountEdit.amount));if(dateEdit&&validIso(dateEdit.date)){out.iso=dateEdit.date;out.date=dateEdit.date;out.day=Number(dateEdit.date.slice(8,10));out.moved=true}out.originalKey=key;return out}).filter(function(row){return String(row.iso||row.date||'').slice(0,7)===mv}).sort(function(a,b){return String(a.iso||a.date).localeCompare(String(b.iso||b.date))||Number(b.amount||0)-Number(a.amount||0)})}
 function allModelRows(model){var out=[];months.forEach(function(m){var key=m[0],rows=model&&model.months&&model.months[key]&&model.months[key].rows||[];rows.forEach(function(r){out.push(r)})});return out}
-function waitForEngine(){return new Promise(function(resolve,reject){var tries=0;(function tick(){if(window.BillsOSCashflow)return resolve(window.BillsOSCashflow);if(++tries>80)return reject(new Error('Cashflow engine did not load.'));setTimeout(tick,50)})()})}
+function waitForEngine(){return new Promise(function(resolve,reject){var tries=0;(function tick(){if(window.BillsOSCashflow)return resolve(window.BillsOSCashflow);if(++tries>200)return reject(new Error('Cashflow engine did not load.'));setTimeout(tick,50)})()})}
 async function loadBillsData(){var data={bills:[],income:[],oneTimeEvents:[]};try{var r=await fetch('/api/bills?dashboard='+Date.now(),{cache:'no-store',credentials:'same-origin'});if(r.ok)data=await r.json()}catch(e){}data.bills=Array.isArray(data.bills)?data.bills.filter(function(x){return x&&x.active!==false}):[];data.income=Array.isArray(data.income)?data.income.filter(function(x){return x&&x.active!==false&&Number(x.amount||0)}):[];data.oneTimeEvents=Array.isArray(data.oneTimeEvents)?data.oneTimeEvents.filter(function(x){return x&&!/^__billsos_/.test(String(x.id||''))&&Number(x.amount||0)}):[];return data}
 function eventsByDay(rows){var out={};rows.forEach(function(r){(out[r.day]=out[r.day]||[]).push(r)});return out}
 function panelHtml(monthDef,model,allRows,prevEnd){var key=monthDef[0],name=monthDef[1],month=monthDef[2],id=shortIds[key],m=model.months[key],rows=applyCardEdits(allRows,month),byDay=eventsByDay(rows),dim=days(month),firstDow=new Date(2026,month-1,1).getDay(),html='';for(var b=0;b<firstDow;b++)html+='<div class="day is-blank"></div>';var run=Number(prevEnd==null?(m&&m.begin||0):prevEnd),monthBegin=run,today=todayIso();for(var d=1;d<=dim;d++){var before=run,items=byDay[d]||[];items.forEach(function(r){run+=Number(r.amount||0)});var date=iso(month,d),warn=run<1000?' is-warn':'',isToday=date===today?' is-today':'',evs=items.map(function(r){var cls=r.amount>0?'in':(/transfer|sweep|fund|spending/i.test(r.name)||r.type==='transfer'?'xfer':'out'),cardKey=r.originalKey||rowKey(r);return '<div class="ev '+cls+'" data-id="'+esc(cardKey)+'"><span class="dot"></span><span class="nm">'+esc(r.name)+'</span><span class="amt">'+signed(r.amount)+'</span></div>'}).join('');html+='<div class="day'+warn+isToday+'" data-day="'+d+'"><div class="dtop"><span class="dnum">'+d+'</span><span>'+new Date(date+'T12:00:00').toLocaleDateString(undefined,{weekday:'short'})+'</span>'+(isToday?'<span class="badge">Today</span>':'')+'</div><div class="bod"><span>begin day</span><b>'+money(before)+'</b></div><div class="events">'+evs+'</div><div class="eod"><span>end of day</span><b>'+money(run)+'</b></div></div>'}
@@ -45,6 +45,6 @@ async function load(){try{var engine=await waitForEngine(),data=await loadBillsD
 load();
 })();
 </script>
-<script id="billsosCardEditor" defer src="/billsos-card-editor.js?v=20260709mobilegrid1"></script>
+<script id="billsosCardEditor" defer src="/billsos-card-editor.js?v=20260710paycheckedit1"></script>
 </body>
 </html>
