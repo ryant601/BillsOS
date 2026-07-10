@@ -4,7 +4,7 @@ const cashflow = require("./cashflow-engine");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.CHATGPT_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || process.env.CHATGPT_MODEL || "gpt-4.1-mini";
-const INTENT_BUILD = "assistant-intent-20260707-balance-corrections";
+const INTENT_BUILD = "assistant-plan-20260709-general1";
 
 function compactBillsContext(data) {
   const src = data && typeof data === "object" ? data : {};
@@ -15,27 +15,9 @@ function compactBillsContext(data) {
     updatedAt: src.updatedAt || null,
     planningYear: 2026,
     availableMonths: ["2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"],
-    bills: bills.filter(row => row && row.active !== false).slice(0, 80).map(row => ({
-      name: row.name || "Bill",
-      amount: Number(row.amount || 0),
-      dueDay: row.dueDay || null,
-      frequency: row.frequency || "monthly",
-      startMonth: row.startMonth || null,
-      endMonth: row.endMonth || null
-    })),
-    income: income.filter(row => row && row.active !== false).slice(0, 20).map(row => ({
-      name: row.name || "Income",
-      amount: Number(row.amount || 0),
-      schedule: row.schedule || "manual",
-      startDate: row.startDate || row.start || row.anchorDate || null
-    })),
-    oneTimeEvents: oneTimeEvents.filter(row => row && !String(row.id || "").startsWith("__billsos_")).slice(0, 60).map(row => ({
-      name: row.name || "One-time item",
-      amount: Number(row.amount || 0),
-      date: row.date || row.iso || row.startDate || row.effectiveDate || null,
-      type: row.type || null,
-      notes: row.notes || ""
-    }))
+    billNames: bills.filter(row => row && row.active !== false).slice(0, 100).map(row => row.name || "Bill"),
+    incomeNames: income.filter(row => row && row.active !== false).slice(0, 30).map(row => row.name || "Income"),
+    oneTimeNames: oneTimeEvents.filter(row => row && !String(row.id || "").startsWith("__billsos_")).slice(0, 80).map(row => row.name || "One-time item")
   };
 }
 
@@ -71,7 +53,7 @@ function injectBridge(html) {
   let out = normalizeDashboardProjection(html);
   if (typeof out !== "string") return out;
   out = replaceScriptById(out, "billsosCashflowEngine", "/cashflow-engine.js?v=20260707corrections1");
-  out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260702intent4");
+  out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260709general1");
   out = replaceScriptById(out, "billsosAssistantAiBridge", "/assistant-ai-bridge.js?v=20260702bridge4");
   return out;
 }
@@ -94,14 +76,15 @@ async function openAIResponse(body) {
 async function callOpenAI({ question, deterministicAnswer, billsContext }) {
   const payload = await openAIResponse({
     model: OPENAI_MODEL,
-    max_output_tokens: 450,
+    max_output_tokens: 500,
     instructions: [
       "You are the BillsOS assistant for a private household budget app.",
-      "BillsOS performs the calculations. Treat the deterministic BillsOS result as the source of truth.",
-      "Do not invent balances, due dates, income, or affordability conclusions.",
-      "Use the BillsOS data only to clarify wording or context.",
-      "Answer calmly and concisely. Use short bullets when useful.",
-      "If the user asks to change data, say that BillsOS should ask for confirmation before saving."
+      "BillsOS performs every calculation. Treat the deterministic BillsOS result as the source of truth.",
+      "Do not invent balances, due dates, income, totals, or affordability conclusions.",
+      "Preserve all important dates and amounts from the deterministic result.",
+      "Answer the user's exact question directly, calmly, and concisely.",
+      "Use a short headline and bullets when useful.",
+      "If the deterministic result reports an unsupported data-changing action, explain that confirmation is required."
     ].join("\n"),
     input: [{ role: "user", content: [{ type: "input_text", text: JSON.stringify({ userQuestion: question, deterministicBillsOSResult: deterministicAnswer, billsContext }) }] }]
   });
@@ -110,30 +93,6 @@ async function callOpenAI({ question, deterministicAnswer, billsContext }) {
 
 function validIso(value) {
   return /^20\d{2}-\d{2}-\d{2}$/.test(String(value || ""));
-}
-
-function localIntent(question) {
-  const text = String(question || "").toLowerCase();
-  const amount = cashflow.parseAmount(question);
-  let intent = "unknown";
-  if (/average|avg|daily spend|monthly spend|spend per day|spend per month|quarter|q[1-4]/.test(text)) intent = "spend_average";
-  else if (/afford|spend|buy|can i/.test(text) && amount) intent = "affordability";
-  else if (/best|when|day|date|pay|payment|safest/.test(text) && amount) intent = "payment_timing";
-  else if (/upcoming|coming up|bills|due|next bill|outflow|outflows/.test(text)) intent = "upcoming_bills";
-  else if (/lowest|low|minimum|floor|risk|buffer|projection/.test(text)) intent = "low_balance";
-  else if (/summary|status|where.*stand|current read/.test(text)) intent = "summary";
-  const scope = cashflow.scopeFromQuestion(question);
-  return {
-    intent,
-    amount: amount || null,
-    dateStart: scope.start,
-    dateEnd: scope.end,
-    scopeLabel: scope.label,
-    target: null,
-    constraints: {},
-    requiresConfirmation: /move|add|delete|mark paid|change|save|edit/.test(text),
-    confidence: intent === "unknown" ? 0.35 : 0.7
-  };
 }
 
 function extractJson(text) {
@@ -146,33 +105,162 @@ function extractJson(text) {
   return null;
 }
 
-function correctIntent(question, intent) {
-  const fallback = localIntent(question);
-  const out = intent && typeof intent === "object" ? { ...fallback, ...intent } : fallback;
-  if (!validIso(out.dateStart) || !validIso(out.dateEnd)) {
-    out.dateStart = fallback.dateStart;
-    out.dateEnd = fallback.dateEnd;
-    out.scopeLabel = fallback.scopeLabel;
-  }
-  return out;
+function amountFromText(text) {
+  const money = String(text || "").match(/(?:\$|under\s+|below\s+|over\s+|above\s+)(-?[0-9][0-9,]*(?:\.\d{1,2})?)/i);
+  return money ? Number(money[1].replace(/,/g, "")) : null;
 }
 
-async function parseIntentWithOpenAI(question, data) {
-  if (!OPENAI_API_KEY) return { mode: "local", intent: localIntent(question) };
+function localPlan(question, previousPlan) {
+  const text = String(question || "").toLowerCase();
+  const scope = cashflow.scopeFromQuestion(question);
+  const parsedAmount = cashflow.parseAmount(question);
+  const explicitThreshold = amountFromText(question);
+  const prior = previousPlan && typeof previousPlan === "object" ? previousPlan : {};
+  const plan = {
+    operation: "summary",
+    metric: "balance",
+    dateStart: scope.start,
+    dateEnd: scope.end,
+    scopeLabel: scope.label,
+    flow: "all",
+    comparator: null,
+    threshold: null,
+    aggregation: null,
+    groupBy: null,
+    sort: "date_asc",
+    limit: 12,
+    entity: null,
+    amount: parsedAmount || null,
+    includeCompleted: false,
+    requiresConfirmation: /\b(move|add|delete|remove|mark paid|change|save|edit|update)\b/.test(text),
+    confidence: 0.65,
+    clarificationQuestion: null
+  };
+
+  if (/\b(that|those|same|it|them)\b/.test(text) && prior.operation) {
+    Object.assign(plan, prior, { dateStart: scope.start, dateEnd: scope.end, scopeLabel: scope.label });
+  }
+
+  if (/negative|below zero|under zero|overdrawn|overdraft/.test(text)) {
+    plan.operation = "balance_filter";
+    plan.metric = "ending_balance";
+    plan.comparator = "lt";
+    plan.threshold = 0;
+  } else if (/below|under|less than/.test(text) && explicitThreshold != null && /balance|cash|buffer|day/.test(text)) {
+    plan.operation = "balance_filter";
+    plan.metric = "ending_balance";
+    plan.comparator = "lt";
+    plan.threshold = explicitThreshold;
+  } else if (/above|over|greater than/.test(text) && explicitThreshold != null && /balance|cash|buffer|day/.test(text)) {
+    plan.operation = "balance_filter";
+    plan.metric = "ending_balance";
+    plan.comparator = "gt";
+    plan.threshold = explicitThreshold;
+  } else if (/lowest|minimum|worst|tightest|smallest balance/.test(text)) {
+    plan.operation = "balance_extreme";
+    plan.metric = "ending_balance";
+    plan.sort = "value_asc";
+    plan.limit = /days|dates|list|show/.test(text) ? 10 : 1;
+  } else if (/highest|maximum|best balance|largest balance/.test(text)) {
+    plan.operation = "balance_extreme";
+    plan.metric = "ending_balance";
+    plan.sort = "value_desc";
+    plan.limit = /days|dates|list|show/.test(text) ? 10 : 1;
+  } else if (/how many|count|number of/.test(text)) {
+    plan.operation = /balance|negative|below|under/.test(text) ? "balance_filter" : "event_aggregate";
+    plan.aggregation = "count";
+    if (/negative|below zero|under zero/.test(text)) { plan.comparator = "lt"; plan.threshold = 0; }
+  } else if (/average|avg|per day|daily|per month|monthly/.test(text)) {
+    plan.operation = "event_aggregate";
+    plan.metric = "amount";
+    plan.aggregation = "average";
+    plan.groupBy = /month|monthly|quarter|q[1-4]/.test(text) ? "month" : "day";
+    plan.flow = /income|paycheck|deposit/.test(text) ? "income" : "outflow";
+  } else if (/total|sum|combined|how much/.test(text)) {
+    plan.operation = "event_aggregate";
+    plan.metric = "amount";
+    plan.aggregation = "sum";
+    plan.flow = /income|paycheck|deposit/.test(text) ? "income" : /net/.test(text) ? "all" : "outflow";
+    plan.groupBy = /by month|each month|monthly/.test(text) ? "month" : null;
+  } else if (/compare|versus|vs\.?|difference between|which month/.test(text)) {
+    plan.operation = "period_compare";
+    plan.metric = /balance|low|risk/.test(text) ? "minimum_balance" : "outflow";
+    plan.groupBy = "month";
+    plan.sort = /best|highest/.test(text) ? "value_desc" : "value_asc";
+  } else if (/largest|biggest|most expensive|top\s+\d+/.test(text)) {
+    plan.operation = "event_list";
+    plan.flow = /income|paycheck|deposit/.test(text) ? "income" : "outflow";
+    plan.sort = "amount_desc";
+    const top = text.match(/top\s+(\d+)/);
+    plan.limit = top ? Math.min(30, Math.max(1, Number(top[1]))) : 10;
+  } else if (/upcoming|coming up|due|bills|payments|paychecks|income|deposits|items|transactions/.test(text)) {
+    plan.operation = "event_list";
+    plan.flow = /paycheck|income|deposit/.test(text) ? "income" : /all|everything|items|transactions/.test(text) ? "all" : "outflow";
+  }
+
+  if ((/afford|safe to spend|can i spend|can i buy/.test(text)) && parsedAmount) {
+    plan.operation = "affordability";
+    plan.amount = parsedAmount;
+  } else if ((/best|safest|when|what day|which day/.test(text)) && parsedAmount) {
+    plan.operation = "payment_timing";
+    plan.amount = parsedAmount;
+  }
+
+  const quoted = String(question || "").match(/["“]([^"”]+)["”]/);
+  if (quoted) plan.entity = quoted[1];
+  plan.confidence = plan.operation === "summary" ? 0.45 : 0.8;
+  return plan;
+}
+
+function normalizeEnum(value, allowed, fallback) {
+  return allowed.includes(value) ? value : fallback;
+}
+
+function correctPlan(question, raw, previousPlan) {
+  const fallback = localPlan(question, previousPlan);
+  const plan = raw && typeof raw === "object" ? { ...fallback, ...raw } : fallback;
+  plan.operation = normalizeEnum(plan.operation, ["balance_filter", "balance_extreme", "event_list", "event_aggregate", "period_compare", "payment_timing", "affordability", "summary", "unknown"], fallback.operation);
+  plan.metric = normalizeEnum(plan.metric, ["ending_balance", "minimum_balance", "maximum_balance", "amount", "outflow", "income", "net", "balance"], fallback.metric);
+  plan.flow = normalizeEnum(plan.flow, ["all", "outflow", "income", "transfer"], fallback.flow);
+  plan.comparator = plan.comparator == null ? null : normalizeEnum(plan.comparator, ["lt", "lte", "eq", "gte", "gt"], fallback.comparator);
+  plan.aggregation = plan.aggregation == null ? null : normalizeEnum(plan.aggregation, ["sum", "average", "count", "minimum", "maximum"], fallback.aggregation);
+  plan.groupBy = plan.groupBy == null ? null : normalizeEnum(plan.groupBy, ["day", "month", "name", "type"], fallback.groupBy);
+  plan.sort = normalizeEnum(plan.sort, ["date_asc", "date_desc", "amount_asc", "amount_desc", "value_asc", "value_desc"], fallback.sort);
+  plan.limit = Math.min(30, Math.max(1, Number(plan.limit || fallback.limit || 12)));
+  plan.threshold = plan.threshold == null || !Number.isFinite(Number(plan.threshold)) ? fallback.threshold : Number(plan.threshold);
+  plan.amount = plan.amount == null || !Number.isFinite(Number(plan.amount)) ? fallback.amount : Number(plan.amount);
+  plan.entity = plan.entity ? String(plan.entity).slice(0, 120) : null;
+  plan.includeCompleted = !!plan.includeCompleted;
+  plan.requiresConfirmation = !!plan.requiresConfirmation;
+  plan.confidence = Math.max(0, Math.min(1, Number(plan.confidence || fallback.confidence || 0.5)));
+  if (!validIso(plan.dateStart) || !validIso(plan.dateEnd) || plan.dateStart > plan.dateEnd) {
+    plan.dateStart = fallback.dateStart;
+    plan.dateEnd = fallback.dateEnd;
+    plan.scopeLabel = fallback.scopeLabel;
+  }
+  return plan;
+}
+
+async function parsePlanWithOpenAI(question, data, previousPlan) {
+  if (!OPENAI_API_KEY) return { mode: "local", plan: localPlan(question, previousPlan) };
   const payload = await openAIResponse({
     model: OPENAI_MODEL,
-    max_output_tokens: 350,
+    max_output_tokens: 500,
     instructions: [
-      "You parse BillsOS user requests into strict JSON only.",
-      "Do not calculate balances or totals. BillsOS calculates numbers after your parse.",
-      "Use planning year 2026 unless the user explicitly gives another year.",
-      "BillsOS currently has month data from 2026-06 through 2026-12.",
-      "Return only valid JSON with keys: intent, amount, dateStart, dateEnd, scopeLabel, target, constraints, requiresConfirmation, confidence, clarificationQuestion.",
-      "Allowed intent values: payment_timing, affordability, low_balance, upcoming_bills, spend_average, summary, unknown."
+      "Translate a household-budget question into one general BillsOS query plan. Return strict JSON only.",
+      "Do not calculate any values. BillsOS calculates after parsing.",
+      "Use planning year 2026 unless another year is explicit. Available data is 2026-06 through 2026-12.",
+      "Resolve ordinary wording and synonyms broadly. Examples: negative/below zero/overdrawn => balance_filter lt 0; biggest bills => event_list outflow amount_desc; how much => event_aggregate sum; compare months => period_compare.",
+      "Use previousPlan only for follow-ups such as that month, those bills, or what about September.",
+      "Schema keys: operation, metric, dateStart, dateEnd, scopeLabel, flow, comparator, threshold, aggregation, groupBy, sort, limit, entity, amount, includeCompleted, requiresConfirmation, confidence, clarificationQuestion.",
+      "Allowed operation: balance_filter, balance_extreme, event_list, event_aggregate, period_compare, payment_timing, affordability, summary, unknown.",
+      "Allowed metric: ending_balance, minimum_balance, maximum_balance, amount, outflow, income, net, balance.",
+      "Allowed flow: all, outflow, income, transfer. Allowed comparator: lt, lte, eq, gte, gt. Allowed aggregation: sum, average, count, minimum, maximum. Allowed groupBy: day, month, name, type.",
+      "Prefer a usable best-match plan over unknown. Only ask a clarification when two materially different calculations are equally plausible."
     ].join("\n"),
-    input: [{ role: "user", content: [{ type: "input_text", text: JSON.stringify({ currentDate: cashflow.today(), planningYear: 2026, userQuestion: question, billsContext: compactBillsContext(data) }) }] }]
+    input: [{ role: "user", content: [{ type: "input_text", text: JSON.stringify({ currentDate: cashflow.today(), userQuestion: question, previousPlan: previousPlan || null, billsContext: compactBillsContext(data) }) }] }]
   });
-  return { mode: "openai", intent: correctIntent(question, extractJson(outputText(payload)) || localIntent(question)) };
+  return { mode: "openai", plan: correctPlan(question, extractJson(outputText(payload)), previousPlan) };
 }
 
 module.exports = function registerAssistantApi(app, options) {
@@ -205,10 +293,11 @@ module.exports = function registerAssistantApi(app, options) {
     res.setHeader("Cache-Control", "no-store");
     try {
       const question = String((req.body && req.body.question) || "").trim().slice(0, 1000);
+      const previousPlan = req.body && req.body.previousPlan && typeof req.body.previousPlan === "object" ? req.body.previousPlan : null;
       if (!question) return res.status(400).json({ error: "Question is required" });
       const data = typeof readBillsData === "function" ? readBillsData() : {};
-      const parsed = await parseIntentWithOpenAI(question, data).catch(err => ({ mode: "local", error: err && err.message ? err.message : "Intent parse failed", intent: localIntent(question) }));
-      res.json({ mode: parsed.mode, model: parsed.mode === "openai" ? OPENAI_MODEL : null, build: INTENT_BUILD, intent: correctIntent(question, parsed.intent || localIntent(question)), answer: null, error: parsed.error || null });
+      const parsed = await parsePlanWithOpenAI(question, data, previousPlan).catch(err => ({ mode: "local", error: err && err.message ? err.message : "Plan parse failed", plan: localPlan(question, previousPlan) }));
+      res.json({ mode: parsed.mode, model: parsed.mode === "openai" ? OPENAI_MODEL : null, build: INTENT_BUILD, intent: correctPlan(question, parsed.plan || localPlan(question, previousPlan), previousPlan), answer: null, error: parsed.error || null });
     } catch (err) {
       res.status(500).json({ error: err && err.message ? err.message : "Intent request failed" });
     }
@@ -218,7 +307,7 @@ module.exports = function registerAssistantApi(app, options) {
     res.setHeader("Cache-Control", "no-store");
     try {
       const question = String((req.body && req.body.question) || "").trim().slice(0, 1000);
-      const deterministicAnswer = plainText((req.body && req.body.deterministicAnswer) || "").slice(0, 4000);
+      const deterministicAnswer = plainText((req.body && req.body.deterministicAnswer) || "").slice(0, 5000);
       if (!question) return res.status(400).json({ error: "Question is required" });
       if (!deterministicAnswer) return res.status(400).json({ error: "Deterministic BillsOS result is required" });
       if (!OPENAI_API_KEY) return res.status(501).json({ mode: "local", enabled: false, error: "OPENAI_API_KEY is not configured" });
