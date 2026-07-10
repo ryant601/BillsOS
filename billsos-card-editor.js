@@ -13,8 +13,9 @@
   function amountFromKey(key){var p=String(key||'').split('|'),n=Number(p[p.length-1]);return isFinite(n)?n:0}
   function originalDate(key){var d=String(key||'').split('|')[0]||'';return validDate(d)?d:''}
   function rowKey(row){var input=row.querySelector('input[data-id]');return input&&input.dataset.id||row.dataset.id||row.dataset.key||''}
-  function rowName(row){var el=row.querySelector('.nm');return String(el&&el.textContent||'Bill').replace(/\s+/g,' ').trim()}
+  function rowName(row){var el=row.querySelector('.nm');return String(el&&el.textContent||'Item').replace(/\s+/g,' ').trim()}
   function amountFor(key){var edit=read(AMOUNT_KEY)[key],base=Math.abs(amountFromKey(key));return edit&&isFinite(Number(edit.amount))?Math.abs(Number(edit.amount)):base}
+  function signedAmountFor(key){return amountFromKey(key)<0?-amountFor(key):amountFor(key)}
   function renderedDate(row,key){var day=row.closest('.day'),panel=row.closest('.month-panel'),n=Number(day&&day.dataset.day),id=String(panel&&panel.id||'').replace(/^panel-/,'').toLowerCase(),months={june:'06',jul:'07',july:'07',aug:'08',august:'08',sep:'09',september:'09',oct:'10',october:'10',nov:'11',november:'11',dec:'12',december:'12'},mm=months[id];return mm&&n?'2026-'+mm+'-'+String(n).padStart(2,'0'):originalDate(key)}
   function dateFor(key,row){var edit=read(DATE_KEY)[key];return edit&&validDate(edit.date)?edit.date:renderedDate(row,key)}
   function saveAmount(key,value){var n=Math.round(Math.abs(Number(value||0))*100)/100,map=read(AMOUNT_KEY),base=Math.abs(amountFromKey(key));if(!isFinite(n))return false;if(Math.abs(n-base)<.005)delete map[key];else map[key]={amount:n,updatedAt:new Date().toISOString()};write(AMOUNT_KEY,map);return true}
@@ -32,9 +33,9 @@
   function closeEditor(){var p=document.querySelector('.billsosCardEditPopover');if(p)p.remove()}
   function openEditor(row,key,anchor){
     closeEditor();
-    var base=Math.abs(amountFromKey(key)),amount=amountFor(key),date=dateFor(key,row),orig=originalDate(key),pop=document.createElement('div');
+    var base=Math.abs(amountFromKey(key)),amount=amountFor(key),date=dateFor(key,row),orig=originalDate(key),isIncome=amountFromKey(key)>0,pop=document.createElement('div');
     pop.className='billsosCardEditPopover';
-    pop.innerHTML='<label>Amount</label><input class="amountInput" inputmode="decimal" value="'+amount.toFixed(2)+'"><label>Due date</label><input class="dateInput" type="date" value="'+date+'"><div class="billsosCardEditActions"><button class="primary" data-action="save">Save</button><button data-action="cancel">Cancel</button>'+(amount!==base?'<button class="wide" data-action="reset-amount">Reset amount</button>':'')+(date!==orig?'<button class="wide" data-action="reset-date">Reset due date</button>':'')+'</div>';
+    pop.innerHTML='<label>Amount</label><input class="amountInput" inputmode="decimal" value="'+amount.toFixed(2)+'"><label>Date</label><input class="dateInput" type="date" value="'+date+'"><div class="billsosCardEditActions"><button class="primary" data-action="save">Save</button><button data-action="cancel">Cancel</button>'+(amount!==base?'<button class="wide" data-action="reset-amount">Reset amount</button>':'')+(date!==orig?'<button class="wide" data-action="reset-date">Reset date</button>':'')+'</div><div style="font-size:11px;color:#5f6b7a">Editing '+(isIncome?'income':'payment')+' occurrence only.</div>';
     document.body.appendChild(pop);
     var r=anchor.getBoundingClientRect();pop.style.left=Math.max(12,Math.min(r.left,innerWidth-pop.offsetWidth-12))+'px';pop.style.top=Math.max(12,Math.min(r.bottom+8,innerHeight-pop.offsetHeight-12))+'px';
     pop.onclick=function(e){var action=e.target.dataset.action;if(!action)return;e.preventDefault();if(action==='cancel')closeEditor();if(action==='save'){saveAmount(key,pop.querySelector('.amountInput').value);saveDate(key,pop.querySelector('.dateInput').value);location.reload()}if(action==='reset-amount'){saveAmount(key,base);location.reload()}if(action==='reset-date'){var map=read(DATE_KEY);delete map[key];write(DATE_KEY,map);location.reload()}};
@@ -48,7 +49,8 @@
       if(!cb){cb=document.createElement('input');cb.type='checkbox';cb.className='billsosDoneCheck';row.insertBefore(cb,row.firstChild)}
       cb.dataset.id=key;cb.checked=!!done[key];row.classList.toggle('done',!!done[key]);
       row.querySelectorAll('.moveBtn,.amountEditBtn,.billsosCardEditBtn').forEach(function(button){button.remove()});
-      if(amountFromKey(key)<0){var btn=document.createElement('button');btn.type='button';btn.className='billsosCardEditBtn';btn.dataset.key=key;btn.textContent='✎';btn.title='Edit amount or due date';btn.setAttribute('aria-label','Edit amount and due date for '+rowName(row));row.appendChild(btn);var amt=row.querySelector('.amt');if(amt)amt.textContent='−'+money(amountFor(key))}
+      var btn=document.createElement('button');btn.type='button';btn.className='billsosCardEditBtn';btn.dataset.key=key;btn.textContent='✎';btn.title='Edit amount or date';btn.setAttribute('aria-label','Edit amount and date for '+rowName(row));row.appendChild(btn);
+      var amt=row.querySelector('.amt'),signed=signedAmountFor(key);if(amt)amt.textContent=(signed<0?'−':'+')+money(Math.abs(signed));
     });
   }
   function schedule(){clearTimeout(syncTimer);syncTimer=setTimeout(sync,80)}
