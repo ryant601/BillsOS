@@ -12,23 +12,15 @@
   function money(v){return Number(v||0).toLocaleString(undefined,{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2})}
   function amountFromKey(key){var p=String(key||'').split('|'),n=Number(p[p.length-1]);return isFinite(n)?n:0}
   function originalDate(key){var d=String(key||'').split('|')[0]||'';return validDate(d)?d:''}
+  function nameFromKey(key){var p=String(key||'').split('|');return p.length>=3?p.slice(1,-1).join('|').replace(/\s+/g,' ').trim():''}
   function rowKey(row){return row.dataset.billsosKey||row.dataset.id||row.dataset.key||((row.querySelector('input[data-id]')||{}).dataset||{}).id||''}
   function cleanText(v){return String(v||'').replace(/\s+/g,' ').trim()}
-  function sourceName(row){return row.dataset.billsosSourceName||cleanText((row.querySelector('.nm')||{}).textContent)||row.dataset.billsosName||'Item'}
+  function sourceName(row,key){return nameFromKey(key)||row.dataset.billsosSourceName||cleanText((row.querySelector('.nm')||{}).textContent)||row.dataset.billsosName||'Item'}
   function amountFor(key){var edit=read(AMOUNT_KEY)[key],base=Math.abs(amountFromKey(key));return edit&&isFinite(Number(edit.amount))?Math.abs(Number(edit.amount)):base}
   function signedAmountFor(key){return amountFromKey(key)<0?-amountFor(key):amountFor(key)}
   function renderedDate(row,key){var day=row.closest('.day'),panel=row.closest('.month-panel'),n=Number(day&&day.dataset.day),id=String(panel&&panel.id||'').replace(/^panel-/,'').toLowerCase(),months={june:'06',jul:'07',july:'07',aug:'08',august:'08',sep:'09',september:'09',oct:'10',october:'10',nov:'11',november:'11',dec:'12',december:'12'},mm=months[id];return mm&&n?'2026-'+mm+'-'+String(n).padStart(2,'0'):originalDate(key)}
   function dateFor(key,row){var edit=read(DATE_KEY)[key];return edit&&validDate(edit.date)?edit.date:renderedDate(row,key)}
   function formatDate(v){return validDate(v)?new Date(v+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'}):''}
-  function displayName(row,key){
-    var name=sourceName(row),date=renderedDate(row,key);
-    if(!validDate(date))return name;
-    var d=new Date(date+'T12:00:00'),monthLong=d.toLocaleDateString('en-US',{month:'long'}),monthShort=d.toLocaleDateString('en-US',{month:'short'}),day=String(d.getDate()),isoDate=date;
-    var variants=[isoDate,monthLong+' '+day,monthShort+' '+day,monthLong+' '+day+', '+d.getFullYear(),monthShort+' '+day+', '+d.getFullYear(),String(d.getMonth()+1)+'/'+day,String(d.getMonth()+1)+'/'+day+'/'+d.getFullYear()];
-    variants.sort(function(a,b){return b.length-a.length});
-    variants.forEach(function(v){var escaped=v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');name=name.replace(new RegExp('(?:\\s*[·|–—-]\\s*|\\s+)'+escaped+'\\s*$','i'),'')});
-    return cleanText(name)||sourceName(row);
-  }
   function saveAmount(key,value){var n=Math.round(Math.abs(Number(value||0))*100)/100,map=read(AMOUNT_KEY),base=Math.abs(amountFromKey(key));if(!isFinite(n))return false;if(Math.abs(n-base)<.005)delete map[key];else map[key]={amount:n,updatedAt:new Date().toISOString()};write(AMOUNT_KEY,map);return true}
   function saveDate(key,date){var orig=originalDate(key),map=read(DATE_KEY);if(!validDate(date)||!validDate(orig))return false;if(date===orig)delete map[key];else map[key]={date:date,originalDate:orig,status:'moved',updatedAt:new Date().toISOString()};write(DATE_KEY,map);return true}
   function cleanDone(map){var out={};Object.keys(map||{}).forEach(function(k){if(map[k])out[k]=1});return out}
@@ -57,9 +49,9 @@
 
   function normalizeCard(row,done){
     var key=rowKey(row);if(!key)return;
-    var rawName=sourceName(row),name=displayName(row,key),signed=signedAmountFor(key),checked=!!done[key];
+    var name=sourceName(row,key),signed=signedAmountFor(key),checked=!!done[key];
     row.dataset.billsosKey=key;
-    row.dataset.billsosSourceName=rawName;
+    row.dataset.billsosSourceName=name;
     row.dataset.billsosName=name;
     row.classList.add('billsosCard');
     row.classList.toggle('done',checked);
