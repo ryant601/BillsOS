@@ -1,0 +1,3 @@
+Deployment trigger created by ChatGPT.
+Timestamp: 2026-07-20T15:35Z
+Purpose: force a fresh Railway deployment after previous failure.
