@@ -1,0 +1,27 @@
+const assert = require('assert');
+const engine = require('../cashflow-engine');
+
+function julyRows(oneTimeEvents) {
+  return engine.rowsForMonth({ bills: [], income: [], oneTimeEvents }, 7, 0);
+}
+
+const positive = julyRows([{ id: 'positive', name: 'Balance correction', date: '2026-07-10', amount: 125, type: 'balance-correction', correctionDirection: 'add' }]);
+assert.strictEqual(positive.length, 1);
+assert.strictEqual(positive[0].amount, 125);
+assert.strictEqual(positive[0].type, 'balance-correction');
+
+const negative = julyRows([{ id: 'negative', name: 'Balance correction', date: '2026-07-11', amount: 75, type: 'balance-correction', correctionDirection: 'subtract' }]);
+assert.strictEqual(negative.length, 1);
+assert.strictEqual(negative[0].amount, -75);
+
+const legacy = julyRows([{ id: 'legacy', name: 'Balance correction', date: '2026-07-12', amount: -40, type: 'bill', notes: 'Manual balance correction' }]);
+assert.strictEqual(legacy.length, 1);
+assert.strictEqual(legacy[0].amount, -40);
+
+const model = engine.build({ bills: [], income: [], oneTimeEvents: [
+  { id: 'add', name: 'Balance correction', date: '2026-07-10', amount: 100, type: 'balance-correction', correctionDirection: 'add' },
+  { id: 'subtract', name: 'Balance correction', date: '2026-07-11', amount: 25, type: 'balance-correction', correctionDirection: 'subtract' }
+]}, { firstBegin: 1000, floorNegative: false });
+
+assert.strictEqual(model.months.july.end - model.months.july.begin, 75);
+console.log('cashflow-engine correction tests passed');
