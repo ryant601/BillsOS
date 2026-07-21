@@ -1,16 +1,16 @@
 {
   "name": "billsos",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "type": "commonjs",
-  "description": "BillsOS Render deploy test from ChatGPT on 2026-06-26",
+  "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.06.26-test.1",
-    "buildDate": "2026-06-26",
-    "buildNote": "ChatGPT to GitHub to Render build metadata test. Dashboard index.html not changed in this test."
+    "version": "v2026.07.21-amount-balance.1",
+    "buildDate": "2026-07-21",
+    "buildNote": "Recalculate card and month ending balances after amount edits."
   },
   "scripts": {
-    "start": "node server.js"
+    "start": "node -r ./html-hotfix-loader.js server.js"
   },
   "dependencies": {
     "express": "^4.19.2"
