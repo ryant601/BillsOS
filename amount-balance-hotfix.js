@@ -11,7 +11,8 @@
   const MONTHS = [['june', 6, 'June'], ['july', 7, 'July'], ['aug', 8, 'August'], ['sep', 9, 'September'], ['oct', 10, 'October'], ['nov', 11, 'November'], ['dec', 12, 'December']];
 
   function text(el) { return (el && el.textContent ? el.textContent : '').replace(/\s+/g, ' ').trim(); }
-  function money(value) { return Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
+  function money(value) { return Number(value || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
+  function moneyCents(value) { return Number(value || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function days(month) { return new Date(YEAR, month, 0).getDate(); }
   function iso(month, day) { return YEAR + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0'); }
   function rowKey(event) { return (event.originalDate || event.date) + '|' + event.name + '|' + event.amount; }
@@ -23,23 +24,28 @@
     if (!out.length && item.date && String(item.date).slice(0, 7) === monthKey) out.push(item.date);
     return out;
   }
+  function signedAdjustmentAmount(item) {
+    const amount = Number(item.amount || 0);
+    if (item.type === 'adjustment') return amount;
+    if (item.type === 'income') return Math.abs(amount);
+    return -Math.abs(amount);
+  }
   function generateRows(data, month) {
     const monthKey = YEAR + '-' + String(month).padStart(2, '0');
     const dim = days(month);
     const rows = [];
-    function push(day, name, amount) {
+    function push(day, name, amount, type) {
       const n = Number(day || 0);
-      if (n >= 1 && n <= dim) rows.push({ date: iso(month, n), day: n, name: name || 'Item', amount: Number(amount || 0) });
+      if (n >= 1 && n <= dim) rows.push({ date: iso(month, n), day: n, name: name || 'Item', amount: Number(amount || 0), type: type || '' });
     }
     (data.bills || []).forEach(function (bill) {
       if (bill.active === false || (bill.frequency && bill.frequency !== 'monthly') || (bill.startMonth && bill.startMonth > monthKey) || (bill.endMonth && bill.endMonth < monthKey)) return;
-      push(Math.min(Number(bill.dueDay || 1), dim), bill.name || 'Bill', -Math.abs(Number(bill.amount || 0)));
+      push(Math.min(Number(bill.dueDay || 1), dim), bill.name || 'Bill', -Math.abs(Number(bill.amount || 0)), bill.type || 'bill');
     });
     (data.oneTimeEvents || []).forEach(function (item) {
       if (item.id === RULE_ID) return;
       oneDates(item, monthKey).forEach(function (date) {
-        const amount = Number(item.amount || 0);
-        push(Number(date.slice(8, 10)), item.name || 'One-time item', item.type === 'income' ? Math.abs(amount) : -Math.abs(amount));
+        push(Number(date.slice(8, 10)), item.name || 'Cash flow adjustment', signedAdjustmentAmount(item), item.type || 'adjustment');
       });
     });
     (data.income || []).forEach(function (income) {
@@ -47,9 +53,9 @@
       const amount = Math.abs(Number(income.amount || 0));
       const name = income.name || 'Income';
       const schedule = income.schedule || 'manual';
-      if (schedule === 'semi-monthly-15-30') { push(15, name, amount); push(Math.min(30, dim), name, amount); }
-      else if (schedule === 'biweekly') [1, 15, 29].forEach(function (day) { if (day <= dim) push(day, name, amount); });
-      else push(1, name, amount);
+      if (schedule === 'semi-monthly-15-30') { push(15, name, amount, 'income'); push(Math.min(30, dim), name, amount, 'income'); }
+      else if (schedule === 'biweekly') [1, 15, 29].forEach(function (day) { if (day <= dim) push(day, name, amount, 'income'); });
+      else push(1, name, amount, 'income');
     });
     return rows;
   }
@@ -62,6 +68,8 @@
       const key = rowKey(event);
       const amountEdit = amountAdjustments[key];
       const move = dateAdjustments[key];
+      event.originalKey = key;
+      event.originalDate = event.date;
       if (amountEdit && Number.isFinite(Number(amountEdit.amount))) event.amount = (event.amount < 0 ? -1 : 1) * Math.abs(Number(amountEdit.amount));
       if (move && move.date) { event.date = move.date; event.day = Number(move.date.slice(8, 10)); }
       return event;
@@ -88,6 +96,32 @@
     return MONTHS.find(function (month) { return title.indexOf(month[2].toLowerCase()) >= 0; });
   }
   function setValue(id, value) { const el = document.getElementById(id); if (el) el.textContent = money(value); }
+  function dayNodeFor(day) {
+    return Array.from(document.querySelectorAll('#mount .day:not(.blank)')).find(function (node) {
+      return Number(text(node.querySelector('.topline b')) || 0) === Number(day);
+    }) || null;
+  }
+  function syncAdjustmentCalendarRows(current) {
+    if (!current || !current.rows) return;
+    current.rows.filter(function (row) { return row.type === 'adjustment'; }).forEach(function (row) {
+      const dayNode = dayNodeFor(row.day);
+      if (!dayNode) return;
+      const candidates = Array.from(dayNode.querySelectorAll('.ev'));
+      const calendarRow = candidates.find(function (node) {
+        const nameNode = node.querySelector(':scope > span') || node.querySelector('.nm') || node.querySelector('span');
+        return text(nameNode) === row.name;
+      });
+      if (!calendarRow) return;
+      const isInflow = row.amount > 0;
+      calendarRow.classList.toggle('in', isInflow);
+      calendarRow.classList.toggle('out', !isInflow);
+      calendarRow.classList.remove('xfer');
+      const input = calendarRow.querySelector('input[data-id]');
+      if (input) input.setAttribute('data-id', row.originalKey || rowKey(row));
+      const amountNode = calendarRow.querySelector('.amountEditBtn') || calendarRow.querySelector('b');
+      if (amountNode) amountNode.textContent = moneyCents(Math.abs(row.amount));
+    });
+  }
 
   window.BillsOSRecalculateVisibleBalances = async function () {
     const monthDef = visibleMonth();
@@ -104,6 +138,7 @@
     setValue('kout', current.outflow);
     setValue('kend', current.end);
     setValue('ksweep', current.sweep);
+    syncAdjustmentCalendarRows(current);
 
     const byDay = {};
     current.rows.forEach(function (row) { byDay[row.day] = (byDay[row.day] || 0) + row.amount; });
