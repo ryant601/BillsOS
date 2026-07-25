@@ -17,6 +17,24 @@
   function iso(month, day) { return YEAR + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0'); }
   function rowKey(event) { return (event.originalDate || event.date) + '|' + event.name + '|' + event.amount; }
   function readStore(key) { try { const parsed = JSON.parse(localStorage.getItem(key) || '{}') || {}; return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}; } catch (_err) { return {}; } }
+  function keyIdentity(key) {
+    const parts = String(key || '').split('|');
+    if (parts.length < 3) return '';
+    return parts.slice(1).join('|');
+  }
+  function matchingOverride(map, key) {
+    if (map && map[key]) return map[key];
+    const identity = keyIdentity(key);
+    if (!identity) return null;
+    const matches = Object.keys(map || {}).filter(function (candidate) { return keyIdentity(candidate) === identity; });
+    if (!matches.length) return null;
+    matches.sort(function (a, b) {
+      const at = Date.parse((map[a] && map[a].updatedAt) || '') || 0;
+      const bt = Date.parse((map[b] && map[b].updatedAt) || '') || 0;
+      return bt - at;
+    });
+    return map[matches[0]] || null;
+  }
   function oneDates(item, monthKey) {
     const out = [];
     const matches = String(item.notes || '').match(/20\d{2}-\d{2}-\d{2}/g) || [];
@@ -66,8 +84,8 @@
     return rows.map(function (row) {
       const event = Object.assign({}, row);
       const key = rowKey(event);
-      const amountEdit = amountAdjustments[key];
-      const move = dateAdjustments[key];
+      const amountEdit = matchingOverride(amountAdjustments, key);
+      const move = matchingOverride(dateAdjustments, key);
       event.originalKey = key;
       event.originalDate = event.date;
       if (amountEdit && Number.isFinite(Number(amountEdit.amount))) event.amount = (event.amount < 0 ? -1 : 1) * Math.abs(Number(amountEdit.amount));
