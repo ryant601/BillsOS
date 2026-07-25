@@ -123,47 +123,66 @@
     });
   }
 
+  let recalculationBusy = false;
   window.BillsOSRecalculateVisibleBalances = async function () {
+    if (recalculationBusy) return;
     const monthDef = visibleMonth();
     const mount = document.getElementById('mount');
     if (!monthDef || !mount) return;
-    const response = await fetch('/api/bills?amountBalance=' + Date.now(), { cache: 'no-store' });
-    if (!response.ok) return;
-    const model = buildModel(await response.json());
-    const current = model[monthDef[0]];
-    if (!current) return;
+    recalculationBusy = true;
+    try {
+      const response = await fetch('/api/bills?amountBalance=' + Date.now(), { cache: 'no-store' });
+      if (!response.ok) return;
+      const model = buildModel(await response.json());
+      const current = model[monthDef[0]];
+      if (!current) return;
 
-    setValue('kbegin', current.begin);
-    setValue('kin', current.income);
-    setValue('kout', current.outflow);
-    setValue('kend', current.end);
-    setValue('ksweep', current.sweep);
-    syncAdjustmentCalendarRows(current);
+      setValue('kbegin', current.begin);
+      setValue('kin', current.income);
+      setValue('kout', current.outflow);
+      setValue('kend', current.end);
+      setValue('ksweep', current.sweep);
+      syncAdjustmentCalendarRows(current);
 
-    const byDay = {};
-    current.rows.forEach(function (row) { byDay[row.day] = (byDay[row.day] || 0) + row.amount; });
-    let running = current.begin;
-    mount.querySelectorAll('.day:not(.blank)').forEach(function (dayNode) {
-      const dayNum = Number(text(dayNode.querySelector('.topline b')) || 0);
-      if (!dayNum) return;
-      const startNode = dayNode.querySelector('.topline span:last-child b');
-      const endNode = dayNode.querySelector('.endline b');
-      if (startNode) startNode.textContent = money(running);
-      if (monthDef[0] === 'july' && dayNum <= JULY_REBASE_DAY) {
-        running = JULY_REBASE_END;
+      const byDay = {};
+      current.rows.forEach(function (row) { byDay[row.day] = (byDay[row.day] || 0) + row.amount; });
+      let running = current.begin;
+      mount.querySelectorAll('.day:not(.blank)').forEach(function (dayNode) {
+        const dayNum = Number(text(dayNode.querySelector('.topline b')) || 0);
+        if (!dayNum) return;
+        const startNode = dayNode.querySelector('.topline span:last-child b');
+        const endNode = dayNode.querySelector('.endline b');
+        if (startNode) startNode.textContent = money(running);
+        if (monthDef[0] === 'july' && dayNum <= JULY_REBASE_DAY) {
+          running = JULY_REBASE_END;
+          if (endNode) endNode.textContent = money(running);
+          return;
+        }
+        running += Number(byDay[dayNum] || 0);
         if (endNode) endNode.textContent = money(running);
-        return;
-      }
-      running += Number(byDay[dayNum] || 0);
-      if (endNode) endNode.textContent = money(running);
-    });
+      });
 
-    const selected = document.querySelector('.day.selected');
-    const detailSub = document.getElementById('detailSub');
-    if (selected && detailSub) {
-      const start = text(selected.querySelector('.topline span:last-child b')) || '—';
-      const end = text(selected.querySelector('.endline b')) || '—';
-      detailSub.textContent = 'Starting ' + start + ' · Ending ' + end;
+      const selected = document.querySelector('.day.selected');
+      const detailSub = document.getElementById('detailSub');
+      if (selected && detailSub) {
+        const start = text(selected.querySelector('.topline span:last-child b')) || '—';
+        const end = text(selected.querySelector('.endline b')) || '—';
+        detailSub.textContent = 'Starting ' + start + ' · Ending ' + end;
+      }
+    } finally {
+      recalculationBusy = false;
     }
   };
+
+  function scheduleRecalculation(delay) {
+    window.setTimeout(function () {
+      if (typeof window.BillsOSRecalculateVisibleBalances === 'function') window.BillsOSRecalculateVisibleBalances();
+    }, delay || 0);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { scheduleRecalculation(0); scheduleRecalculation(350); scheduleRecalculation(1200); });
+  else { scheduleRecalculation(0); scheduleRecalculation(350); scheduleRecalculation(1200); }
+  window.addEventListener('pageshow', function () { scheduleRecalculation(100); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) scheduleRecalculation(100); });
+  document.addEventListener('click', function () { scheduleRecalculation(250); }, true);
 })();
