@@ -12,11 +12,13 @@ fs.readFileSync = function patchedReadFileSync(filePath, options) {
   let html = Buffer.isBuffer(result) ? result.toString('utf8') : String(result);
   const scripts = [
     '<script defer src="/amount-balance-hotfix.js?v=20260728calendartruth4"></script>',
-    '<script defer src="/billsos-cross-device-sync.js?v=20260729force1"></script>'
+    '<script defer src="/billsos-cross-device-sync.js?v=20260729canonical2"></script>'
   ];
   scripts.forEach((script) => {
     const src = script.match(/src="([^"]+)/)[1].split('?')[0];
-    if (!html.includes(src)) html = html.replace('</body>', script + '</body>');
+    const existing = new RegExp('<script[^>]+src=["\\\']' + src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^"\\\']*["\\\'][^>]*><\\/script>', 'i');
+    if (existing.test(html)) html = html.replace(existing, script);
+    else html = html.replace('</body>', script + '</body>');
   });
   return Buffer.isBuffer(result) ? Buffer.from(html, 'utf8') : html;
 };
