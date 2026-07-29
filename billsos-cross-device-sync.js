@@ -1,69 +1,33 @@
 (function(){
   'use strict';
-  var AMOUNT_KEY='billsos-amount-adjust-v1';
   var DATE_KEY='billsos-pay-adjust-v1';
+  var AMOUNT_KEY='billsos-amount-adjust-v1';
+  var DONE_KEY='billsos-generated-done-v5';
   var RULE_ID='__billsos_system_rules__';
   var initialized=false;
   var syncing=false;
-  var lastSnapshot={};
-  var lastSignature='';
-  var pollTimer=0;
+  var lastLocalSignature='';
+  var lastCloudSignature='';
+  var reloadMarker='billsos-canonical-reload-v1';
 
   function readJson(key){try{var value=JSON.parse(localStorage.getItem(key)||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{}}catch(e){return {}}}
   function writeJson(key,value){try{localStorage.setItem(key,JSON.stringify(value||{}))}catch(e){}}
   function readRules(row){try{return JSON.parse(row&&row.notes||'{}')||{}}catch(e){return {}}}
-  function timestamp(row){return Date.parse(row&&row.updatedAt||'')||0}
-  function cleanMap(map){var out={};Object.keys(map||{}).forEach(function(key){var row=map[key]||{};if(row.deleted===true){out[key]={deleted:true,updatedAt:row.updatedAt||null};return}var amount=Number(row.amount);if(isFinite(amount)&&amount>=0)out[key]={amount:Math.round(amount*100)/100,updatedAt:row.updatedAt||null}});return out}
-  function cleanDates(map){var out={};Object.keys(map||{}).forEach(function(key){var row=map[key]||{};if(/^20\d{2}-\d{2}-\d{2}$/.test(String(row.date||''))){out[key]={date:row.date,originalDate:row.originalDate||String(key).split('|')[0],status:row.status||'moved',updatedAt:row.updatedAt||null}}});return out}
-  function signature(map){try{return JSON.stringify(cleanMap(map))}catch(e){return '{}'}}
-  function mergeMaps(local,cloud){var out={},keys={};local=cleanMap(local);cloud=cleanMap(cloud);Object.keys(local).forEach(function(k){keys[k]=1});Object.keys(cloud).forEach(function(k){keys[k]=1});Object.keys(keys).forEach(function(k){var l=local[k],c=cloud[k];if(!l)out[k]=c;else if(!c)out[k]=l;else out[k]=timestamp(c)>timestamp(l)?c:l});return out}
-  function cloudAmounts(data){var rows=Array.isArray(data&&data.oneTimeEvents)?data.oneTimeEvents:[];var system=rows.find(function(row){return row&&row.id===RULE_ID});return cleanMap(readRules(system).amountAdjustments||{})}
-  function markLocalDeletions(current){var next=cleanMap(current),now=new Date().toISOString();Object.keys(lastSnapshot||{}).forEach(function(key){if(!Object.prototype.hasOwnProperty.call(next,key)&&lastSnapshot[key]&&lastSnapshot[key].deleted!==true)next[key]={deleted:true,updatedAt:now}});return next}
-  function refreshDashboard(){if(typeof window.BillsOSRecalculateVisibleBalances==='function')window.BillsOSRecalculateVisibleBalances();try{window.dispatchEvent(new CustomEvent('billsos:cloud-sync'))}catch(e){}}
-
-  async function pushCloud(map){if(syncing)return;syncing=true;try{map=cleanMap(map);var response=await fetch('/api/bills?amountSyncPush='+Date.now(),{cache:'no-store'});if(!response.ok)return;var data=await response.json();data=data&&typeof data==='object'?data:{};data.oneTimeEvents=Array.isArray(data.oneTimeEvents)?data.oneTimeEvents:[];var index=data.oneTimeEvents.findIndex(function(row){return row&&row.id===RULE_ID});var system=index>=0?data.oneTimeEvents[index]:{id:RULE_ID,name:'BillsOS system rules',type:'meta',amount:0,date:null,notes:'{}'};var rules=readRules(system);rules.amountAdjustments=map;system.notes=JSON.stringify(rules);if(index>=0)data.oneTimeEvents[index]=system;else data.oneTimeEvents.push(system);await fetch('/api/bills',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});lastSnapshot=cleanMap(map);lastSignature=signature(map)}catch(e){}finally{syncing=false}}
-
-  async function pullCloud(){if(syncing)return;syncing=true;try{var response=await fetch('/api/bills?amountSyncPull='+Date.now(),{cache:'no-store'});if(!response.ok)return;var data=await response.json();var local=cleanMap(readJson(AMOUNT_KEY));var cloud=cloudAmounts(data);var merged=mergeMaps(local,cloud);var localSig=signature(local),cloudSig=signature(cloud),mergedSig=signature(merged);if(mergedSig!==localSig){writeJson(AMOUNT_KEY,merged);refreshDashboard()}lastSnapshot=cleanMap(merged);lastSignature=mergedSig;initialized=true;if(mergedSig!==cloudSig)setTimeout(function(){pushCloud(merged)},150)}catch(e){}finally{syncing=false}}
-
-  async function forceThisDevice(){
-    if(syncing)return false;
-    syncing=true;
-    try{
-      var now=new Date().toISOString();
-      var amounts=cleanMap(readJson(AMOUNT_KEY));
-      var dates=cleanDates(readJson(DATE_KEY));
-      Object.keys(amounts).forEach(function(key){amounts[key].updatedAt=now});
-      Object.keys(dates).forEach(function(key){dates[key].updatedAt=now});
-      writeJson(AMOUNT_KEY,amounts);writeJson(DATE_KEY,dates);
-      var response=await fetch('/api/bills?forceDeviceSync='+Date.now(),{cache:'no-store'});if(!response.ok)throw new Error('load');
-      var data=await response.json();data=data&&typeof data==='object'?data:{};data.oneTimeEvents=Array.isArray(data.oneTimeEvents)?data.oneTimeEvents:[];
-      var index=data.oneTimeEvents.findIndex(function(row){return row&&row.id===RULE_ID});
-      var system=index>=0?data.oneTimeEvents[index]:{id:RULE_ID,name:'BillsOS system rules',type:'meta',amount:0,date:null,notes:'{}'};
-      var rules=readRules(system);rules.amountAdjustments=amounts;rules.dateAdjustments=dates;rules.authoritativeDeviceUpdatedAt=now;system.notes=JSON.stringify(rules);
-      if(index>=0)data.oneTimeEvents[index]=system;else data.oneTimeEvents.push(system);
-      var saved=await fetch('/api/bills',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!saved.ok)throw new Error('save');
-      lastSnapshot=amounts;lastSignature=signature(amounts);initialized=true;refreshDashboard();return true;
-    }catch(e){return false}finally{syncing=false}
-  }
-
-  function installForceButton(){
-    if(document.getElementById('billsosForceSyncButton'))return;
-    var host=document.querySelector('.hero-actions,.top-actions,.nav,.tabs')||document.body;
-    var button=document.createElement('button');button.id='billsosForceSyncButton';button.type='button';button.textContent='Sync this device';button.title='Make this device’s calendar dates and amounts the cloud source of truth';
-    button.style.cssText='border:1px solid rgba(20,35,55,.18);border-radius:999px;background:#fff;color:#14202c;padding:8px 12px;font:inherit;font-size:12px;font-weight:850;cursor:pointer;margin:4px;box-shadow:0 2px 8px rgba(20,35,55,.08)';
-    button.addEventListener('click',async function(){if(!window.confirm('Use this device’s current calendar dates and amounts as the version for every device?'))return;button.disabled=true;button.textContent='Syncing…';var ok=await forceThisDevice();button.textContent=ok?'Synced ✓':'Sync failed';setTimeout(function(){button.disabled=false;button.textContent='Sync this device'},2500)});
-    host.appendChild(button);
-  }
-
-  function watchLocal(){var current=cleanMap(readJson(AMOUNT_KEY));if(!initialized){lastSnapshot=current;lastSignature=signature(current);return}var currentSig=signature(current);if(currentSig===lastSignature)return;var withDeletes=markLocalDeletions(current);writeJson(AMOUNT_KEY,withDeletes);lastSnapshot=cleanMap(withDeletes);lastSignature=signature(withDeletes);pushCloud(withDeletes);refreshDashboard()}
-  function schedulePull(delay){clearTimeout(pollTimer);pollTimer=setTimeout(function(){pullCloud()},delay||0)}
-
-  window.BillsOSForceThisDeviceSync=forceThisDevice;
-  setInterval(watchLocal,900);
-  setInterval(function(){pullCloud()},5000);
-  window.addEventListener('pageshow',function(){schedulePull(100);installForceButton()});
-  document.addEventListener('visibilitychange',function(){if(!document.hidden)schedulePull(100)});
-  window.addEventListener('storage',function(event){if(event.key===AMOUNT_KEY){lastSnapshot=cleanMap(readJson(AMOUNT_KEY));lastSignature=signature(lastSnapshot);refreshDashboard()}schedulePull(100)});
-  window.addEventListener('billsos:calendar-change',function(){watchLocal();schedulePull(150)});
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){schedulePull(250);installForceButton()});else{schedulePull(250);installForceButton()}
+  function stable(value){if(!value||typeof value!=='object')return value;var out={};Object.keys(value).sort().forEach(function(key){out[key]=value[key]&&typeof value[key]==='object'&&!Array.isArray(value[key])?stable(value[key]):value[key]});return out}
+  function signature(value){try{return JSON.stringify(stable(value||{}))}catch(e){return '{}'}}
+  function localState(){return {dateAdjustments:readJson(DATE_KEY),amountAdjustments:readJson(AMOUNT_KEY),completed:readJson(DONE_KEY)}}
+  function cleanState(state){state=state&&typeof state==='object'?state:{};return {dateAdjustments:state.dateAdjustments&&typeof state.dateAdjustments==='object'?state.dateAdjustments:{},amountAdjustments:state.amountAdjustments&&typeof state.amountAdjustments==='object'?state.amountAdjustments:{},completed:state.completed&&typeof state.completed==='object'?state.completed:{},updatedAt:state.updatedAt||null,revision:Number(state.revision||0)}}
+  function cloudState(data){var rows=Array.isArray(data&&data.oneTimeEvents)?data.oneTimeEvents:[];var system=rows.find(function(row){return row&&row.id===RULE_ID});var rules=readRules(system);if(rules.calendarState)return cleanState(rules.calendarState);if(rules.dateAdjustments||rules.amountAdjustments)return cleanState({dateAdjustments:rules.dateAdjustments||{},amountAdjustments:rules.amountAdjustments||{},completed:rules.completed||{},updatedAt:system&&system.updatedAt||null,revision:1});return null}
+  function applyCloud(state){state=cleanState(state);var before=signature(localState());writeJson(DATE_KEY,state.dateAdjustments);writeJson(AMOUNT_KEY,state.amountAdjustments);writeJson(DONE_KEY,state.completed);var after=signature(localState());lastLocalSignature=after;lastCloudSignature=signature(state);if(before!==after){try{window.dispatchEvent(new CustomEvent('billsos:cloud-sync',{detail:{state:state}}))}catch(e){}if(typeof window.BillsOSRecalculateVisibleBalances==='function')window.BillsOSRecalculateVisibleBalances();var marker=String(state.revision)+'|'+String(state.updatedAt||'');try{if(sessionStorage.getItem(reloadMarker)!==marker){sessionStorage.setItem(reloadMarker,marker);setTimeout(function(){location.reload()},180)}}catch(e){}}}
+  async function fetchBills(tag){var response=await fetch('/api/bills?canonicalCalendar='+encodeURIComponent(tag||'pull')+'&t='+Date.now(),{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);return response.json()}
+  async function pushState(state,forced){if(syncing)return false;syncing=true;try{var data=await fetchBills(forced?'force':'push');data=data&&typeof data==='object'?data:{};data.oneTimeEvents=Array.isArray(data.oneTimeEvents)?data.oneTimeEvents:[];var index=data.oneTimeEvents.findIndex(function(row){return row&&row.id===RULE_ID});var system=index>=0?data.oneTimeEvents[index]:{id:RULE_ID,name:'BillsOS system rules',type:'meta',amount:0,date:null,notes:'{}'};var rules=readRules(system);var previous=cleanState(rules.calendarState||{});var clean=cleanState(state);clean.updatedAt=new Date().toISOString();clean.revision=Math.max(previous.revision,clean.revision)+1;rules.calendarState=clean;rules.dateAdjustments=clean.dateAdjustments;rules.amountAdjustments=clean.amountAdjustments;rules.completed=clean.completed;system.notes=JSON.stringify(rules);system.updatedAt=clean.updatedAt;if(index>=0)data.oneTimeEvents[index]=system;else data.oneTimeEvents.push(system);var saved=await fetch('/api/bills',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!saved.ok)throw new Error('HTTP '+saved.status);lastLocalSignature=signature(localState());lastCloudSignature=signature(clean);return true}catch(e){return false}finally{syncing=false}}
+  async function pullCloud(){if(syncing)return;syncing=true;try{var data=await fetchBills('pull');var state=cloudState(data);if(!state){initialized=true;lastLocalSignature=signature(localState());return}var cloudSig=signature(state);var cloudLocalSig=signature({dateAdjustments:state.dateAdjustments,amountAdjustments:state.amountAdjustments,completed:state.completed});if(cloudSig!==lastCloudSignature||signature(localState())!==cloudLocalSig)applyCloud(state);else{lastLocalSignature=signature(localState());lastCloudSignature=cloudSig}initialized=true}catch(e){}finally{syncing=false}}
+  function watchLocal(){if(!initialized||syncing)return;var current=localState();var sig=signature(current);if(sig===lastLocalSignature)return;lastLocalSignature=sig;pushState(current,false)}
+  function installButton(){if(document.getElementById('billsosCanonicalSync'))return;var host=document.querySelector('.hero .actions,.hero nav,.hero,.tabs')||document.body;var button=document.createElement('button');button.id='billsosCanonicalSync';button.type='button';button.textContent='Sync this device';button.title='Make this device’s calendar the version shown everywhere';button.style.cssText='border:1px solid rgba(31,58,61,.18);background:#fff;color:#1f3a3d;border-radius:999px;padding:9px 13px;font:inherit;font-size:12px;font-weight:850;cursor:pointer;margin:4px';button.onclick=async function(){if(!confirm('Make this device’s current calendar the version shown on every device?'))return;button.disabled=true;button.textContent='Syncing…';var ok=await pushState(localState(),true);button.textContent=ok?'Synced ✓':'Sync failed';setTimeout(function(){button.disabled=false;button.textContent='Sync this device'},2200)};host.appendChild(button)}
+  function start(){installButton();pullCloud();setInterval(watchLocal,800);setInterval(pullCloud,3000)}
+  window.BillsOSForceThisDeviceSync=function(){return pushState(localState(),true)};
+  window.addEventListener('pageshow',function(){installButton();setTimeout(pullCloud,80)});
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(pullCloud,80)});
+  window.addEventListener('focus',function(){setTimeout(pullCloud,80)});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
