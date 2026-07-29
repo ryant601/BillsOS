@@ -12,7 +12,7 @@ fs.readFileSync = function patchedReadFileSync(filePath, options) {
   let html = Buffer.isBuffer(result) ? result.toString('utf8') : String(result);
   const scripts = [
     '<script defer src="/amount-balance-hotfix.js?v=20260728calendartruth4"></script>',
-    '<script defer src="/billsos-cross-device-sync.js?v=20260728cloudsync1"></script>'
+    '<script defer src="/billsos-cross-device-sync.js?v=20260729force1"></script>'
   ];
   scripts.forEach((script) => {
     const src = script.match(/src="([^"]+)/)[1].split('?')[0];
