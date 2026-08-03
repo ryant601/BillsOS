@@ -30,6 +30,6 @@ fs.readFileSync = function patchedReadFileSync(filePath, options) {
     html = upsertScript(html, '<script defer src="/billsos-cross-device-sync.js?v=20260730localfirst1"></script>');
   }
 
-  html = upsertScript(html, '<script defer src="/billsos-v2-ui.js?v=20260802sharednav1"></script>');
+  html = upsertScript(html, '<script defer src="/billsos-v2-ui.js?v=20260802sharednav2"></script>');
   return Buffer.isBuffer(result) ? Buffer.from(html, 'utf8') : html;
 };
