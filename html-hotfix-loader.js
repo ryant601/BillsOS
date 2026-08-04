@@ -13,85 +13,76 @@ function upsertScript(html, script) {
   return html.replace('</body>', script + '\n</body>');
 }
 
-const polishedUi = String.raw`<script id="billsosPolishedUi">
+const appUi = String.raw`<script id="billsosAppUi">
 (function(){
   'use strict';
-  if(window.__billsosPolishedUi)return;
-  window.__billsosPolishedUi=true;
+  if(window.__billsosAppUi)return;
+  window.__billsosAppUi=true;
 
   function money(value){return Number(value||0).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0})}
-  function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-  function addFont(){if(document.getElementById('billsosPolishedFont'))return;var link=document.createElement('link');link.id='billsosPolishedFont';link.rel='stylesheet';link.href='https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap';document.head.appendChild(link)}
+  function text(node){return String(node&&node.textContent||'').trim()}
+  function num(node){var raw=text(node).replace(/[^0-9.-]/g,'');return Number(raw||0)}
+  function greeting(){var h=new Date().getHours();return h<12?'Good morning':h<18?'Good afternoon':'Good evening'}
+  function addFont(){if(document.getElementById('boFont'))return;var l=document.createElement('link');l.id='boFont';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap';document.head.appendChild(l)}
 
   function addStyles(){
-    if(document.getElementById('billsosPolishedStyles'))return;
-    var style=document.createElement('style');style.id='billsosPolishedStyles';style.textContent=[
-      ':root{--bo-bg:#f5f7f2;--bo-card:#fff;--bo-ink:#18231d;--bo-muted:#69756e;--bo-line:#dfe6de;--bo-green:#2f7048;--bo-green-dark:#205837;--bo-green-soft:#e7f0e6;--bo-red:#c74438;--bo-shadow:0 10px 28px rgba(31,59,44,.07)}',
-      'html{background:var(--bo-bg)}body.billsos-polished{margin:0!important;background:linear-gradient(135deg,#f4f7f1 0%,#fffdfa 56%,#eef4ec 100%)!important;color:var(--bo-ink)!important;font-family:Manrope,"Avenir Next","Segoe UI",sans-serif!important}',
-      '.bo-sidebar{position:fixed;inset:0 auto 0 0;width:220px;z-index:80;display:flex;flex-direction:column;padding:28px 16px 18px;background:rgba(250,252,248,.96);border-right:1px solid var(--bo-line);backdrop-filter:blur(20px)}',
-      '.bo-brand{display:flex;align-items:center;gap:12px;padding:0 10px 26px}.bo-leaf{font-size:30px;line-height:1;color:var(--bo-green)}.bo-brand strong{display:block;font-size:22px;letter-spacing:-.05em}.bo-brand small{display:block;margin-top:2px;color:var(--bo-muted);font-size:11px}',
-      '.bo-nav{display:grid;gap:5px}.bo-nav a,.bo-nav button{display:flex;align-items:center;gap:12px;width:100%;padding:12px 13px;border:0;border-radius:12px;background:transparent;color:#34433a;text-decoration:none;font:inherit;font-size:14px;font-weight:650;text-align:left;cursor:pointer}.bo-nav a:hover,.bo-nav button:hover{background:#edf3eb}.bo-nav .is-active{background:linear-gradient(135deg,#3d7d55,#6f9f78);color:#fff;box-shadow:0 8px 20px rgba(47,112,72,.18)}.bo-icon{width:24px;text-align:center;font-size:16px}.bo-divider{height:1px;margin:13px 9px;background:var(--bo-line)}',
-      '.bo-sidebar-bottom{margin-top:auto}.bo-week-control{margin-bottom:18px}.bo-status{padding:14px;border:1px solid var(--bo-line);border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(31,59,44,.04);font-size:11px;color:var(--bo-muted);line-height:1.65}.bo-status strong{display:block;color:var(--bo-green);font-size:12px}.bo-dot{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%;background:#39a160}.bo-copy{margin-top:28px;color:#879189;font-size:11px}',
-      'body.billsos-polished>.wrap{max-width:none!important;margin-left:220px!important;padding:24px 28px 44px!important}',
-      'body.billsos-polished .top{display:none!important}body.billsos-polished>.wrap>.banner{display:none!important}',
-      '.bo-page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:24px}.bo-page-head h1{margin:0;font-size:32px;line-height:1.05;letter-spacing:-.05em}.bo-page-head p{margin:7px 0 0;color:var(--bo-muted);font-size:14px}.bo-head-actions{display:flex;gap:9px}.bo-head-btn{display:grid;place-items:center;width:42px;height:42px;border:1px solid var(--bo-line);border-radius:12px;background:#fff;box-shadow:0 4px 12px rgba(31,59,44,.04);font-size:17px;cursor:pointer}',
-      '.bo-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:24px}.bo-metric{position:relative;padding:20px;border:1px solid var(--bo-line);border-radius:16px;background:#fff;box-shadow:var(--bo-shadow)}.bo-metric-label{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#526058}.bo-metric-value{margin-top:14px;font-size:30px;line-height:1;font-weight:800;letter-spacing:-.045em}.bo-metric-note{margin-top:12px;color:var(--bo-green);font-size:12px;font-weight:700}.bo-metric-icon{position:absolute;right:18px;top:48px;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--bo-green-soft);color:var(--bo-green);font-size:19px}',
-      'body.billsos-polished .tabs{display:flex!important;gap:8px!important;flex-wrap:wrap!important;margin:0 0 16px!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}body.billsos-polished .tab{padding:9px 15px!important;border:1px solid var(--bo-line)!important;border-radius:999px!important;background:#fff!important;color:var(--bo-ink)!important;font-size:12px!important;font-weight:700!important;box-shadow:0 3px 9px rgba(31,59,44,.04)}body.billsos-polished .tab.active{background:linear-gradient(135deg,#2f7048,#4d8b61)!important;border-color:transparent!important;color:#fff!important}',
-      'body.billsos-polished .card{padding:20px!important;border:1px solid var(--bo-line)!important;border-radius:16px!important;background:#fff!important;box-shadow:var(--bo-shadow)!important}body.billsos-polished .cardhead{margin-bottom:16px!important}body.billsos-polished .card h2{font-size:18px!important;letter-spacing:-.025em!important}',
-      'body.billsos-polished .grid{gap:13px!important}body.billsos-polished label{margin-bottom:7px!important;color:#657269!important;font-size:10px!important;font-weight:800!important;letter-spacing:.1em!important}body.billsos-polished input,body.billsos-polished select,body.billsos-polished textarea{min-height:44px!important;padding:11px 13px!important;border:1px solid var(--bo-line)!important;border-radius:11px!important;background:#fff!important;color:var(--bo-ink)!important;font-family:inherit!important;box-shadow:inset 0 1px 2px rgba(31,59,44,.02)}body.billsos-polished textarea{min-height:72px!important}body.billsos-polished input:focus,body.billsos-polished select:focus,body.billsos-polished textarea:focus{outline:3px solid rgba(47,112,72,.12)!important;border-color:#6a9877!important}',
-      'body.billsos-polished .btn,body.billsos-polished .linkbtn{min-height:40px!important;padding:9px 14px!important;border:1px solid var(--bo-line)!important;border-radius:11px!important;background:#fff!important;color:var(--bo-ink)!important;font-size:12px!important;font-weight:750!important;box-shadow:0 4px 12px rgba(31,59,44,.04)}body.billsos-polished .btn.primary{background:linear-gradient(135deg,#2f7048,#47865b)!important;border-color:transparent!important;color:#fff!important}body.billsos-polished .btn.danger{color:var(--bo-red)!important}',
-      'body.billsos-polished .tablewrap{border:1px solid var(--bo-line)!important;border-radius:13px!important;overflow:auto!important;background:#fff!important}body.billsos-polished table{min-width:820px!important}body.billsos-polished th{padding:11px!important;background:#f1f5ef!important;color:#5f6b63!important;font-size:9px!important}body.billsos-polished td{padding:11px!important;border-bottom:1px solid #edf1ec!important;font-size:12px!important}body.billsos-polished tr:hover td{background:#fbfcfa}',
-      '.bo-saved-tools{display:flex;align-items:center;gap:12px}.bo-search{position:relative}.bo-search input{width:220px!important;padding-right:36px!important}.bo-search span{position:absolute;right:12px;top:12px}',
+    if(document.getElementById('boStyles'))return;
+    var s=document.createElement('style');s.id='boStyles';s.textContent=[
+      ':root{--bo-bg:#f6f8f3;--bo-card:#fff;--bo-ink:#18231d;--bo-muted:#6d786f;--bo-line:#dde5dc;--bo-green:#2f7048;--bo-green2:#5c916a;--bo-soft:#e8f1e7;--bo-red:#c74438;--bo-shadow:0 10px 28px rgba(31,59,44,.07)}',
+      'html{background:var(--bo-bg)}body.bo-app{margin:0!important;background:linear-gradient(135deg,#f5f8f2 0%,#fffdfa 58%,#eef4ec 100%)!important;color:var(--bo-ink)!important;font-family:Manrope,"Avenir Next","Segoe UI",sans-serif!important}',
+      '.bo-sidebar{position:fixed;inset:0 auto 0 0;width:220px;z-index:80;display:flex;flex-direction:column;padding:28px 16px 18px;background:rgba(250,252,248,.97);border-right:1px solid var(--bo-line);backdrop-filter:blur(20px)}',
+      '.bo-brand{display:flex;align-items:center;gap:11px;padding:0 10px 26px}.bo-brand-mark{font-size:29px;color:var(--bo-green)}.bo-brand strong{display:block;font-size:22px;letter-spacing:-.05em}.bo-brand small{display:block;margin-top:2px;color:var(--bo-muted);font-size:11px}',
+      '.bo-nav{display:grid;gap:5px}.bo-nav a{display:flex;align-items:center;gap:12px;padding:12px 13px;border-radius:12px;color:#34433a;text-decoration:none;font-size:14px;font-weight:650}.bo-nav a:hover{background:#edf3eb}.bo-nav a.is-active{background:linear-gradient(135deg,#3d7d55,#6f9f78);color:#fff;box-shadow:0 8px 20px rgba(47,112,72,.18)}.bo-icon{width:24px;text-align:center;font-size:16px}.bo-divider{height:1px;margin:13px 9px;background:var(--bo-line)}',
+      '.bo-side-bottom{margin-top:auto}.bo-status{padding:14px;border:1px solid var(--bo-line);border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(31,59,44,.04);font-size:11px;color:var(--bo-muted);line-height:1.65}.bo-status strong{display:block;color:var(--bo-green);font-size:12px}.bo-dot{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%;background:#39a160}.bo-copy{margin-top:24px;color:#89928b;font-size:11px}',
+      'body.bo-app>.wrap{max-width:none!important;margin-left:220px!important;padding:24px 28px 44px!important}body.bo-home-active>.wrap{display:none!important}',
+      '.bo-home{display:none;margin-left:220px;padding:28px 30px 44px;min-height:100vh}.bo-home.is-active{display:block}.bo-home-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:24px}.bo-home-head h1{margin:0;font-size:34px;letter-spacing:-.05em}.bo-home-head p{margin:7px 0 0;color:var(--bo-muted)}.bo-month{padding:11px 15px;border:1px solid var(--bo-line);border-radius:12px;background:#fff;font-size:13px;font-weight:700}',
+      '.bo-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}.bo-kpi{position:relative;padding:20px;border:1px solid var(--bo-line);border-radius:16px;background:#fff;box-shadow:var(--bo-shadow)}.bo-kpi-label{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#526058}.bo-kpi-value{margin-top:14px;font-size:30px;line-height:1;font-weight:800;letter-spacing:-.045em}.bo-kpi-note{margin-top:12px;color:var(--bo-green);font-size:12px;font-weight:700}.bo-kpi-icon{position:absolute;right:18px;top:45px;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--bo-soft);color:var(--bo-green);font-size:19px}',
+      '.bo-home-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.7fr);gap:18px}.bo-panel{padding:20px;border:1px solid var(--bo-line);border-radius:16px;background:#fff;box-shadow:var(--bo-shadow)}.bo-panel h2{margin:0 0 16px;font-size:18px;letter-spacing:-.03em}.bo-upcoming{display:grid;gap:8px}.bo-upcoming-row{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border:1px solid #edf1ec;border-radius:12px}.bo-upcoming-date{font-size:11px;font-weight:800;color:var(--bo-green)}.bo-upcoming-name{font-size:13px;font-weight:700}.bo-upcoming-amt{font-size:13px;font-weight:800}.bo-empty{padding:18px;border:1px dashed var(--bo-line);border-radius:12px;color:var(--bo-muted);font-size:13px}',
+      '.bo-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.bo-action{padding:14px;border:1px solid var(--bo-line);border-radius:12px;background:#fff;color:var(--bo-ink);text-decoration:none;font-size:13px;font-weight:750}.bo-action:hover{background:#f4f8f2}.bo-attention{margin-top:18px}.bo-attention-item{padding:13px;border-radius:12px;background:#f8eee9;color:#8c3f35;font-size:12px;font-weight:700}',
+      'body.bo-app .top{display:none!important}body.bo-app>.wrap>.banner{display:none!important}body.bo-app .hero,body.bo-app .month-panel,body.bo-app .card{border-color:var(--bo-line)!important;background:#fff!important;box-shadow:var(--bo-shadow)!important}',
+      'body.bo-app .btn.primary{background:linear-gradient(135deg,var(--bo-green),var(--bo-green2))!important;border-color:transparent!important;color:#fff!important}body.bo-app input,body.bo-app select,body.bo-app textarea{border-color:var(--bo-line)!important}',
       '#boMenu{display:none;position:fixed;left:12px;top:12px;z-index:100;width:42px;height:42px;border:1px solid var(--bo-line);border-radius:12px;background:#fff;box-shadow:var(--bo-shadow);font-size:19px}#boScrim{display:none}',
-      'body.billsos-polished .hero{border:1px solid var(--bo-line)!important;background:#fff!important;box-shadow:var(--bo-shadow)!important}body.billsos-polished .hero .nav{display:none!important}body.billsos-polished .month-panel{border-color:var(--bo-line)!important;background:#fff!important;box-shadow:var(--bo-shadow)!important}',
-      '@media(max-width:1050px){.bo-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}',
-      '@media(max-width:760px){body.billsos-polished>.wrap{margin-left:0!important;padding:68px 10px 30px!important}.bo-sidebar{width:min(84vw,290px);transform:translateX(-105%);transition:transform .2s ease}.bo-open .bo-sidebar{transform:translateX(0)}#boMenu{display:grid;place-items:center}.bo-open #boScrim{display:block;position:fixed;inset:0;z-index:70;background:rgba(24,35,29,.30);backdrop-filter:blur(2px)}.bo-metrics{grid-template-columns:1fr}.bo-page-head{display:block}.bo-head-actions{margin-top:14px}.bo-search input{width:160px!important}body.billsos-polished .field,body.billsos-polished .field.wide,body.billsos-polished .field.small{grid-column:1/-1!important}}'
-    ].join('');document.head.appendChild(style)
+      '@media(max-width:1050px){.bo-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.bo-home-grid{grid-template-columns:1fr}}',
+      '@media(max-width:760px){body.bo-app>.wrap{margin-left:0!important;padding:68px 10px 30px!important}.bo-home{margin-left:0;padding:72px 12px 30px}.bo-sidebar{width:min(84vw,290px);transform:translateX(-105%);transition:transform .2s ease}.bo-open .bo-sidebar{transform:translateX(0)}#boMenu{display:grid;place-items:center}.bo-open #boScrim{display:block;position:fixed;inset:0;z-index:70;background:rgba(24,35,29,.30);backdrop-filter:blur(2px)}.bo-kpis{grid-template-columns:1fr}.bo-home-head{display:block}.bo-month{display:inline-block;margin-top:14px}.bo-actions{grid-template-columns:1fr}.bo-upcoming-row{grid-template-columns:72px minmax(0,1fr) auto}}'
+    ].join('');document.head.appendChild(s)
   }
 
-  function navLink(icon,label,href,active){return '<a href="'+href+'" target="_self"'+(active?' class="is-active"':'')+'><span class="bo-icon">'+icon+'</span><span>'+label+'</span></a>'}
-  function tabLink(icon,label,tab,active){return '<a href="/control#'+tab+'" data-bo-tab="'+tab+'"'+(active?' class="is-active"':'')+'><span class="bo-icon">'+icon+'</span><span>'+label+'</span></a>'}
-
+  function link(icon,label,href,active){return '<a href="'+href+'" target="_self"'+(active?' class="is-active"':'')+'><span class="bo-icon">'+icon+'</span><span>'+label+'</span></a>'}
   function installSidebar(){
     if(document.getElementById('boSidebar'))return;
-    var path=location.pathname,control=path.indexOf('/control')===0,legacy=path.indexOf('/legacy')===0,dashboard=!control&&!legacy,hash=location.hash.replace('#','')||'bills';
-    var aside=document.createElement('aside');aside.id='boSidebar';aside.className='bo-sidebar';
-    aside.innerHTML='<div class="bo-brand"><div class="bo-leaf">◒</div><div><strong>BillsOS</strong><small>Cash flow planner</small></div></div><nav class="bo-nav">'+navLink('⌂','Home','/',dashboard)+navLink('▦','Calendar','/#calendar',false)+tabLink('▤','Bills','bills',control&&hash==='bills')+tabLink('♙','Income','income',control&&hash==='income')+tabLink('↝','Cash Flow','oneTime',control&&hash==='oneTime')+navLink('▥','Accounts','/control#backup',control&&hash==='backup')+'<div class="bo-divider"></div>'+navLink('↗','Reports','/control#backup',false)+navLink('⚙','Settings','/control#backup',false)+'</nav><div class="bo-sidebar-bottom"><button class="bo-week-control" id="boWeekButton" hidden><span class="bo-icon">−</span><span>Collapse weeks</span></button><div class="bo-status"><strong><span class="bo-dot"></span>BillsOS online</strong><span>All changes synced</span><br><span id="boStatusTime"></span></div><div class="bo-copy">© 2026 BillsOS</div></div>';
-    document.body.appendChild(aside);
-    var menu=document.createElement('button');menu.id='boMenu';menu.type='button';menu.textContent='☰';menu.setAttribute('aria-label','Open navigation');document.body.appendChild(menu);
-    var scrim=document.createElement('div');scrim.id='boScrim';document.body.appendChild(scrim);
-    menu.onclick=function(){document.body.classList.toggle('bo-open')};scrim.onclick=function(){document.body.classList.remove('bo-open')};
-    aside.addEventListener('click',function(event){var link=event.target.closest&&event.target.closest('a[href]');if(!link)return;event.preventDefault();var href=link.getAttribute('href'),tab=link.getAttribute('data-bo-tab');if(control&&tab&&typeof window.showTab==='function'){window.showTab(tab);history.replaceState(null,'','#'+tab);aside.querySelectorAll('a').forEach(function(a){a.classList.remove('is-active')});link.classList.add('is-active')}else if(href==='/#calendar'&&dashboard){var panel=document.querySelector('.month-panel.show')||document.querySelector('.month-panel');if(panel)panel.scrollIntoView({behavior:'smooth'});else location.assign(href)}else location.assign(href);document.body.classList.remove('bo-open')});
-    var time=document.getElementById('boStatusTime');if(time)time.textContent=new Date().toLocaleString([], {month:'numeric',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})
+    var path=location.pathname,view=new URLSearchParams(location.search).get('view')||'home',control=path.indexOf('/control')===0,legacy=path.indexOf('/legacy')===0,dashboard=!control&&!legacy;
+    var a=document.createElement('aside');a.id='boSidebar';a.className='bo-sidebar';
+    a.innerHTML='<div class="bo-brand"><div class="bo-brand-mark">◒</div><div><strong>BillsOS</strong><small>Cash flow planner</small></div></div><nav class="bo-nav">'+link('⌂','Home','/',dashboard&&view!=='calendar')+link('▦','Calendar','/?view=calendar',dashboard&&view==='calendar')+link('▤','Bills','/control#bills',control)+link('♙','Income','/control#income',false)+link('↝','Cash Flow','/control#oneTime',false)+link('▥','Accounts','/control#backup',false)+'<div class="bo-divider"></div>'+link('↗','Reports','/control#backup',false)+link('⚙','Settings','/control#backup',false)+'</nav><div class="bo-side-bottom"><div class="bo-status"><strong><span class="bo-dot"></span>BillsOS online</strong>All changes synced<br><span>'+new Date().toLocaleString([], {month:'numeric',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+'</span></div><div class="bo-copy">© 2026 BillsOS</div></div>';
+    document.body.appendChild(a);
+    var m=document.createElement('button');m.id='boMenu';m.type='button';m.textContent='☰';document.body.appendChild(m);var q=document.createElement('div');q.id='boScrim';document.body.appendChild(q);m.onclick=function(){document.body.classList.toggle('bo-open')};q.onclick=function(){document.body.classList.remove('bo-open')}
   }
 
-  function addControlHeader(){
-    if(location.pathname.indexOf('/control')!==0||document.getElementById('boPageHead'))return;
-    var wrap=document.querySelector('.wrap'),tabs=wrap&&wrap.querySelector('.tabs');if(!wrap||!tabs)return;
-    var head=document.createElement('section');head.id='boPageHead';head.className='bo-page-head';head.innerHTML='<div><h1>Good '+(new Date().getHours()<12?'morning':new Date().getHours()<18?'afternoon':'evening')+', Ryan</h1><p>Take control of your cash flow.</p></div><div class="bo-head-actions"><button class="bo-head-btn" type="button" title="Refresh" onclick="loadData()">↻</button><button class="bo-head-btn" type="button" title="Save" onclick="saveData()">✓</button></div>';
-    var metrics=document.createElement('section');metrics.id='boMetrics';metrics.className='bo-metrics';
-    wrap.insertBefore(head,wrap.firstChild);wrap.insertBefore(metrics,tabs);
-    fetch('/api/bills?ui='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():{}}).then(function(data){
-      var bills=(data.bills||[]).filter(function(x){return x&&x.active!==false}),income=(data.income||[]).filter(function(x){return x&&x.active!==false}),one=(data.oneTimeEvents||[]).filter(function(x){return x&&!/^__billsos_/.test(String(x.id||''))});
-      var monthly=bills.filter(function(x){return !x.frequency||x.frequency==='monthly'}).reduce(function(s,x){return s+Math.abs(Number(x.amount||0))},0);
-      var incomeTotal=income.reduce(function(s,x){return s+Math.abs(Number(x.amount||0))},0);
-      var cards=[['Active bills',bills.length,'Recurring obligations','▤'],['Monthly outflow',money(monthly),'Scheduled bills','↘'],['Income sources',income.length,money(incomeTotal)+' per cycle','♙'],['Adjustments',one.length,'One-time cash flow','↝']];
-      metrics.innerHTML=cards.map(function(c){return '<article class="bo-metric"><div class="bo-metric-label">'+esc(c[0])+'</div><div class="bo-metric-value">'+esc(c[1])+'</div><div class="bo-metric-note">'+esc(c[2])+'</div><div class="bo-metric-icon">'+c[3]+'</div></article>'}).join('')
-    }).catch(function(){metrics.innerHTML=''})
+  function upcomingBills(data){
+    var now=new Date(),today=now.getDate(),month=now.getMonth(),year=now.getFullYear(),rows=[];
+    (data.bills||[]).filter(function(b){return b&&b.active!==false&&Number(b.dueDay)>0}).forEach(function(b){var d=new Date(year,month,Number(b.dueDay));if(d<new Date(year,month,today))d=new Date(year,month+1,Number(b.dueDay));var diff=Math.ceil((d-new Date(year,month,today))/86400000);if(diff>=0&&diff<=14)rows.push({date:d,diff:diff,name:b.name||'Bill',amount:Math.abs(Number(b.amount||0))})});
+    return rows.sort(function(a,b){return a.date-b.date}).slice(0,8)
   }
 
-  function addSearch(){
-    if(location.pathname.indexOf('/control')!==0)return;
-    var tableCard=document.querySelector('#panel-bills .card:nth-of-type(2)');if(!tableCard||tableCard.querySelector('.bo-search'))return;
-    var head=tableCard.querySelector('.cardhead');if(!head)return;
-    var tools=document.createElement('div');tools.className='bo-saved-tools';
-    var count=head.querySelector('#billCount');if(count)tools.appendChild(count);
-    var search=document.createElement('label');search.className='bo-search';search.innerHTML='<input type="search" placeholder="Search bills…" aria-label="Search bills"><span>⌕</span>';tools.appendChild(search);head.appendChild(tools);
-    search.querySelector('input').addEventListener('input',function(){var q=this.value.toLowerCase();tableCard.querySelectorAll('tbody tr').forEach(function(row){row.style.display=row.textContent.toLowerCase().indexOf(q)>=0?'':'none'})})
+  function readCalendarMetrics(){
+    return {start:num(document.querySelector('#kstart')),income:num(document.querySelector('#kin')),outflow:num(document.querySelector('#kout')),end:num(document.querySelector('#kend'))}
   }
 
-  function selectHashTab(){if(location.pathname.indexOf('/control')!==0)return;var tab=location.hash.replace('#','');if(tab&&typeof window.showTab==='function'&&['bills','oneTime','income','backup'].indexOf(tab)>=0)window.showTab(tab)}
-  function install(){addFont();addStyles();document.body.classList.add('billsos-polished');installSidebar();addControlHeader();selectHashTab();setTimeout(addSearch,300)}
+  function buildHome(){
+    if(location.pathname!=='/'||document.getElementById('boHome'))return;
+    var view=new URLSearchParams(location.search).get('view')||'home';if(view==='calendar')return;
+    document.body.classList.add('bo-home-active');
+    var home=document.createElement('main');home.id='boHome';home.className='bo-home is-active';home.innerHTML='<section class="bo-home-head"><div><h1>'+greeting()+', Ryan</h1><p>Here is what is happening with your cash flow.</p></div><div class="bo-month">'+new Date().toLocaleString([], {month:'long',year:'numeric'})+'</div></section><section class="bo-kpis" id="boHomeKpis"></section><section class="bo-home-grid"><article class="bo-panel"><h2>Upcoming bills</h2><div id="boUpcoming" class="bo-upcoming"><div class="bo-empty">Loading upcoming bills…</div></div></article><aside><article class="bo-panel"><h2>Quick actions</h2><div class="bo-actions"><a class="bo-action" href="/control#bills">＋ Add bill</a><a class="bo-action" href="/control#income">＋ Add income</a><a class="bo-action" href="/control#oneTime">＋ Cash flow item</a><a class="bo-action" href="/?view=calendar">Open calendar</a></div></article><article class="bo-panel bo-attention"><h2>Attention</h2><div id="boAttention" class="bo-empty">Checking your month…</div></article></aside></section>';
+    document.body.appendChild(home);
+    fetch('/api/bills?home='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(data){
+      var upcoming=upcomingBills(data),total=upcoming.reduce(function(s,x){return s+x.amount},0),income=(data.income||[]).filter(function(x){return x&&x.active!==false}).reduce(function(s,x){return s+Math.abs(Number(x.amount||0))},0);
+      function renderMetrics(){var c=readCalendarMetrics(),cards=[['Cash available',c.start||c.end||0,'Current planning balance','▣'],['Upcoming (14 days)',upcoming.length+' bills',money(total)+' due','▦'],['Income remaining',income,money(income)+' scheduled','♙'],['Projected month end',c.end||0,c.end<0?'Needs attention':'On track','↗']];document.getElementById('boHomeKpis').innerHTML=cards.map(function(x){return '<article class="bo-kpi"><div class="bo-kpi-label">'+x[0]+'</div><div class="bo-kpi-value">'+(typeof x[1]==='number'?money(x[1]):x[1])+'</div><div class="bo-kpi-note">'+x[2]+'</div><div class="bo-kpi-icon">'+x[3]+'</div></article>'}).join('');var attention=document.getElementById('boAttention');attention.className=c.end<0?'bo-attention-item':'bo-empty';attention.textContent=c.end<0?'Projected month end is below zero. Review the calendar.':'No urgent cash-flow issues detected.'}
+      renderMetrics();setTimeout(renderMetrics,1200);
+      document.getElementById('boUpcoming').innerHTML=upcoming.length?upcoming.map(function(x){var label=x.diff===0?'Today':x.diff===1?'Tomorrow':x.date.toLocaleDateString([], {month:'short',day:'numeric'});return '<div class="bo-upcoming-row"><div class="bo-upcoming-date">'+label+'</div><div class="bo-upcoming-name">'+x.name+'</div><div class="bo-upcoming-amt">'+money(x.amount)+'</div></div>'}).join(''):'<div class="bo-empty">No bills due in the next 14 days.</div>'
+    }).catch(function(){document.getElementById('boUpcoming').innerHTML='<div class="bo-empty">Could not load upcoming bills.</div>'})
+  }
+
+  function selectControlTab(){if(location.pathname.indexOf('/control')!==0)return;var tab=location.hash.slice(1);if(tab&&typeof window.showTab==='function')window.showTab(tab)}
+  function install(){addFont();addStyles();document.body.classList.add('bo-app');installSidebar();selectControlTab();buildHome()}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
 </script>`;
@@ -110,6 +101,6 @@ fs.readFileSync = function patchedReadFileSync(filePath, options) {
     html = upsertScript(html, '<script defer src="/amount-balance-hotfix.js?v=20260728calendartruth4"></script>');
     html = upsertScript(html, '<script defer src="/billsos-cross-device-sync.js?v=20260730localfirst1"></script>');
   }
-  if (!html.includes('id="billsosPolishedUi"')) html = html.replace('</body>', polishedUi + '\n</body>');
+  if (!html.includes('id="billsosAppUi"')) html = html.replace('</body>', appUi + '\n</body>');
   return Buffer.isBuffer(result) ? Buffer.from(html, 'utf8') : html;
 };
