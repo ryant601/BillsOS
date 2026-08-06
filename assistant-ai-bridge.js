@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var BUILD='assistant-ai-bridge-20260702-4';
+  var BUILD='assistant-ai-bridge-20260806-review1';
   window.BillsOSModules=window.BillsOSModules||{};
   var state={loaded:true,build:BUILD,at:new Date().toISOString(),observing:false,requests:0,successes:0,failures:0,lastStatus:'initializing',lastError:null,model:null};
   window.BillsOSModules.assistantAiBridge=state;
@@ -13,6 +13,7 @@
   function mark(node){if(!node||!node.classList||node.classList.contains('user')||node.dataset.aiBridge==='1')return;if(node.dataset&&node.dataset.billsosIntro==='1')return;var text=cleanText(node);if(!text||/checking billsos/i.test(text)||/ask:\s*“?/i.test(text))return;var question=userQuestionFor(node);if(!question)return;node.dataset.aiBridge='1';var deterministic=node.innerHTML||text;source(node,'Sending to ChatGPT · model from OPENAI_MODEL · BillsOS math is source of truth','pending');rewrite(node,question,deterministic)}
   function scan(){document.querySelectorAll('#billsosAiLog .billsos-msg:not(.user)').forEach(mark)}
   function observe(){var log=document.getElementById('billsosAiLog');if(!log)return false;if(log.dataset.aiBridgeObserver==='1')return true;log.dataset.aiBridgeObserver='1';new MutationObserver(function(records){records.forEach(function(record){Array.prototype.forEach.call(record.addedNodes||[],function(node){if(node&&node.nodeType===1&&node.classList&&node.classList.contains('billsos-msg'))setTimeout(function(){mark(node)},80)})})}).observe(log,{childList:true,subtree:false});state.observing=true;state.lastStatus='observing-assistant-responses';scan();return true}
-  function init(){if(observe())return;setTimeout(observe,500);setTimeout(observe,1500);setTimeout(observe,3000)}
+  function loadAssistantReview(){if(location.pathname.indexOf('/control')!==0||document.getElementById('billsosAssistantReviewScript'))return;var s=document.createElement('script');s.id='billsosAssistantReviewScript';s.src='/assistant-review.js?v=20260806mvp1';s.defer=true;document.head.appendChild(s)}
+  function init(){loadAssistantReview();if(observe())return;setTimeout(observe,500);setTimeout(observe,1500);setTimeout(observe,3000)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
