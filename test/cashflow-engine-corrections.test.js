@@ -18,6 +18,10 @@ const legacy = julyRows([{ id: 'legacy', name: 'Balance correction', date: '2026
 assert.strictEqual(legacy.length, 1);
 assert.strictEqual(legacy[0].amount, -40);
 
+const opening = julyRows([{ id: 'opening', name: 'Beginning balance adjustment', date: '2026-07-13', amount: -55.25, type: 'balance-opening-adjustment' }]);
+assert.strictEqual(opening.length, 1);
+assert.strictEqual(opening[0].amount, -55.25);
+
 const model = engine.build({ bills: [], income: [], oneTimeEvents: [
   { id: 'add', name: 'Balance correction', date: '2026-07-10', amount: 100, type: 'balance-correction', correctionDirection: 'add' },
   { id: 'subtract', name: 'Balance correction', date: '2026-07-11', amount: 25, type: 'balance-correction', correctionDirection: 'subtract' }

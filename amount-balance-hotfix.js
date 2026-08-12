@@ -44,7 +44,7 @@
   }
   function signedAdjustmentAmount(item) {
     const amount = Number(item.amount || 0);
-    if (item.type === 'adjustment') return amount;
+    if (/adjustment|correction/i.test(String(item.type || '')) || /adjustment|correction/i.test(String(item.name || ''))) return amount;
     if (item.type === 'income') return Math.abs(amount);
     return -Math.abs(amount);
   }
@@ -162,14 +162,18 @@
       setValue('ksweep', current.sweep);
       syncAdjustmentCalendarRows(current);
 
-      const byDay = {};
-      current.rows.forEach(function (row) { byDay[row.day] = (byDay[row.day] || 0) + row.amount; });
+      const byDay = {}, openingByDay = {};
+      current.rows.forEach(function (row) {
+        if (row.type === 'balance-opening-adjustment') openingByDay[row.day] = (openingByDay[row.day] || 0) + row.amount;
+        else byDay[row.day] = (byDay[row.day] || 0) + row.amount;
+      });
       let running = current.begin;
       mount.querySelectorAll('.day:not(.blank)').forEach(function (dayNode) {
         const dayNum = Number(text(dayNode.querySelector('.topline b')) || 0);
         if (!dayNum) return;
         const startNode = dayNode.querySelector('.topline span:last-child b');
         const endNode = dayNode.querySelector('.endline b');
+        running += Number(openingByDay[dayNum] || 0);
         if (startNode) startNode.textContent = money(running);
         if (monthDef[0] === 'july' && dayNum <= JULY_REBASE_DAY) {
           running = JULY_REBASE_END;
