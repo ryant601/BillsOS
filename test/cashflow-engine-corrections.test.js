@@ -22,6 +22,10 @@ const opening = julyRows([{ id: 'opening', name: 'Beginning balance adjustment',
 assert.strictEqual(opening.length, 1);
 assert.strictEqual(opening[0].amount, -55.25);
 
+const timestamped = julyRows([{ id: 'timestamped', name: 'Ending balance reconciliation', date: '2026-07-20', amount: 80, type: 'adjustment', notes: 'Requested balance $1,000. Saved 2026-07-21T00:04:00.000Z.' }]);
+assert.strictEqual(timestamped.length, 1);
+assert.strictEqual(timestamped[0].iso, '2026-07-20');
+
 const model = engine.build({ bills: [], income: [], oneTimeEvents: [
   { id: 'add', name: 'Balance correction', date: '2026-07-10', amount: 100, type: 'balance-correction', correctionDirection: 'add' },
   { id: 'subtract', name: 'Balance correction', date: '2026-07-11', amount: 25, type: 'balance-correction', correctionDirection: 'subtract' }

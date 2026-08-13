@@ -123,7 +123,7 @@ fs.readFileSync = function patchedReadFileSync(filePath, options) {
   if (!isText || (!isDashboard && !isControl && !isLegacy)) return result;
   let html = Buffer.isBuffer(result) ? result.toString('utf8') : String(result);
   if (isDashboard) {
-    html = upsertScript(html, '<script defer src="/amount-balance-hotfix.js?v=20260812balanceeditor1"></script>');
+    html = upsertScript(html, '<script defer src="/amount-balance-hotfix.js?v=20260812balancededupe1"></script>');
     html = upsertScript(html, '<script defer src="/billsos-cross-device-sync.js?v=20260730localfirst1"></script>');
     html = upsertScript(html, '<script defer src="/billsos-balance-editor.js?v=20260812balanceeditor1"></script>');
   }

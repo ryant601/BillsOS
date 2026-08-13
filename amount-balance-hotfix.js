@@ -37,9 +37,13 @@
   }
   function oneDates(item, monthKey) {
     const out = [];
+    const explicit = [item && item.date, item && item.iso, item && item.startDate, item && item.effectiveDate].filter(function (date) { return /^20\d{2}-\d{2}-\d{2}$/.test(String(date || '')); });
+    if (explicit.length) {
+      explicit.forEach(function (date) { if (date.slice(0, 7) === monthKey && out.indexOf(date) < 0) out.push(date); });
+      return out;
+    }
     const matches = String(item.notes || '').match(/20\d{2}-\d{2}-\d{2}/g) || [];
     matches.forEach(function (date) { if (date.slice(0, 7) === monthKey && out.indexOf(date) < 0) out.push(date); });
-    if (!out.length && item.date && String(item.date).slice(0, 7) === monthKey) out.push(item.date);
     return out;
   }
   function signedAdjustmentAmount(item) {
