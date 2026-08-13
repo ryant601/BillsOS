@@ -1,0 +1,26 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+const loader = fs.readFileSync(path.join(root, 'html-hotfix-loader.js'), 'utf8');
+const control = fs.readFileSync(path.join(root, 'control.html'), 'utf8');
+
+test('sidebar exposes only working control destinations', () => {
+  assert.match(loader, /'Bills','\/control#bills'/);
+  assert.match(loader, /'Income','\/control#income'/);
+  assert.match(loader, /'Cash Flow','\/control#oneTime'/);
+  assert.match(loader, /'Backup','\/control#backup'/);
+  assert.doesNotMatch(loader, /link\([^\n]+,'Accounts'/);
+  assert.doesNotMatch(loader, /link\([^\n]+,'Reports'/);
+  assert.doesNotMatch(loader, /link\([^\n]+,'Settings'/);
+});
+
+test('hash navigation switches the panel and active sidebar item', () => {
+  assert.match(loader, /addEventListener\('hashchange',selectControlTab\)/);
+  assert.match(loader, /showTab\(tab\)/);
+  assert.match(loader, /syncSidebarActive\(tab\)/);
+  assert.match(control, /BillsOSSyncSidebarActive\(id\)/);
+  assert.match(control, /history\.replaceState\(null,'','#'\+id\)/);
+});

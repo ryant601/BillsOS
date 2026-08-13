@@ -49,12 +49,16 @@ const appUi = String.raw`<script id="billsosAppUi">
     ].join('');document.head.appendChild(s)
   }
 
-  function link(icon,label,href,active){return '<a href="'+href+'" target="_self"'+(active?' class="is-active"':'')+'><span class="bo-icon">'+icon+'</span><span>'+label+'</span></a>'}
+  function link(icon,label,href,active,section){return '<a href="'+href+'" target="_self"'+(active?' class="is-active"':'')+(section?' data-bo-section="'+section+'"':'')+'><span class="bo-icon">'+icon+'</span><span>'+label+'</span></a>'}
+  function controlSection(){var section=location.hash.slice(1)||'bills';return ['bills','income','oneTime','backup'].indexOf(section)>=0?section:'bills'}
+  function syncSidebarActive(section){document.querySelectorAll('.bo-nav [data-bo-section]').forEach(function(item){item.classList.toggle('is-active',item.getAttribute('data-bo-section')===section)})}
+  window.BillsOSSyncSidebarActive=syncSidebarActive;
   function installSidebar(){
     if(document.getElementById('boSidebar'))return;
     var path=location.pathname,view=new URLSearchParams(location.search).get('view')||'home',control=path.indexOf('/control')===0,legacy=path.indexOf('/legacy')===0,dashboard=!control&&!legacy;
+    var section=controlSection();
     var a=document.createElement('aside');a.id='boSidebar';a.className='bo-sidebar';
-    a.innerHTML='<div class="bo-brand"><div class="bo-brand-mark">◒</div><div><strong>BillsOS</strong><small>Cash flow planner</small></div></div><nav class="bo-nav">'+link('⌂','Home','/',dashboard&&view!=='calendar')+link('▦','Calendar','/?view=calendar',dashboard&&view==='calendar')+link('▤','Bills','/control#bills',control)+link('♙','Income','/control#income',false)+link('↝','Cash Flow','/control#oneTime',false)+link('▥','Accounts','/control#backup',false)+'<div class="bo-divider"></div>'+link('↗','Reports','/control#backup',false)+link('⚙','Settings','/control#backup',false)+'</nav><div class="bo-side-bottom"><div class="bo-status"><strong><span class="bo-dot"></span>BillsOS online</strong>All changes synced<br><span>'+new Date().toLocaleString([], {month:'numeric',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+'</span></div><div class="bo-copy">© 2026 BillsOS</div></div>';
+    a.innerHTML='<div class="bo-brand"><div class="bo-brand-mark">◒</div><div><strong>BillsOS</strong><small>Cash flow planner</small></div></div><nav class="bo-nav">'+link('⌂','Home','/',dashboard&&view!=='calendar')+link('▦','Calendar','/?view=calendar',dashboard&&view==='calendar')+link('▤','Bills','/control#bills',control&&section==='bills','bills')+link('♙','Income','/control#income',control&&section==='income','income')+link('↝','Cash Flow','/control#oneTime',control&&section==='oneTime','oneTime')+link('▥','Backup','/control#backup',control&&section==='backup','backup')+'</nav><div class="bo-side-bottom"><div class="bo-status"><strong><span class="bo-dot"></span>BillsOS online</strong>All changes synced<br><span>'+new Date().toLocaleString([], {month:'numeric',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+'</span></div><div class="bo-copy">© 2026 BillsOS</div></div>';
     document.body.appendChild(a);
     var m=document.createElement('button');m.id='boMenu';m.type='button';m.textContent='☰';document.body.appendChild(m);var q=document.createElement('div');q.id='boScrim';document.body.appendChild(q);m.onclick=function(){document.body.classList.toggle('bo-open')};q.onclick=function(){document.body.classList.remove('bo-open')}
   }
@@ -106,7 +110,8 @@ const appUi = String.raw`<script id="billsosAppUi">
     }).catch(function(){document.getElementById('boUpcoming').innerHTML='<div class="bo-empty">Could not load upcoming bills.</div>'})
   }
 
-  function selectControlTab(){if(location.pathname.indexOf('/control')!==0)return;var tab=location.hash.slice(1);if(tab&&typeof window.showTab==='function')window.showTab(tab)}
+  function selectControlTab(){if(location.pathname.indexOf('/control')!==0)return;var tab=controlSection();if(typeof window.showTab==='function')window.showTab(tab);syncSidebarActive(tab);document.body.classList.remove('bo-open')}
+  window.addEventListener('hashchange',selectControlTab);
   function install(){addFont();addStyles();document.body.classList.add('bo-app');installSidebar();selectControlTab();buildHome()}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
