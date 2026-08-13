@@ -15,4 +15,10 @@ assert.strictEqual(calculator.result().display, '60');
 calculator.press('C'); calculator.press('9'); calculator.press('⌫');
 assert.strictEqual(calculator.result().display, '0');
 
+const fs = require('fs');
+const source = fs.readFileSync(require.resolve('../billsos-sidebar-calculator'), 'utf8');
+assert.ok(source.includes('class="bo-calc-heading"'));
+assert.ok(!source.includes('bo-calc-toggle'));
+assert.ok(!source.includes('aria-expanded'));
+
 console.log('sidebar calculator tests passed');

@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.12-dark-mode.2",
-    "buildDate": "2026-08-12",
-    "buildNote": "Refine dark mode with consistent charcoal surfaces and restrained sage accents."
+    "version": "v2026.08.13-always-visible-calculator.1",
+    "buildDate": "2026-08-13",
+    "buildNote": "Keep the sidebar calculator display and keypad permanently visible."
   },
   "scripts": {
     "start": "node -r ./html-hotfix-loader.js server.js"
