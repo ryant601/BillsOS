@@ -128,6 +128,7 @@ fs.readFileSync = function patchedReadFileSync(filePath, options) {
     html = upsertScript(html, '<script defer src="/billsos-balance-editor.js?v=20260812balanceeditor1"></script>');
   }
   html = upsertScript(html, '<script defer src="/billsos-sidebar-calculator.js?v=20260812calculator1"></script>');
+  html = upsertScript(html, '<script defer src="/assistant-ai-bridge.js?v=20260812dark2"></script>');
   if (!html.includes('id="billsosAppUi"')) html = html.replace('</body>', appUi + '\n</body>');
   return Buffer.isBuffer(result) ? Buffer.from(html, 'utf8') : html;
 };

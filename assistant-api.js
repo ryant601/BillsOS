@@ -54,7 +54,7 @@ function injectBridge(html) {
   if (typeof out !== "string") return out;
   out = replaceScriptById(out, "billsosCashflowEngine", "/cashflow-engine.js?v=20260707corrections1");
   out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260709general1");
-  out = replaceScriptById(out, "billsosAssistantAiBridge", "/assistant-ai-bridge.js?v=20260702bridge4");
+  out = replaceScriptById(out, "billsosAssistantAiBridge", "/assistant-ai-bridge.js?v=20260812dark2");
   return out;
 }
 
