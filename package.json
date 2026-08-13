@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.12-direct-balance-editor.1",
+    "version": "v2026.08.12-sidebar-calculator.1",
     "buildDate": "2026-08-12",
-    "buildNote": "Edit calendar beginning and ending balances with explicit persisted adjustments."
+    "buildNote": "Add a compact calculator beneath Settings in the BillsOS sidebar."
   },
   "scripts": {
     "start": "node -r ./html-hotfix-loader.js server.js"
