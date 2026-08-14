@@ -24,3 +24,10 @@ test('ending a bill preserves history and cross-device sync reloads data', () =>
   assert.match(html, /b\.active=true/);
   assert.match(html, /setInterval\(syncSavedBills,15000\)/);
 });
+
+test('one-time item edits persist immediately without changing the data model', () => {
+  assert.match(html, /state\.oneTimeEvents\[i\]=row/);
+  assert.match(html, /await persistState\(\(i>=0\?'Updated ':'Added '\)\+row\.name,previous\)/);
+  assert.match(html, /type:direction==='income'\?'income':'adjustment'/);
+  assert.match(html, /state\.oneTimeEvents=state\.oneTimeEvents\.filter/);
+});

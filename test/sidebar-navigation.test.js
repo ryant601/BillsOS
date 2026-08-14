@@ -10,11 +10,19 @@ const control = fs.readFileSync(path.join(root, 'control.html'), 'utf8');
 test('sidebar exposes only working control destinations', () => {
   assert.match(loader, /'Bills','\/control#bills'/);
   assert.match(loader, /'Income','\/control#income'/);
-  assert.match(loader, /'Cash Flow','\/control#oneTime'/);
+  assert.doesNotMatch(loader, /'Cash Flow','\/control#oneTime'/);
   assert.match(loader, /'Backup','\/control#backup'/);
   assert.doesNotMatch(loader, /link\([^\n]+,'Accounts'/);
   assert.doesNotMatch(loader, /link\([^\n]+,'Reports'/);
   assert.doesNotMatch(loader, /link\([^\n]+,'Settings'/);
+});
+
+test('one-time items are consolidated into the Bills workspace', () => {
+  assert.match(control, /Recurring Bills/);
+  assert.match(control, /One-Time Items/);
+  assert.match(control, /Expense \/ Charge/);
+  assert.match(control, /Income \/ Windfall/);
+  assert.doesNotMatch(control, /data-tab="oneTime"/);
 });
 
 test('hash navigation switches the panel and active sidebar item', () => {
