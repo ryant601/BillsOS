@@ -1,7 +1,7 @@
 'use strict';
 
-// Registers a read-only analysis endpoint before server.js installs the login gate.
-// The endpoint intentionally exposes no mutation methods, credentials, or session data.
+// Registers public read-only analysis endpoints before server.js installs the login gate.
+// These endpoints intentionally expose no mutation methods, credentials, or session data.
 const fs = require('fs');
 const path = require('path');
 
@@ -41,22 +41,38 @@ function cleanCheckmarks() {
   };
 }
 
-function readonlyFeed(_req, res) {
-  res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
-  res.json({
+function payload() {
+  return {
     schema: 'billsos-calendar-readonly-v1',
     readOnly: true,
     generatedAt: new Date().toISOString(),
     calendar: cleanBillsData(),
     checkmarks: cleanCheckmarks()
-  });
+  };
+}
+
+function setReadonlyHeaders(res, cacheControl) {
+  res.setHeader('Cache-Control', cacheControl);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+}
+
+function readonlyApi(_req, res) {
+  setReadonlyHeaders(res, 'no-store');
+  res.json(payload());
+}
+
+function readonlyJson(_req, res) {
+  // Short-lived public caching makes this easier for generic web fetchers/CDNs
+  // while keeping calendar analysis effectively current.
+  setReadonlyHeaders(res, 'public, max-age=30, s-maxage=30, stale-while-revalidate=30');
+  res.type('application/json').send(JSON.stringify(payload()));
 }
 
 function wrappedExpress(...args) {
   const app = originalExpress(...args);
-  app.get('/api/calendar-readonly', readonlyFeed);
+  app.get('/api/calendar-readonly', readonlyApi);
+  app.get('/calendar-readonly.json', readonlyJson);
   return app;
 }
 
