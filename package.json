@@ -1,16 +1,16 @@
 {
   "name": "billsos",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.14-bills-cash-flow-merge.1",
+    "version": "v2026.08.14-readonly-calendar.1",
     "buildDate": "2026-08-14",
-    "buildNote": "Merge one-time cash flow items into Bills with immediate persistence and clear expense or income direction."
+    "buildNote": "Expose a public read-only calendar analysis feed while keeping all BillsOS write actions behind authentication."
   },
   "scripts": {
-    "start": "node -r ./html-hotfix-loader.js server.js",
+    "start": "node -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js server.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
