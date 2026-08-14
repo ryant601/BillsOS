@@ -1,16 +1,17 @@
 {
   "name": "billsos",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.13-sidebar-navigation.1",
-    "buildDate": "2026-08-13",
-    "buildNote": "Make sidebar sections functional and label only available destinations."
+    "version": "v2026.08.14-bill-editor-persistence.1",
+    "buildDate": "2026-08-14",
+    "buildNote": "Persist Control Center bill edits and lifecycle actions immediately with history-safe removal."
   },
   "scripts": {
-    "start": "node -r ./html-hotfix-loader.js server.js"
+    "start": "node -r ./html-hotfix-loader.js server.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "express": "^4.19.2"
