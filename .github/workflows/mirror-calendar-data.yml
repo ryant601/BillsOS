@@ -1,0 +1,43 @@
+name: Mirror calendar data branch
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '*/10 * * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mirror-calendar-data
+  cancel-in-progress: true
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out calendar data branch
+        uses: actions/checkout@v4
+        with:
+          ref: calendar-data
+          fetch-depth: 0
+
+      - name: Fetch live read-only calendar
+        run: |
+          curl --fail --silent --show-error --retry 3 \
+            https://billsos-production.up.railway.app/calendar-readonly.json \
+            -o calendar-readonly.json
+          node -e "const fs=require('fs'); const d=JSON.parse(fs.readFileSync('calendar-readonly.json','utf8')); if(d.readOnly!==true || !d.calendar) process.exit(1)"
+
+      - name: Commit refreshed snapshot to calendar-data only
+        run: |
+          if git diff --quiet -- calendar-readonly.json && git ls-files --error-unmatch calendar-readonly.json >/dev/null 2>&1; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add calendar-readonly.json
+          git commit -m 'Refresh calendar data snapshot'
+          git push origin HEAD:calendar-data
