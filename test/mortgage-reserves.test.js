@@ -15,8 +15,8 @@ function close(actual, expected) {
   assert.ok(Math.abs(actual - expected) < 0.001, `${actual} should be close to ${expected}`);
 }
 
-test('derives two mortgage reserve policies without changing the actual payment', () => {
-  const policies = engine.defaultReserves({ bills: [mortgage], income: [], oneTimeEvents: [] });
+test('derives two real mortgage payments', () => {
+  const policies = engine.defaultPaymentSplits({ bills: [mortgage], income: [], oneTimeEvents: [] });
   assert.equal(policies.length, 2);
   assert.equal(policies[0].dueDay, 27);
   assert.equal(policies[0].targetMonthOffset, 1);
@@ -26,17 +26,22 @@ test('derives two mortgage reserve policies without changing the actual payment'
   close(policies[1].amount, 2933.24);
 });
 
-test('reserves reduce available cash and release against the September 15 mortgage', () => {
+test('calendar replaces the 15th mortgage with payments on the 13th and 27th', () => {
   const model = engine.build({ bills: [mortgage], income: [], oneTimeEvents: [] }, { firstBegin: 30000, floorNegative: false });
-  const aug27 = model.balances.find(row => row.iso === '2026-08-27');
-  const sep13 = model.balances.find(row => row.iso === '2026-09-13');
-  const sep15 = model.balances.find(row => row.iso === '2026-09-15');
-  const sepMortgage = model.months.september.rows.find(row => row.sourceId === mortgage.id);
+  const september = model.months.september.rows.filter(row => /Mortgage \(Rocket\)/.test(row.name));
+  assert.equal(september.length, 2);
+  assert.deepEqual(september.map(row => row.day), [13, 27]);
+  close(september[0].amount, -2933.24);
+  close(september[1].amount, -2933.24);
+  assert.equal(september.some(row => row.day === 15), false);
+  assert.equal(september[0].targetMonth, '2026-09');
+  assert.equal(september[1].targetMonth, '2026-10');
+});
 
-  close(aug27.balance - aug27.availableBalance, 2933.24);
-  close(sep13.balance - sep13.availableBalance, 5866.48);
-  close(sepMortgage.amount, -5866.48);
-  close(sepMortgage.reserveRelease, 5866.48);
-  close(sepMortgage.availableAmount, 0);
-  close(sep15.balance, sep15.availableBalance);
+test('split payments preserve the total monthly mortgage cash outflow after August transition', () => {
+  const model = engine.build({ bills: [mortgage], income: [], oneTimeEvents: [] }, { firstBegin: 30000, floorNegative: false });
+  const septemberMortgageOutflow = model.months.september.rows
+    .filter(row => row.type === 'mortgage-split-payment')
+    .reduce((sum, row) => sum + Math.abs(row.amount), 0);
+  close(septemberMortgageOutflow, 5866.48);
 });
