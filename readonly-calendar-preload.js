@@ -21,7 +21,7 @@ function readJson(filePath, fallback) {
   }
 }
 
-function defaultReserves(bills) {
+function defaultPaymentSplits(bills) {
   const mortgage = (Array.isArray(bills) ? bills : []).find(bill =>
     bill && bill.active !== false && /mortgage/i.test(String(bill.name || '')) && /rocket/i.test(String(bill.name || ''))
   );
@@ -33,8 +33,8 @@ function defaultReserves(bills) {
 
   return [
     {
-      id: 'policy-mortgage-reserve-prior-27',
-      name: 'Mortgage reserve · first half',
+      id: 'policy-mortgage-payment-prior-27',
+      name: 'Mortgage payment · first half',
       amount: firstHalf,
       dueDay: 27,
       frequency: 'monthly',
@@ -44,13 +44,14 @@ function defaultReserves(bills) {
       targetBillName: mortgage.name,
       targetDueDay: mortgage.dueDay,
       targetMonthOffset: 1,
-      cashImpact: 0,
-      availableCashImpact: -firstHalf,
-      notes: 'Reserve from the late-month paycheck for next month’s Rocket payment.'
+      paymentPart: 1,
+      paymentParts: 2,
+      cashImpact: -firstHalf,
+      notes: 'Actual first mortgage payment for the following month.'
     },
     {
-      id: 'policy-mortgage-reserve-current-13',
-      name: 'Mortgage reserve · second half',
+      id: 'policy-mortgage-payment-current-13',
+      name: 'Mortgage payment · second half',
       amount: secondHalf,
       dueDay: 13,
       frequency: 'monthly',
@@ -60,9 +61,10 @@ function defaultReserves(bills) {
       targetBillName: mortgage.name,
       targetDueDay: mortgage.dueDay,
       targetMonthOffset: 0,
-      cashImpact: 0,
-      availableCashImpact: -secondHalf,
-      notes: 'Reserve from the mid-month paycheck before the Rocket payment on the 15th.'
+      paymentPart: 2,
+      paymentParts: 2,
+      cashImpact: -secondHalf,
+      notes: 'Actual second mortgage payment before the 15th due date.'
     }
   ];
 }
@@ -74,7 +76,7 @@ function cleanBillsData() {
     bills,
     oneTimeEvents: Array.isArray(source.oneTimeEvents) ? source.oneTimeEvents : [],
     income: Array.isArray(source.income) ? source.income : [],
-    reserves: Array.isArray(source.reserves) && source.reserves.length ? source.reserves : defaultReserves(bills),
+    paymentSplits: defaultPaymentSplits(bills),
     updatedAt: source.updatedAt || null
   };
 }
