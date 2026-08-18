@@ -32,4 +32,11 @@ const model = engine.build({ bills: [], income: [], oneTimeEvents: [
 ]}, { firstBegin: 1000, floorNegative: false });
 
 assert.strictEqual(model.months.july.end - model.months.july.begin, 75);
+
+const reconciled = engine.build({ bills: [], income: [], oneTimeEvents: [
+  { id: 'opening-aug', name: 'Beginning balance adjustment', date: '2026-08-01', amount: 250, type: 'balance-opening-adjustment', correctionDirection: 'add' },
+  { id: 'ending-aug', name: 'Ending balance reconciliation', date: '2026-08-31', amount: 75, type: 'adjustment', correctionDirection: 'subtract' }
+] }, { firstBegin: 1000, floorNegative: false });
+assert.strictEqual(reconciled.months.august.end, reconciled.months.august.begin + 175);
+assert.strictEqual(reconciled.months.september.begin, reconciled.months.august.end);
 console.log('cashflow-engine correction tests passed');

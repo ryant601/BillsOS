@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.18-mortgage-split.1",
+    "version": "v2026.08.18-balance-carryover-fix.1",
     "buildDate": "2026-08-18",
-    "buildNote": "Pay the Rocket mortgage in two real half-payments on the 27th of the prior month and the 13th of the due month."
+    "buildNote": "Keep calendar balance recalculation on the shared cash-flow model so adjustments and month carryover are applied once."
   },
   "scripts": {
     "start": "node -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./mortgage-reserve-ui-loader.js server.js",

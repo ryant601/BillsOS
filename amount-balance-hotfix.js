@@ -53,6 +53,18 @@
     return -Math.abs(amount);
   }
   function generateRows(data, month) {
+    if (window.BillsOSCashflow && typeof window.BillsOSCashflow.rowsForMonth === 'function') {
+      return window.BillsOSCashflow.rowsForMonth(data, month).map(function (row) {
+        return {
+          date: row.iso,
+          day: row.day,
+          name: row.name,
+          amount: row.amount,
+          type: row.type,
+          sourceId: row.sourceId || ''
+        };
+      });
+    }
     const monthKey = YEAR + '-' + String(month).padStart(2, '0');
     const dim = days(month);
     const rows = [];
@@ -155,6 +167,10 @@
     try {
       const response = await fetch('/api/bills?amountBalance=' + Date.now(), { cache: 'no-store' });
       if (!response.ok) return;
+      // Use the same cash-flow rows as the calendar renderer.  This matters for
+      // policies such as split mortgage payments and for signed balance
+      // corrections; rebuilding those rules here caused a later recalculation
+      // to overwrite otherwise-correct calendar balances.
       const model = buildModel(await response.json());
       const current = model[monthDef[0]];
       if (!current) return;
