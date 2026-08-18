@@ -70,7 +70,20 @@
     widget.querySelectorAll('[data-calc-key]').forEach(function (button) { button.onclick = function () { render(calculator.press(button.dataset.calcKey)); }; });
     return true;
   }
-  function install() { installStyles(); if (!mount()) { setTimeout(mount, 250); setTimeout(mount, 900); } }
+  function ensureCalendarEnhancements() {
+    if (location.pathname !== '/' || new URLSearchParams(location.search).get('view') !== 'calendar') return;
+    if (document.getElementById('billsosWeekToggleJs')) return;
+    const script = document.createElement('script');
+    script.id = 'billsosWeekToggleJs';
+    script.src = '/billsos-week-toggle.js?v=20260818monthlist2';
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+  function install() {
+    installStyles();
+    ensureCalendarEnhancements();
+    if (!mount()) { setTimeout(mount, 250); setTimeout(mount, 900); }
+  }
   if (typeof document !== 'undefined') { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install); else install(); }
   return { operate: operate, createCalculator: createCalculator };
 });
