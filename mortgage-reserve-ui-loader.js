@@ -53,7 +53,7 @@ const splitUiScript = String.raw`<script id="billsosMortgageSplitUi">
       var date='2026-'+String(month.number).padStart(2,'0')+'-'+String(day).padStart(2,'0');
       var balance=(model.balances||[]).find(function(row){return row.iso===date});
       var cell=panel.querySelector('.day[data-day="'+day+'"]');
-      if(cell){var bod=cell.querySelector('.bod b'),eod=cell.querySelector('.eod b');if(bod)bod.textContent=money(previous);if(eod&&balance)eod.textContent=money(balance.balance)}
+      if(cell){var bod=cell.querySelector('.bod b'),eod=cell.querySelector('.eod b');if(bod)bod.textContent=money(balance&&balance.beginning!=null?balance.beginning:previous);if(eod&&balance)eod.textContent=money(balance.balance)}
       if(balance)previous=Number(balance.balance||0);
     }
   }

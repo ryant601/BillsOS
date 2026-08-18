@@ -39,4 +39,21 @@ const reconciled = engine.build({ bills: [], income: [], oneTimeEvents: [
 ] }, { firstBegin: 1000, floorNegative: false });
 assert.strictEqual(reconciled.months.august.end, reconciled.months.august.begin + 175);
 assert.strictEqual(reconciled.months.september.begin, reconciled.months.august.end);
+
+const openingBalance = reconciled.balances.find(row => row.iso === '2026-08-01');
+assert.strictEqual(openingBalance.beginning, reconciled.months.august.begin + 250);
+
+const absoluteOpening = engine.build({ bills: [], income: [], oneTimeEvents: [
+  { id: 'opening-absolute', name: 'Beginning balance adjustment', date: '2026-08-14', amount: -506.71, type: 'balance-opening-adjustment', notes: 'Requested balance $160.11. Saved now.' }
+] }, { firstBegin: 1000, floorNegative: false });
+assert.strictEqual(absoluteOpening.balances.find(row => row.iso === '2026-08-14').beginning, 160.11);
+
+const carryover = engine.build({ bills: [], income: [], oneTimeEvents: [
+  { id: 'late-july', name: 'Late July correction', date: '2026-07-31', amount: 125, type: 'adjustment' },
+  { id: 'aug-out', name: 'August bill', date: '2026-08-31', amount: 25, type: 'bill' }
+] }, { floorNegative: false });
+assert.strictEqual(carryover.months.july.begin, 2310);
+assert.strictEqual(carryover.months.july.end, 2435);
+assert.strictEqual(carryover.months.august.begin, carryover.months.july.end);
+assert.strictEqual(carryover.months.september.begin, carryover.months.august.end);
 console.log('cashflow-engine correction tests passed');
