@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.18-balance-carryover-fix.2",
+    "version": "v2026.08.18-balance-carryover-fix.3",
     "buildDate": "2026-08-18",
-    "buildNote": "Keep the rendered calendar, mortgage split UI, manual opening adjustments, and month carryover on one shared balance model."
+    "buildNote": "Always start each rendered month from the prior rendered month ending, including local calendar edits."
   },
   "scripts": {
     "start": "node -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./mortgage-reserve-ui-loader.js server.js",

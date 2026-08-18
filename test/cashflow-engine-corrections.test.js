@@ -1,4 +1,6 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const engine = require('../cashflow-engine');
 
 function julyRows(oneTimeEvents) {
@@ -56,4 +58,10 @@ assert.strictEqual(carryover.months.july.begin, 2310);
 assert.strictEqual(carryover.months.july.end, 2435);
 assert.strictEqual(carryover.months.august.begin, carryover.months.july.end);
 assert.strictEqual(carryover.months.september.begin, carryover.months.august.end);
+
+const renderedCalendar = fs.readFileSync(path.join(__dirname, '..', 'generated-v5.html'), 'utf8');
+assert.match(renderedCalendar, /prevEnd==null\?\(m&&m\.begin\|\|0\):prevEnd/);
+const mortgageLoader = fs.readFileSync(path.join(__dirname, '..', 'mortgage-reserve-ui-loader.js'), 'utf8');
+const applyBody = mortgageLoader.match(/async function apply\(\)\{([\s\S]*?)return true;/)[1];
+assert.doesNotMatch(applyBody, /updateDayBalances|setChip|decorateDay/);
 console.log('cashflow-engine correction tests passed');

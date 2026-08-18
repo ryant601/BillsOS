@@ -78,13 +78,9 @@ const splitUiScript = String.raw`<script id="billsosMortgageSplitUi">
     Object.keys(SHORT).forEach(function(key){
       var month=model.months&&model.months[key],panel=document.getElementById('panel-'+SHORT[key]);
       if(!month||!panel)return;
-      removeOldMortgageRows(panel);
-      (month.rows||[]).filter(function(row){return row.type==='mortgage-split-payment'}).forEach(function(row){decorateDay(panel,row)});
-      updateDayBalances(panel,month,model);
-      setChip(panel,'Starting',month.begin);
-      setChip(panel,'Income',(month.rows||[]).filter(function(r){return r.amount>0}).reduce(function(s,r){return s+r.amount},0));
-      setChip(panel,'Outflow',(month.rows||[]).filter(function(r){return r.amount<0}).reduce(function(s,r){return s+Math.abs(r.amount)},0));
-      setChip(panel,'Ending',month.end);
+      // The primary calendar renderer already includes split mortgage rows and
+      // chains each rendered month from the prior rendered ending. This loader
+      // only adds explanatory copy; it must never rewrite balances afterward.
       addSummary(panel,month);
     });
     window.BillsOSMortgageSplit={loaded:true,paymentSplits:model.paymentSplits||[],engine:model};
