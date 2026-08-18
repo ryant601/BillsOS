@@ -31,3 +31,10 @@ test('one-time item edits persist immediately without changing the data model', 
   assert.match(html, /type:direction==='income'\?'income':'adjustment'/);
   assert.match(html, /state\.oneTimeEvents=state\.oneTimeEvents\.filter/);
 });
+
+test('one-time save confirms calendar persistence and resets the form', () => {
+  assert.match(html, /id="oneSaveButton"/);
+  assert.match(html, /Saved to calendar/);
+  assert.match(html, /clearOneTimeForm\(\);renderOne\(\);setOneTimeSaveState\('saved'\)/);
+  assert.match(html, /b\.id===highlightedOneTimeId\?'saved-row'/);
+});
