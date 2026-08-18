@@ -153,6 +153,8 @@
       'html[data-billsos-theme="dark"] .amountEditPopover input{background:#020617;color:#f8fafc;border-color:rgba(226,232,240,.18)}',
       'html[data-billsos-theme="dark"] .amountEditPopover button{background:#1f2937;color:#f8fafc;border-color:rgba(226,232,240,.16)}',
       'html[data-billsos-theme="dark"] .amountEditPopover button.primary{background:#f8fafc;color:#111827}',
+      '.amountHoverTooltip{position:fixed;z-index:120;pointer-events:none;padding:7px 10px;border-radius:10px;background:#14202c;color:#fff;font-size:12px;font-weight:900;line-height:1;white-space:nowrap;box-shadow:0 10px 28px rgba(20,35,55,.24);transform:translate(-50%,-100%)}',
+      'html[data-billsos-theme="dark"] .amountHoverTooltip{background:#f8fafc;color:#111827}',
       '@media (min-width:901px) and (max-width:2000px){.month-shell{grid-template-columns:minmax(0,1fr)!important}.resizeHandle{display:none!important}.drawer{position:static!important;grid-column:1!important;margin-top:12px!important}}'
     ].join('');
     document.head.appendChild(style);
@@ -474,6 +476,9 @@
       const due = shortDueDate(key);
       const label = moneyCents(Math.abs(amount)) + (due ? '  ·  ' + due : '');
       if (btn.textContent !== label) btn.textContent = label;
+      row.dataset.amountTooltip = moneyCents(Math.abs(amount));
+      row.title = 'Amount: ' + moneyCents(Math.abs(amount));
+      bindAmountTooltip(row);
       const nameNode = row.querySelector(':scope > span');
       const name = text(nameNode);
       if (nameNode) nameNode.title = name;
@@ -482,6 +487,35 @@
       const existingAmount = row.querySelector('b:not(.ignoreAmount)');
       if (existingAmount && existingAmount !== btn) existingAmount.textContent = moneyCents(Math.abs(amount));
     });
+  }
+
+  function hideAmountTooltip() {
+    const tooltip = document.querySelector('.amountHoverTooltip');
+    if (tooltip) tooltip.remove();
+  }
+
+  function showAmountTooltip(row) {
+    if (!row || !window.matchMedia('(max-width: 900px)').matches) return;
+    hideAmountTooltip();
+    const amount = row.dataset.amountTooltip;
+    if (!amount) return;
+    const rect = row.getBoundingClientRect();
+    const tooltip = document.createElement('div');
+    tooltip.className = 'amountHoverTooltip';
+    tooltip.setAttribute('role', 'tooltip');
+    tooltip.textContent = amount;
+    tooltip.style.left = Math.max(52, Math.min(window.innerWidth - 52, rect.left + rect.width / 2)) + 'px';
+    tooltip.style.top = Math.max(38, rect.top - 5) + 'px';
+    document.body.appendChild(tooltip);
+  }
+
+  function bindAmountTooltip(row) {
+    if (!row || row.dataset.amountTooltipBound === '1') return;
+    row.dataset.amountTooltipBound = '1';
+    row.addEventListener('pointerenter', function () { showAmountTooltip(row); });
+    row.addEventListener('pointerleave', hideAmountTooltip);
+    row.addEventListener('focusin', function () { showAmountTooltip(row); });
+    row.addEventListener('focusout', hideAmountTooltip);
   }
 
   function syncDrawerAmountEditors() {
