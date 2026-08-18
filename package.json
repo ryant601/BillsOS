@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.18-balance-carryover-fix.3",
+    "version": "v2026.08.18-bill-start-month-fix.1",
     "buildDate": "2026-08-18",
-    "buildNote": "Always start each rendered month from the prior rendered month ending, including local calendar edits."
+    "buildNote": "Restore a reliable Start Month selector and persist recurring bills into the calendar engine."
   },
   "scripts": {
     "start": "node -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./mortgage-reserve-ui-loader.js server.js",
