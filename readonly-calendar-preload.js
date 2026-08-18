@@ -21,12 +21,60 @@ function readJson(filePath, fallback) {
   }
 }
 
+function defaultReserves(bills) {
+  const mortgage = (Array.isArray(bills) ? bills : []).find(bill =>
+    bill && bill.active !== false && /mortgage/i.test(String(bill.name || '')) && /rocket/i.test(String(bill.name || ''))
+  );
+  if (!mortgage || !Number(mortgage.amount)) return [];
+
+  const total = Math.abs(Number(mortgage.amount));
+  const firstHalf = Math.round(total * 50) / 100;
+  const secondHalf = Math.round((total - firstHalf) * 100) / 100;
+
+  return [
+    {
+      id: 'policy-mortgage-reserve-prior-27',
+      name: 'Mortgage reserve · first half',
+      amount: firstHalf,
+      dueDay: 27,
+      frequency: 'monthly',
+      active: true,
+      startMonth: '2026-08',
+      targetBillId: mortgage.id,
+      targetBillName: mortgage.name,
+      targetDueDay: mortgage.dueDay,
+      targetMonthOffset: 1,
+      cashImpact: 0,
+      availableCashImpact: -firstHalf,
+      notes: 'Reserve from the late-month paycheck for next month’s Rocket payment.'
+    },
+    {
+      id: 'policy-mortgage-reserve-current-13',
+      name: 'Mortgage reserve · second half',
+      amount: secondHalf,
+      dueDay: 13,
+      frequency: 'monthly',
+      active: true,
+      startMonth: '2026-09',
+      targetBillId: mortgage.id,
+      targetBillName: mortgage.name,
+      targetDueDay: mortgage.dueDay,
+      targetMonthOffset: 0,
+      cashImpact: 0,
+      availableCashImpact: -secondHalf,
+      notes: 'Reserve from the mid-month paycheck before the Rocket payment on the 15th.'
+    }
+  ];
+}
+
 function cleanBillsData() {
   const source = readJson(BILLS_FILE, {});
+  const bills = Array.isArray(source.bills) ? source.bills : [];
   return {
-    bills: Array.isArray(source.bills) ? source.bills : [],
+    bills,
     oneTimeEvents: Array.isArray(source.oneTimeEvents) ? source.oneTimeEvents : [],
     income: Array.isArray(source.income) ? source.income : [],
+    reserves: Array.isArray(source.reserves) && source.reserves.length ? source.reserves : defaultReserves(bills),
     updatedAt: source.updatedAt || null
   };
 }
