@@ -5,11 +5,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const expressPath = require.resolve('express');
-const originalExpress = require(expressPath);
+const exportOnly = process.env.BILLS_READONLY_EXPORT_ONLY === '1';
+const expressPath = exportOnly ? null : require.resolve('express');
+const originalExpress = exportOnly ? null : require(expressPath);
 const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, 'data');
 const BILLS_FILE = path.join(DATA_DIR, 'bills.json');
 const CHECKMARK_FILE = path.join(DATA_DIR, 'checkmarks.json');
+const READONLY_FILE = process.env.BILLS_READONLY_FILE || path.join(__dirname, 'calendar-readonly.json');
 
 function readJson(filePath, fallback) {
   try {
@@ -21,12 +23,29 @@ function readJson(filePath, fallback) {
   }
 }
 
-function cleanBillsData() {
-  const source = readJson(BILLS_FILE, {});
+function calendarRevision(source) {
+  const direct = Number(source && source.revision);
+  if (Number.isFinite(direct) && direct >= 0) return direct;
+  const system = (Array.isArray(source && source.oneTimeEvents) ? source.oneTimeEvents : [])
+    .find(row => row && row.id === '__billsos_system_rules__');
+  try {
+    const rules = JSON.parse(system && system.notes || '{}');
+    const nested = Number(rules && rules.calendarState && rules.calendarState.revision);
+    return Number.isFinite(nested) && nested >= 0 ? nested : 0;
+  } catch (_err) {
+    return 0;
+  }
+}
+
+function cleanBillsData(input) {
+  const source = input && typeof input === 'object' && !Array.isArray(input)
+    ? input
+    : readJson(BILLS_FILE, {});
   return {
     bills: Array.isArray(source.bills) ? source.bills : [],
     oneTimeEvents: Array.isArray(source.oneTimeEvents) ? source.oneTimeEvents : [],
     income: Array.isArray(source.income) ? source.income : [],
+    paymentSplits: Array.isArray(source.paymentSplits) ? source.paymentSplits : [],
     updatedAt: source.updatedAt || null
   };
 }
@@ -41,14 +60,24 @@ function cleanCheckmarks() {
   };
 }
 
-function payload() {
+function payload(calendarInput) {
+  const calendar = cleanBillsData(calendarInput);
   return {
     schema: 'billsos-calendar-readonly-v1',
     readOnly: true,
+    revision: calendarRevision(calendarInput || calendar),
     generatedAt: new Date().toISOString(),
-    calendar: cleanBillsData(),
+    calendar,
     checkmarks: cleanCheckmarks()
   };
+}
+
+function writeReadonlySnapshot(calendar) {
+  const exported = payload(calendar);
+  const tmp = READONLY_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(exported));
+  fs.renameSync(tmp, READONLY_FILE);
+  return exported;
 }
 
 function setReadonlyHeaders(res, cacheControl) {
@@ -69,15 +98,19 @@ function readonlyJson(_req, res) {
   res.type('application/json').send(JSON.stringify(payload()));
 }
 
-function wrappedExpress(...args) {
-  const app = originalExpress(...args);
-  app.get('/api/calendar-readonly', readonlyApi);
-  app.get('/calendar-readonly.json', readonlyJson);
-  return app;
+if (!exportOnly) {
+  function wrappedExpress(...args) {
+    const app = originalExpress(...args);
+    app.get('/api/calendar-readonly', readonlyApi);
+    app.get('/calendar-readonly.json', readonlyJson);
+    return app;
+  }
+
+  Object.keys(originalExpress).forEach(key => {
+    wrappedExpress[key] = originalExpress[key];
+  });
+  Object.setPrototypeOf(wrappedExpress, Object.getPrototypeOf(originalExpress));
+  require.cache[expressPath].exports = wrappedExpress;
 }
 
-Object.keys(originalExpress).forEach(key => {
-  wrappedExpress[key] = originalExpress[key];
-});
-Object.setPrototypeOf(wrappedExpress, Object.getPrototypeOf(originalExpress));
-require.cache[expressPath].exports = wrappedExpress;
+module.exports = { calendarRevision, payload, writeReadonlySnapshot };

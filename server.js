@@ -3,6 +3,7 @@ const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs");
 const registerAssistantApi = require("./assistant-api");
+const { calendarRevision, writeReadonlySnapshot } = require("./readonly-calendar-preload");
 
 const app = express();
 
@@ -98,6 +99,8 @@ function normalizeBillsData(input) {
     bills: Array.isArray(src.bills) ? src.bills : [],
     oneTimeEvents: Array.isArray(src.oneTimeEvents) ? src.oneTimeEvents : [],
     income: Array.isArray(src.income) ? src.income : [],
+    paymentSplits: Array.isArray(src.paymentSplits) ? src.paymentSplits : [],
+    revision: calendarRevision(src),
     updatedAt: src.updatedAt || null
   };
 }
@@ -293,7 +296,9 @@ app.get("/api/bills", (_req, res) => {
 
 app.post("/api/bills", (req, res) => {
   try {
-    res.json(writeBillsData(req.body));
+    const saved = writeBillsData(req.body);
+    const exported = writeReadonlySnapshot(saved);
+    res.json({ ...saved, revision: exported.revision, readonlyGeneratedAt: exported.generatedAt });
   } catch (_err) {
     res.status(500).json({ error: "Could not save bills control data" });
   }
