@@ -1,16 +1,16 @@
 {
   "name": "billsos",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.18-bill-start-month-fix.1",
-    "buildDate": "2026-08-18",
-    "buildNote": "Restore a reliable Start Month selector and persist recurring bills into the calendar engine."
+    "version": "v2026.08.19-cache-coherence.1",
+    "buildDate": "2026-08-19",
+    "buildNote": "Force critical calendar assets onto one shared build across devices."
   },
   "scripts": {
-    "start": "node -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./mortgage-reserve-ui-loader.js server.js",
+    "start": "node -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./mortgage-reserve-ui-loader.js -r ./cache-coherence-preload.js server.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
