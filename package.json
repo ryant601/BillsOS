@@ -10,7 +10,7 @@
     "buildNote": "Carry negative balances forward without clamping them to zero."
   },
   "scripts": {
-    "start": "node -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./mortgage-reserve-ui-loader.js -r ./cache-coherence-preload.js server.js",
+    "start": "node -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./mortgage-reserve-ui-loader.js -r ./cache-coherence-preload.js server.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
