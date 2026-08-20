@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.19-split-payments.1",
+    "version": "v2026.08.19-upcoming-payment-rows.1",
     "buildDate": "2026-08-19",
-    "buildNote": "Add editable recurring-bill installments with calendar total validation."
+    "buildNote": "Add fast bulk entry for upcoming dated payments in One-Time Items."
   },
   "scripts": {
     "start": "node -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./mortgage-reserve-ui-loader.js -r ./cache-coherence-preload.js server.js",

@@ -53,12 +53,13 @@ test('a split bill stays one bill while producing each installment', () => {
     .some(row => row.sourceId === jeep.id), false);
 });
 
-test('Bills editor exposes split rows and validates their total', () => {
-  assert.match(html, />Split payments</);
+test('One-Time Items supports bulk upcoming payment rows', () => {
+  assert.match(html, />Add upcoming payments</);
   assert.match(html, />\+ Add payment</);
-  assert.match(html, /row\.paymentSplits=splits\.map/);
-  assert.match(html, /Split payment amounts must add up to the bill total/);
-  assert.match(html, /renderPaymentSplits\(Array\.isArray\(b\.paymentSplits\)/);
+  assert.match(html, /function upcomingPaymentsFromForm/);
+  assert.match(html, /state\.oneTimeEvents\.push\(\.\.\.rows\)/);
+  assert.match(html, /Each row becomes its own calendar item/);
+  assert.doesNotMatch(html, />Split payments</);
 });
 
 test('ending a bill preserves history and cross-device sync reloads data', () => {
@@ -68,8 +69,9 @@ test('ending a bill preserves history and cross-device sync reloads data', () =>
 });
 
 test('one-time item edits persist immediately without changing the data model', () => {
-  assert.match(html, /state\.oneTimeEvents\[i\]=row/);
-  assert.match(html, /await persistState\(\(i>=0\?'Updated ':'Added '\)\+row\.name,previous\)/);
+  assert.match(html, /state\.oneTimeEvents\.push\(\.\.\.rows\)/);
+  assert.match(html, /if\(editId\)state\.oneTimeEvents=state\.oneTimeEvents\.filter/);
+  assert.match(html, /await persistState\(\(editId\?'Updated ':'Added '\)\+rows\.length/);
   assert.match(html, /type:direction==='income'\?'income':'adjustment'/);
   assert.match(html, /state\.oneTimeEvents=state\.oneTimeEvents\.filter/);
 });
@@ -78,7 +80,7 @@ test('one-time save confirms calendar persistence and resets the form', () => {
   assert.match(html, /id="oneSaveButton"/);
   assert.match(html, /Saved to calendar/);
   assert.match(html, /renderAll\(\);clearOneTimeForm\(true\);if\(await persistState/);
-  assert.match(html, /restoreOneTimeForm\(row,direction\)/);
+  assert.match(html, /restoreOneTimeForm\(payments,direction,name,notes,editId\)/);
   assert.match(html, /your entries were restored/);
   assert.match(html, /b\.id===highlightedOneTimeId\?'saved-row'/);
 });
