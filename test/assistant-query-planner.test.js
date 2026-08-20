@@ -123,3 +123,15 @@ test('browser assistant has no automatic summary fallback', () => {
   assert.match(source, /if\(p\.operation==='summary'\)return summary/);
   assert.doesNotMatch(source, /return summary\(cal,p,s\)\}\s*function addMsg/);
 });
+
+test('assistant answers use explicit title, total, and row styles', () => {
+  const ui = fs.readFileSync(path.join(__dirname, '..', 'assistant-ui.js'), 'utf8');
+  const bridge = fs.readFileSync(path.join(__dirname, '..', 'assistant-ai-bridge.js'), 'utf8');
+  assert.match(ui, /billsos-ai-answer-title/);
+  assert.match(ui, /billsos-ai-answer-total/);
+  assert.match(ui, /billsos-ai-answer-list/);
+  assert.match(bridge, /billsos-ai-answer-title/);
+  assert.match(bridge, /billsos-ai-answer-total/);
+  assert.match(bridge, /billsos-ai-answer-list/);
+  assert.doesNotMatch(bridge, /<b>'\+esc\(lines\[0\]/);
+});

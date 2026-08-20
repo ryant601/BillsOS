@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var BUILD='assistant-ai-bridge-20260812-dark2';
+  var BUILD='assistant-ai-bridge-20260820-format1';
   var THEME_KEY='billsos-theme-v1';
   window.BillsOSModules=window.BillsOSModules||{};
   var state={loaded:true,build:BUILD,at:new Date().toISOString(),observing:false,requests:0,successes:0,failures:0,lastStatus:'initializing',lastError:null,model:null};
@@ -9,7 +9,29 @@
   function esc(v){return String(v||'').replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}
   function userQuestionFor(node){var cur=node&&node.previousElementSibling;while(cur){if(cur.classList&&cur.classList.contains('billsos-msg')&&cur.classList.contains('user'))return cleanText(cur);cur=cur.previousElementSibling}return ''}
   function source(node,text,kind){var p=node.querySelector('.billsos-ai-source');if(!p){p=document.createElement('p');p.className='billsos-ai-source';p.style.cssText='margin-top:8px;color:#64748b;font-size:11px';node.appendChild(p)}p.textContent=text;if(kind)p.dataset.kind=kind}
-  function answerHtml(text){var raw=String(text||'').trim();if(!raw)return '';var parts=raw.split(/\n{2,}/).map(function(p){return p.trim()}).filter(Boolean);if(!parts.length)parts=[raw];return parts.map(function(part){var lines=part.split(/\n/).map(function(x){return x.trim()}).filter(Boolean);if(lines.length>1&&lines.slice(1).every(function(x){return /^[-*•]\s+/.test(x)})){return '<b>'+esc(lines[0].replace(/^[-*•]\s+/,''))+'</b><ul>'+lines.slice(1).map(function(x){return '<li>'+esc(x.replace(/^[-*•]\s+/,''))+'</li>'}).join('')+'</ul>'}if(lines.every(function(x){return /^[-*•]\s+/.test(x)}))return '<ul>'+lines.map(function(x){return '<li>'+esc(x.replace(/^[-*•]\s+/,''))+'</li>'}).join('')+'</ul>';return '<p>'+esc(part)+'</p>'}).join('')}
+  function answerHtml(text){
+    var lines=String(text||'').split(/\n/).map(function(x){return x.trim()}).filter(Boolean);
+    if(!lines.length)return '';
+    var title='',total='',body=[],rows=[];
+    lines.forEach(function(line){
+      if(/^[-*•]\s+/.test(line)){rows.push(line.replace(/^[-*•]\s+/,''));return}
+      if(!title){
+        var combined=line.match(/^(.*?)\s+[—–-]\s+(Total\s*:\s*.+)$/i);
+        if(combined){title=combined[1].trim();total=combined[2].trim();return}
+        if(/^Total\b/i.test(line)){total=line;return}
+        title=line;
+        return;
+      }
+      if(!total&&/^Total\b/i.test(line)){total=line;return}
+      body.push(line);
+    });
+    var html='<div class="billsos-ai-answer">';
+    if(title)html+='<p class="billsos-ai-answer-title">'+esc(title)+'</p>';
+    if(total)html+='<p class="billsos-ai-answer-total">'+esc(total)+'</p>';
+    body.forEach(function(line){html+='<p class="billsos-ai-answer-copy">'+esc(line)+'</p>'});
+    if(rows.length)html+='<ul class="billsos-ai-answer-list">'+rows.map(function(row){return '<li>'+esc(row)+'</li>'}).join('')+'</ul>';
+    return html+'</div>';
+  }
   async function rewrite(node,question,deterministic){state.requests++;state.lastStatus='requesting-openai';try{var res=await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:question,deterministicAnswer:deterministic})});var data=await res.json().catch(function(){return {}});if(!res.ok||!data||!data.answer)throw new Error(data&&data.error?data.error:'OpenAI assistant response failed');state.successes++;state.model=data.model||null;state.lastStatus='openai-response-applied';state.lastError=null;node.innerHTML=answerHtml(data.answer);source(node,'ChatGPT response · '+(data.model||'model unspecified')+' · BillsOS math','openai')}catch(e){state.failures++;state.lastStatus='local-response-kept';state.lastError=String(e&&e.message||e);source(node,'Local BillsOS answer · ChatGPT unavailable: '+state.lastError,'local')}}
   function mark(node){if(!node||!node.classList||node.classList.contains('user')||node.dataset.aiBridge==='1')return;if(node.dataset&&node.dataset.billsosIntro==='1')return;var text=cleanText(node);if(!text||/checking billsos/i.test(text)||/ask:\s*“?/i.test(text))return;var question=userQuestionFor(node);if(!question)return;node.dataset.aiBridge='1';var deterministic=node.innerHTML||text;source(node,'Sending to ChatGPT · model from OPENAI_MODEL · BillsOS math is source of truth','pending');rewrite(node,question,deterministic)}
   function scan(){document.querySelectorAll('#billsosAiLog .billsos-msg:not(.user)').forEach(mark)}
