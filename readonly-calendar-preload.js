@@ -24,16 +24,31 @@ function readJson(filePath, fallback) {
 }
 
 function defaultPaymentSplits(bills) {
+  const explicit = (Array.isArray(bills) ? bills : []).flatMap(bill =>
+    (Array.isArray(bill && bill.paymentSplits) ? bill.paymentSplits : []).map((split, index, all) => ({
+      ...split,
+      id: split.id || `${bill.id || 'bill'}-payment-${index + 1}`,
+      dueDay: Number(split.day || split.dueDay || 0),
+      targetBillId: bill.id || '',
+      targetBillName: bill.name || 'Bill',
+      paymentPart: index + 1,
+      paymentParts: all.length,
+      frequency: bill.frequency || 'monthly',
+      active: bill.active !== false,
+      startMonth: bill.startMonth || null,
+      endMonth: bill.endMonth || null
+    }))
+  );
   const mortgage = (Array.isArray(bills) ? bills : []).find(bill =>
     bill && bill.active !== false && /mortgage/i.test(String(bill.name || '')) && /rocket/i.test(String(bill.name || ''))
   );
-  if (!mortgage || !Number(mortgage.amount)) return [];
+  if (!mortgage || !Number(mortgage.amount) || (Array.isArray(mortgage.paymentSplits) && mortgage.paymentSplits.length)) return explicit;
 
   const total = Math.abs(Number(mortgage.amount));
   const firstHalf = Math.round(total * 50) / 100;
   const secondHalf = Math.round((total - firstHalf) * 100) / 100;
 
-  return [
+  return explicit.concat([
     {
       id: 'policy-mortgage-payment-prior-27',
       name: 'Mortgage payment · first half',
@@ -68,7 +83,7 @@ function defaultPaymentSplits(bills) {
       cashImpact: -secondHalf,
       notes: 'Actual second mortgage payment before the 15th due date.'
     }
-  ];
+  ]);
 }
 
 function calendarRevision(source) {

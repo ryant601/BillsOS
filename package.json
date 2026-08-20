@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.19-cache-coherence.1",
+    "version": "v2026.08.19-split-payments.1",
     "buildDate": "2026-08-19",
-    "buildNote": "Force critical calendar assets onto one shared build across devices."
+    "buildNote": "Add editable recurring-bill installments with calendar total validation."
   },
   "scripts": {
     "start": "node -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./mortgage-reserve-ui-loader.js -r ./cache-coherence-preload.js server.js",

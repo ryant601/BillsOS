@@ -37,6 +37,30 @@ test('a saved recurring bill begins in its selected calendar month', () => {
   assert.equal(engine.rowsForMonth(data, 10, 0).some(row => row.sourceId === 'start-month-regression'), true);
 });
 
+test('a split bill stays one bill while producing each installment', () => {
+  const jeep = {
+    id: 'jeep-split', name: 'Jeep', amount: 700, dueDay: 20,
+    frequency: 'monthly', startMonth: '2026-09', endMonth: '2026-10', active: true,
+    paymentSplits: [{ id: 'jeep-1', day: 5, amount: 300 }, { id: 'jeep-2', day: 20, amount: 400 }]
+  };
+  const september = engine.rowsForMonth({ bills: [jeep], income: [], oneTimeEvents: [] }, 9, 0)
+    .filter(row => row.sourceId === jeep.id);
+  assert.equal(september.length, 2);
+  assert.deepEqual(september.map(row => [row.day, row.amount, row.paymentPart, row.paymentParts]), [
+    [5, -300, 1, 2], [20, -400, 2, 2]
+  ]);
+  assert.equal(engine.rowsForMonth({ bills: [jeep], income: [], oneTimeEvents: [] }, 11, 0)
+    .some(row => row.sourceId === jeep.id), false);
+});
+
+test('Bills editor exposes split rows and validates their total', () => {
+  assert.match(html, />Split payments</);
+  assert.match(html, />\+ Add payment</);
+  assert.match(html, /row\.paymentSplits=splits\.map/);
+  assert.match(html, /Split payment amounts must add up to the bill total/);
+  assert.match(html, /renderPaymentSplits\(Array\.isArray\(b\.paymentSplits\)/);
+});
+
 test('ending a bill preserves history and cross-device sync reloads data', () => {
   assert.match(html, /b\.endMonth=previousMonth\(month\)/);
   assert.match(html, /b\.active=true/);
