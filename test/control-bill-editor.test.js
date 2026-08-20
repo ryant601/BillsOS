@@ -57,8 +57,10 @@ test('One-Time Items supports bulk upcoming payment rows', () => {
   assert.match(html, />Add upcoming payments</);
   assert.match(html, />\+ Add payment</);
   assert.match(html, /function upcomingPaymentsFromForm/);
+  assert.match(html, /data-payment-name/);
+  assert.match(html, /name:payment\.name\|\|defaultName/);
   assert.match(html, /state\.oneTimeEvents\.push\(\.\.\.rows\)/);
-  assert.match(html, /Each row becomes its own calendar item/);
+  assert.match(html, /Each row can have its own calendar name, date, and amount/);
   assert.doesNotMatch(html, />Split payments</);
 });
 
@@ -80,7 +82,7 @@ test('one-time save confirms calendar persistence and resets the form', () => {
   assert.match(html, /id="oneSaveButton"/);
   assert.match(html, /Saved to calendar/);
   assert.match(html, /renderAll\(\);clearOneTimeForm\(true\);if\(await persistState/);
-  assert.match(html, /restoreOneTimeForm\(payments,direction,name,notes,editId\)/);
+  assert.match(html, /restoreOneTimeForm\(payments,direction,defaultName,notes,editId\)/);
   assert.match(html, /your entries were restored/);
   assert.match(html, /b\.id===highlightedOneTimeId\?'saved-row'/);
 });
