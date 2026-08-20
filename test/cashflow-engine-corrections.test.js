@@ -59,8 +59,16 @@ assert.strictEqual(carryover.months.july.end, 2435);
 assert.strictEqual(carryover.months.august.begin, carryover.months.july.end);
 assert.strictEqual(carryover.months.september.begin, carryover.months.august.end);
 
+const negativeCarry = engine.build({ bills: [], income: [], oneTimeEvents: [
+  { id: 'negative-opening', name: 'Beginning balance adjustment', date: '2026-08-18', amount: -211.42, type: 'balance-opening-adjustment', notes: 'Requested balance -$211.42.' }
+] }, { floorNegative: true });
+assert.strictEqual(negativeCarry.balances.find(row => row.iso === '2026-08-18').balance, -211.42);
+assert.strictEqual(negativeCarry.balances.find(row => row.iso === '2026-08-19').beginning, -211.42);
+assert.strictEqual(negativeCarry.months.september.begin, negativeCarry.months.august.end);
+
 const renderedCalendar = fs.readFileSync(path.join(__dirname, '..', 'generated-v5.html'), 'utf8');
 assert.match(renderedCalendar, /prevEnd==null\?\(m&&m\.begin\|\|0\):prevEnd/);
+assert.match(renderedCalendar, /style:'currency',currency:'USD'/);
 const mortgageLoader = fs.readFileSync(path.join(__dirname, '..', 'mortgage-reserve-ui-loader.js'), 'utf8');
 const applyBody = mortgageLoader.match(/async function apply\(\)\{([\s\S]*?)return true;/)[1];
 assert.doesNotMatch(applyBody, /updateDayBalances|setChip|decorateDay/);

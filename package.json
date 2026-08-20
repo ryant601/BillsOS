@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.19-named-payment-rows.1",
+    "version": "v2026.08.19-negative-carry.1",
     "buildDate": "2026-08-19",
-    "buildNote": "Allow each upcoming one-time payment row to have its own name."
+    "buildNote": "Carry negative balances forward without clamping them to zero."
   },
   "scripts": {
     "start": "node -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./mortgage-reserve-ui-loader.js -r ./cache-coherence-preload.js server.js",
