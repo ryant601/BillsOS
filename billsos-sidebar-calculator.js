@@ -75,7 +75,7 @@
     if (document.getElementById('billsosWeekToggleJs')) return;
     const script = document.createElement('script');
     script.id = 'billsosWeekToggleJs';
-    script.src = '/billsos-week-toggle.js?v=20260818monthlist2';
+    script.src = '/billsos-week-toggle.js?v=20260820fundingblue1';
     script.defer = true;
     document.head.appendChild(script);
   }

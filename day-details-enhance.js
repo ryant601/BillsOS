@@ -18,6 +18,7 @@
   function isActionLogMeta(item) { return normalizedText(item).indexOf(ACTION_LOG_LABEL) >= 0; }
   function isBalanceCorrection(item) { return normalizedText(item).indexOf(BALANCE_CORRECTION_LABEL) >= 0; }
   function isAutoSpendingFunding(item) { return normalizedText(item).indexOf(SPENDING_FUNDING_LABEL) >= 0; }
+  function transferKind(item) { return window.BillsOSCashflow && window.BillsOSCashflow.transferKind ? window.BillsOSCashflow.transferKind(item) : ''; }
   function isCalculationOnly(item) { return isActionLogMeta(item) || isBalanceCorrection(item) || isAutoSpendingFunding(item); }
   function money(value) { return Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
   function moneyCents(value) { return Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -101,22 +102,33 @@
     const style = document.createElement('style');
     style.id = 'oneTimeTransferStyles';
     style.textContent = [
-      '.ev.xfer{background:#E4F1EA!important;color:#276749!important;border:1px solid rgba(47,133,90,.24)!important;outline:none!important}',
-      '.ev.xfer .nm,.ev.xfer span,.ev.xfer b{color:#276749!important}',
-      '.ev.xfer .dot{background:#2F855A!important;box-shadow:0 0 0 2px rgba(47,133,90,.16)!important}',
+      '.ev.funding{background:#E8F3FA!important;color:#225D7A!important;border:1px solid rgba(46,120,162,.26)!important;outline:none!important}',
+      '.ev.funding .nm,.ev.funding span,.ev.funding b{color:#225D7A!important}',
+      '.ev.funding .dot{background:#4A90B8!important;box-shadow:0 0 0 2px rgba(74,144,184,.16)!important}',
+      '.ev.funding.done{opacity:.58}',
+      '.week-strip .day .ev.funding,.billsos-week-days .day .ev.funding{background:#E8F3FA!important;color:#225D7A!important;border-color:rgba(46,120,162,.26)!important}',
+      '.detailItem.funding{background:#F0F7FB!important;border-color:rgba(46,120,162,.24)!important}',
+      '.detailItem.funding .amt,.detailItem.funding .dir,.detailItem.funding .name{color:#225D7A!important}',
+      '.mobile-sheet .detailItem.funding{background:#F0F7FB!important;border-color:rgba(46,120,162,.24)!important}',
+      '.ev.xfer{background:#F6EDD8!important;color:#8A5E12!important;border:1px solid rgba(138,94,18,.24)!important;outline:none!important}',
+      '.ev.xfer .nm,.ev.xfer span,.ev.xfer b{color:#8A5E12!important}',
+      '.ev.xfer .dot{background:#B8872E!important;box-shadow:0 0 0 2px rgba(184,135,46,.16)!important}',
       '.ev.xfer.done{opacity:.58}',
-      '.week-strip .day .ev.xfer{background:#E4F1EA!important;color:#276749!important;border-color:rgba(47,133,90,.24)!important}',
-      '.detailItem.xfer{background:#F0F8F3!important;border-color:rgba(47,133,90,.22)!important}',
-      '.detailItem.xfer .amt,.detailItem.xfer .dir,.detailItem.xfer .name{color:#276749!important}',
-      '.mobile-sheet .detailItem.xfer{background:#F0F8F3!important;border-color:rgba(47,133,90,.22)!important}',
+      '.week-strip .day .ev.xfer,.billsos-week-days .day .ev.xfer{background:#F6EDD8!important;color:#8A5E12!important;border-color:rgba(138,94,18,.24)!important}',
+      '.detailItem.xfer{background:#FBF6E9!important;border-color:rgba(138,94,18,.22)!important}',
+      '.detailItem.xfer .amt,.detailItem.xfer .dir,.detailItem.xfer .name{color:#8A5E12!important}',
+      '.mobile-sheet .detailItem.xfer{background:#FBF6E9!important;border-color:rgba(138,94,18,.22)!important}',
       '.ev.sweep{background:#F5EBDD!important;color:#7A4D16!important;border:1px solid rgba(192,86,33,.24)!important;outline:none!important}',
       '.ev.sweep span,.ev.sweep b{color:#7A4D16!important}',
       '.ev.sweep .dot{background:#C05621!important;box-shadow:0 0 0 2px rgba(192,86,33,.16)!important}',
       '.detailItem.sweep{background:#FBF4EA!important;border-color:rgba(192,86,33,.22)!important}',
       '.detailItem.sweep .amt,.detailItem.sweep .dir,.detailItem.sweep .name{color:#7A4D16!important}',
-      'html[data-billsos-theme="dark"] .ev.xfer{background:rgba(38,74,52,.88)!important;color:#BFF2D4!important;border-color:rgba(104,211,145,.24)!important}',
-      'html[data-billsos-theme="dark"] .ev.xfer span,html[data-billsos-theme="dark"] .ev.xfer b{color:#BFF2D4!important}',
-      'html[data-billsos-theme="dark"] .detailItem.xfer{background:rgba(38,74,52,.66)!important;border-color:rgba(104,211,145,.22)!important}',
+      'html[data-billsos-theme="dark"] .ev.funding{background:rgba(26,67,91,.88)!important;color:#C8EAFE!important;border-color:rgba(125,211,252,.26)!important}',
+      'html[data-billsos-theme="dark"] .ev.funding span,html[data-billsos-theme="dark"] .ev.funding b{color:#C8EAFE!important}',
+      'html[data-billsos-theme="dark"] .detailItem.funding{background:rgba(26,67,91,.66)!important;border-color:rgba(125,211,252,.24)!important}',
+      'html[data-billsos-theme="dark"] .ev.xfer{background:rgba(70,55,24,.88)!important;color:#F9E4A7!important;border-color:rgba(230,190,90,.24)!important}',
+      'html[data-billsos-theme="dark"] .ev.xfer span,html[data-billsos-theme="dark"] .ev.xfer b{color:#F9E4A7!important}',
+      'html[data-billsos-theme="dark"] .detailItem.xfer{background:rgba(70,55,24,.66)!important;border-color:rgba(230,190,90,.22)!important}',
       'html[data-billsos-theme="dark"] .ev.sweep{background:rgba(70,50,28,.88)!important;color:#FFE1B2!important;border-color:rgba(246,173,85,.24)!important}',
       'html[data-billsos-theme="dark"] .ev.sweep span,html[data-billsos-theme="dark"] .ev.sweep b{color:#FFE1B2!important}',
       'html[data-billsos-theme="dark"] .detailItem.sweep{background:rgba(70,50,28,.66)!important;border-color:rgba(246,173,85,.22)!important}'
@@ -192,8 +204,8 @@
       oneDates(item, monthKey).forEach(function (date) {
         const amount = Number(item.amount || 0);
         const isIncome = item.type === 'income';
-        const isTransfer = item.type === 'transfer';
-        push(Number(date.slice(8, 10)), item.name || 'One-time item', isIncome ? Math.abs(amount) : -Math.abs(amount), isIncome ? 'in' : (isTransfer ? 'xfer' : 'out'), item.type);
+        const row = { name: item.name || 'One-time item', amount: isIncome ? Math.abs(amount) : -Math.abs(amount), type: item.type };
+        push(Number(date.slice(8, 10)), row.name, row.amount, isIncome ? 'in' : (transferKind(row) || 'out'), item.type);
       });
     });
     (data.income || []).forEach(function (income) {
@@ -306,16 +318,15 @@
   let transferColorBusy = false;
   let lastKnownData = null;
 
-  function oneTimeTransferKeys(data) {
-    const keys = new Set();
+  function transferStyleKeys(data) {
+    const keys = { funding: new Set(), xfer: new Set(), sweep: new Set() };
     MONTHS.forEach(function (monthDef) {
-      const monthKey = YEAR + '-' + String(monthDef[1]).padStart(2, '0');
-      (data.oneTimeEvents || []).forEach(function (item) {
-        if (item.id === RULE_ID || item.type !== 'transfer') return;
-        oneDates(item, monthKey).forEach(function (date) {
-          const amount = -Math.abs(Number(item.amount || 0));
-          keys.add(date + '|' + (item.name || 'One-time item') + '|' + amount);
-        });
+      const rows = window.BillsOSCashflow && window.BillsOSCashflow.rowsForMonth
+        ? window.BillsOSCashflow.rowsForMonth(data, monthDef[1], 0)
+        : generateRows(data, monthDef[1]);
+      rows.forEach(function (row) {
+        const kind = transferKind(row);
+        if (keys[kind]) keys[kind].add((row.iso || row.date) + '|' + row.name + '|' + row.amount);
       });
     });
     return keys;
@@ -330,21 +341,26 @@
       if (!response.ok) throw new Error('HTTP ' + response.status);
       const data = await response.json();
       lastKnownData = data;
-      const keys = oneTimeTransferKeys(data);
+      const keys = transferStyleKeys(data);
       document.querySelectorAll('.day label.ev input[data-id], .day .ev input[data-id]').forEach(function (input) {
         const row = input.closest('.ev');
         const dataId = input.getAttribute('data-id') || '';
-        const isTransfer = keys.has(dataId);
-        const isSweep = /sweep/i.test(dataId) || (row && /sweep/i.test(text(row)));
+        const isFunding = keys.funding.has(dataId) || (row && transferKind({ name: text(row), amount: -1 }) === 'funding');
+        const isSweep = keys.sweep.has(dataId) || /sweep/i.test(dataId) || (row && /sweep/i.test(text(row)));
+        const isTransfer = !isFunding && !isSweep && (keys.xfer.has(dataId) || (row && transferKind({ name: text(row), amount: -1 }) === 'xfer'));
         if (!row) return;
+        row.classList.toggle('funding', isFunding);
         row.classList.toggle('xfer', isTransfer);
         row.classList.toggle('sweep', isSweep);
-        if (isTransfer || isSweep) row.classList.remove('out');
+        if (isFunding || isTransfer || isSweep) row.classList.remove('out');
       });
       document.querySelectorAll('#detailContent .detailItem[data-detail-id], .mobile-sheet .detailItem[data-detail-id]').forEach(function (item) {
         const key = item.getAttribute('data-detail-id') || '';
-        item.classList.toggle('xfer', keys.has(key));
-        item.classList.toggle('sweep', /sweep/i.test(key) || /sweep/i.test(text(item)));
+        const isFunding = keys.funding.has(key) || transferKind({ name: text(item), amount: -1 }) === 'funding';
+        const isSweep = keys.sweep.has(key) || /sweep/i.test(key) || /sweep/i.test(text(item));
+        item.classList.toggle('funding', isFunding);
+        item.classList.toggle('xfer', !isFunding && !isSweep && (keys.xfer.has(key) || transferKind({ name: text(item), amount: -1 }) === 'xfer'));
+        item.classList.toggle('sweep', isSweep);
       });
     } catch (_err) {
     } finally {
@@ -687,6 +703,7 @@
       const existing = item.querySelector(CHECKBOX_SELECTOR);
       const checked = !!(match && match.checked);
       if (row) {
+        item.classList.toggle('funding', row.classList.contains('funding'));
         item.classList.toggle('xfer', row.classList.contains('xfer'));
         item.classList.toggle('sweep', row.classList.contains('sweep'));
       }

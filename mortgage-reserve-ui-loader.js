@@ -103,5 +103,5 @@ fs.readFileSync = function patchedReadFileSync(filePath, ...args) {
   if (path.basename(String(filePath)) !== 'generated-v5.html') return output;
   const cleaned = output.replace(/<script id="billsosMortgageReserveUi">[\s\S]*?<\/script>\s*/i, '');
   if (cleaned.includes('id="billsosMortgageSplitUi"')) return cleaned;
-  return cleaned.replace('</body>', splitUiScript + '\n</body>');
+  return cleaned.replace('</body>', function () { return splitUiScript + '\n</body>'; });
 };
