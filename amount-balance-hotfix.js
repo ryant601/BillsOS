@@ -5,6 +5,7 @@
   const FIRST_BEGIN = 3671;
   const JULY_REBASE_DAY = 2;
   const JULY_REBASE_END = 2310;
+  const LOW_BALANCE_WARNING = 300;
   const RULE_ID = '__billsos_system_rules__';
   const AMOUNT_STORE = 'billsos-amount-adjust-v1';
   const DATE_STORE = 'billsos-pay-adjust-v1';
@@ -130,6 +131,12 @@
     return MONTHS.find(function (month) { return title.indexOf(month[2].toLowerCase()) >= 0; });
   }
   function setValue(id, value) { const el = document.getElementById(id); if (el) el.textContent = money(value); }
+  function syncDayBalanceClass(dayNode, balance) {
+    const negative = balance < 0;
+    dayNode.classList.toggle('negative', negative);
+    dayNode.classList.toggle('is-warn', !negative && balance < LOW_BALANCE_WARNING);
+    dayNode.classList.remove('low');
+  }
   function dayNodeFor(day) {
     return Array.from(document.querySelectorAll('#mount .day:not(.blank)')).find(function (node) {
       return Number(text(node.querySelector('.topline b')) || 0) === Number(day);
@@ -198,10 +205,12 @@
         if (monthDef[0] === 'july' && dayNum <= JULY_REBASE_DAY) {
           running = JULY_REBASE_END;
           if (endNode) endNode.textContent = money(running);
+          syncDayBalanceClass(dayNode, running);
           return;
         }
         running += Number(byDay[dayNum] || 0);
         if (endNode) endNode.textContent = money(running);
+        syncDayBalanceClass(dayNode, running);
       });
 
       const selected = document.querySelector('.day.selected');

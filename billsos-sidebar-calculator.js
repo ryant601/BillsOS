@@ -75,7 +75,7 @@
     if (document.getElementById('billsosWeekToggleJs')) return;
     const script = document.createElement('script');
     script.id = 'billsosWeekToggleJs';
-    script.src = '/billsos-week-toggle.js?v=20260820fundingblue1';
+    script.src = '/billsos-week-toggle.js?v=20260820lowbalance300';
     script.defer = true;
     document.head.appendChild(script);
   }

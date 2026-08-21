@@ -2,6 +2,7 @@
   var THEME_KEY='billsos-theme-v1';
   var CHECKMARK_KEY='billsos-generated-done-v5';
   var AMOUNT_KEY='billsos-amount-adjust-v1';
+  var LOW_BALANCE_WARNING=300;
   var LEGACY_META_IDS={__billsos_action_log__:1,__billsos_system_rules__:1};
   var checkmarkSyncing=false;
   var lastCheckmarkUpdatedAt=null;
@@ -12,7 +13,7 @@
   function themeLabel(){return currentTheme()==='dark'?'☀️':'🌙'}
   function loadCss(id,href){if(document.getElementById(id))return;var l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href=href;document.head.appendChild(l)}
   function loadJs(id,src){if(document.getElementById(id))return;var s=document.createElement('script');s.id=id;s.src=src;s.defer=true;document.head.appendChild(s)}
-  function loadDesign(){loadCss('billsosDesignCss','/billsos-design.css?v=20260629manrope1');loadCss('billsosImpactCss','/billsos-impact.css?v=20260630assistantbubble1');loadCss('billsosDarkA11yCss','/billsos-dark-a11y.css?v=20260629a11y1');loadJs('billsosWeekToggleJs','/billsos-week-toggle.js?v=20260820fundingblue1');loadJs('billsosCashflowEngine','/cashflow-engine.js?v=20260820fundingblue1');loadJs('billsosAssistantUi','/assistant-ui.js?v=20260820format1');loadJs('billsosAssistantAiBridge','/assistant-ai-bridge.js?v=20260820format1');loadJs('billsosMonthExport','/billsos-month-export.js?v=20260706card1')}
+  function loadDesign(){loadCss('billsosDesignCss','/billsos-design.css?v=20260629manrope1');loadCss('billsosImpactCss','/billsos-impact.css?v=20260630assistantbubble1');loadCss('billsosDarkA11yCss','/billsos-dark-a11y.css?v=20260629a11y1');loadJs('billsosWeekToggleJs','/billsos-week-toggle.js?v=20260820lowbalance300');loadJs('billsosCashflowEngine','/cashflow-engine.js?v=20260820lowbalance300');loadJs('billsosAssistantUi','/assistant-ui.js?v=20260820format1');loadJs('billsosAssistantAiBridge','/assistant-ai-bridge.js?v=20260820format1');loadJs('billsosMonthExport','/billsos-month-export.js?v=20260706card1')}
 
   function installSweepVisuals(){
     if(document.getElementById('billsosSweepVisuals'))return;
@@ -88,7 +89,7 @@
 
   function removeBalanceBridge(){document.querySelectorAll('.drawerBalanceBridge').forEach(function(node){node.remove()})}
   function moneyNumber(text){var n=Number(String(text||'').replace(/[^0-9.-]/g,''));return isFinite(n)?n:0}
-  function enhanceDashboard(){try{removeBalanceBridge();tagSweepRows();var now=new Date(),heading=document.querySelector('.monthHead h2'),monthText=heading?heading.textContent:'',isThisMonth=monthText.indexOf(now.getFullYear())>=0&&monthText.toLowerCase().indexOf(now.toLocaleString('en-US',{month:'long'}).toLowerCase())>=0;document.querySelectorAll('.ev').forEach(function(ev){var txt=(ev.textContent||'').toLowerCase();if(txt.indexOf('sweep')>=0){ev.classList.add('sweep');ev.classList.remove('out')}});document.querySelectorAll('.day').forEach(function(day){day.classList.remove('today','low','negative','has-more');var first=day.querySelector('.topline span:first-child b'),end=day.querySelector('.endline b'),events=day.querySelector('.events');if(first&&isThisMonth&&Number(first.textContent)===now.getDate())day.classList.add('today');if(end){var bal=moneyNumber(end.textContent);if(bal<0)day.classList.add('negative');else if(bal>0&&bal<1000)day.classList.add('low')}if(events&&events.scrollHeight>events.clientHeight+8)day.classList.add('has-more')})}catch(e){}}
+  function enhanceDashboard(){try{removeBalanceBridge();tagSweepRows();var now=new Date(),heading=document.querySelector('.monthHead h2'),monthText=heading?heading.textContent:'',isThisMonth=monthText.indexOf(now.getFullYear())>=0&&monthText.toLowerCase().indexOf(now.toLocaleString('en-US',{month:'long'}).toLowerCase())>=0;document.querySelectorAll('.ev').forEach(function(ev){var txt=(ev.textContent||'').toLowerCase();if(txt.indexOf('sweep')>=0){ev.classList.add('sweep');ev.classList.remove('out')}});document.querySelectorAll('.day').forEach(function(day){day.classList.remove('today','low','negative','has-more');var first=day.querySelector('.topline span:first-child b'),end=day.querySelector('.endline b'),events=day.querySelector('.events');if(first&&isThisMonth&&Number(first.textContent)===now.getDate())day.classList.add('today');if(end){var bal=moneyNumber(end.textContent);if(bal<0)day.classList.add('negative');else if(bal>=0&&bal<LOW_BALANCE_WARNING)day.classList.add('low')}if(events&&events.scrollHeight>events.clientHeight+8)day.classList.add('has-more')})}catch(e){}}
 
   function installResizeControlFix(){
     if(document.getElementById('billsosResizeControlFix'))return;

@@ -34,12 +34,12 @@ test('desktop, week, mobile, and detail selectors share the funding palette', ()
   assert.match(source, /item\.classList\.toggle\('funding'/);
 });
 
-test('every direct calendar asset reference uses the funding palette cache build', () => {
+test('every direct calendar asset reference uses the current calendar cache build', () => {
   const files = ['generated-v5.html', 'server.js', 'assistant-api.js', 'action-log.js', 'billsos-sidebar-calculator.js'];
   files.forEach(file => {
     const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
     const relevant = source.split(/\r?\n/).filter(line => /(?:cashflow-engine|day-details-enhance|billsos-week-toggle)\.js\?v=/.test(line));
-    relevant.forEach(line => assert.match(line, /v=20260820fundingblue1/, file + ': ' + line));
+    relevant.forEach(line => assert.match(line, /v=20260820lowbalance300/, file + ': ' + line));
   });
 });
 

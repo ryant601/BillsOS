@@ -15,5 +15,5 @@ test('compact calendar tiles expose their full amount in a responsive tooltip', 
 });
 
 test('dashboard cache version includes the amount tooltip update', () => {
-  assert.match(server, /day-details-enhance\.js\?v=20260820fundingblue1/);
+  assert.match(server, /day-details-enhance\.js\?v=20260820lowbalance300/);
 });

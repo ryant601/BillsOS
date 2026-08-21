@@ -10,6 +10,7 @@
   const FIRST_BEGIN = 3671;
   const JULY_REBASE_DAY = 2;
   const JULY_REBASE_END = 2310;
+  const LOW_BALANCE_WARNING = 300;
   const RULE_ID = '__billsos_system_rules__';
   const MONTHS = [['june', 6, 'June'], ['july', 7, 'July'], ['aug', 8, 'August'], ['sep', 9, 'September'], ['oct', 10, 'October'], ['nov', 11, 'November'], ['dec', 12, 'December']];
 
@@ -24,6 +25,12 @@
   function moneyCents(value) { return Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function signedMoney(value) { const n = Number(value || 0); return (n < 0 ? '−' : '+') + money(Math.abs(n)); }
   function parseMoney(value) { const n = Number(String(value || '').replace(/[−–—]/g, '-').replace(/[^0-9.-]/g, '')); return Number.isFinite(n) ? n : 0; }
+  function syncDayBalanceClass(dayNode, balance) {
+    const negative = balance < 0;
+    dayNode.classList.toggle('negative', negative);
+    dayNode.classList.toggle('is-warn', !negative && balance < LOW_BALANCE_WARNING);
+    dayNode.classList.remove('low');
+  }
   function absMoney(value) { return Math.abs(parseMoney(value)); }
   function days(month) { return new Date(YEAR, month, 0).getDate(); }
   function iso(month, day) { return YEAR + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0'); }
@@ -410,10 +417,12 @@
         if (monthKey === 'july' && dayNum <= JULY_REBASE_DAY) {
           if (endNode) endNode.textContent = money(JULY_REBASE_END);
           running = JULY_REBASE_END;
+          syncDayBalanceClass(dayNode, running);
           return;
         }
         running += Number(byDay[dayNum] || 0);
         if (endNode) endNode.textContent = money(running);
+        syncDayBalanceClass(dayNode, running);
       });
     } catch (_err) {
     } finally {
