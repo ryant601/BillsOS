@@ -2,9 +2,9 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20260820fundingblue1';
+const BUILD = '20260820syncv2';
 const CRITICAL_ASSETS = [
-  'billsos-cross-device-sync.js',
+  'billsos-cross-device-sync-v2.js',
   'billsos-sidebar-calculator.js',
   'amount-balance-hotfix.js',
   'billsos-balance-editor.js',
@@ -15,6 +15,7 @@ const CRITICAL_ASSETS = [
 ];
 
 function forceVersion(html) {
+  html = html.replace(/\/billsos-cross-device-sync\.js(?:\?[^"']*)?/g, '/billsos-cross-device-sync-v2.js?v=' + BUILD);
   CRITICAL_ASSETS.forEach(function (asset) {
     const escaped = asset.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const re = new RegExp('(/' + escaped + ')(?:\\?[^"\\\']*)?', 'g');
