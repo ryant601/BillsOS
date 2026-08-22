@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.20-assistant-format.1",
-    "buildDate": "2026-08-20",
-    "buildNote": "Use a consistent title, total, and row layout for assistant answers."
+    "version": "v2026.08.22-safe-sync.1",
+    "buildDate": "2026-08-22",
+    "buildNote": "Protect canonical bills data from stale-device overwrites."
   },
   "scripts": {
     "start": "node -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./mortgage-reserve-ui-loader.js -r ./cache-coherence-preload.js server.js",

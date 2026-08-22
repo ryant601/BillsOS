@@ -28,8 +28,8 @@ test('compatibility enhancer uses the same threshold and preserves negative card
   assert.doesNotMatch(source, /bal<1000/);
 });
 
-test('changed client assets use the low-balance cache build', () => {
-  assert.match(read('cache-coherence-preload.js'), /const BUILD = '20260820lowbalance300'/);
+test('changed client assets use the current cache builds', () => {
+  assert.match(read('cache-coherence-preload.js'), /const BUILD = '20260822safesync1'/);
   assert.match(read('html-hotfix-loader.js'), /amount-balance-hotfix\.js\?v=20260820lowbalance300/);
   assert.match(read('control.html'), /action-log\.js\?v=20260820lowbalance300/);
 });

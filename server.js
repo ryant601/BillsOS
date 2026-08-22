@@ -4,6 +4,11 @@ const crypto = require("crypto");
 const fs = require("fs");
 const registerAssistantApi = require("./assistant-api");
 const { calendarRevision, writeReadonlySnapshot } = require("./readonly-calendar-preload");
+const {
+  applyCalendarStatePatch,
+  prepareFullWrite,
+  sameSourceVersion
+} = require("./bills-data-integrity");
 
 const app = express();
 
@@ -112,7 +117,26 @@ function readBillsData() {
 function writeBillsData(data) {
   const clean = normalizeBillsData(data);
   clean.updatedAt = new Date().toISOString();
+  archiveBillsData();
   return writeJsonFile(BILLS_FILE, clean);
+}
+
+function archiveBillsData() {
+  try {
+    if (!fs.existsSync(BILLS_FILE)) return;
+    const historyDir = path.join(DATA_DIR, "history");
+    fs.mkdirSync(historyDir, { recursive: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    fs.copyFileSync(BILLS_FILE, path.join(historyDir, `bills-${stamp}.json`));
+    const history = fs.readdirSync(historyDir)
+      .filter(name => /^bills-.*\.json$/.test(name))
+      .sort();
+    history.slice(0, Math.max(0, history.length - 200)).forEach(name => {
+      fs.unlinkSync(path.join(historyDir, name));
+    });
+  } catch (_err) {
+    // A failed safety copy must not make the primary atomic save fail.
+  }
 }
 
 function generatedDashboardHtml() {
@@ -196,7 +220,7 @@ function generatedDashboardHtml() {
 
   html = html.replace(
     "function tabs(){",
-    "function monthNum(){var found=M.find(function(x){return x[0]===active});return found?found[1]:7}function setAdjustedDate(k,date,paid){var e=eventMap[k],month=Y+'-'+String(monthNum()).padStart(2,'0');if(!e||!date)return;if(String(date).slice(0,7)!==month){if(sheetMeta)sheetMeta.textContent='Choose a date in the visible month.';return}rememberUndo(k);adjust[k]={date:date,originalDate:e.originalDate||e.date,status:paid?'paid':'moved',updatedAt:new Date().toISOString()};if(paid)done[k]=1;saveAdjust();saveDone();closeSheet();render(lastData)}function openSheet(k){selectedKey=k;var e=eventMap[k];if(!e)return;if(sheetTitle)sheetTitle.textContent=e.name;if(sheetMeta)sheetMeta.textContent=money(Math.abs(e.amount))+' · Due '+(e.originalDate||e.date).slice(5)+(e.adjusted?' · Now '+e.date.slice(5):'');if(moveDate)moveDate.value=e.date;if(paySheet)paySheet.classList.add('on')}function closeSheet(){if(paySheet)paySheet.classList.remove('on');selectedKey=null}var paidToday=document.getElementById('paidToday'),paidYesterday=document.getElementById('paidYesterday'),moveChosen=document.getElementById('moveChosen'),clearMove=document.getElementById('clearMove'),undoMove=document.getElementById('undoMove'),closeSheetBtn=document.getElementById('closeSheet'),paySheet=document.getElementById('paySheet'),sheetTitle=document.getElementById('sheetTitle'),sheetMeta=document.getElementById('sheetMeta'),moveDate=document.getElementById('moveDate');if(paidToday)paidToday.onclick=function(){setAdjustedDate(selectedKey,todayIso(0),true)};if(paidYesterday)paidYesterday.onclick=function(){setAdjustedDate(selectedKey,todayIso(-1),true)};if(moveChosen)moveChosen.onclick=function(){setAdjustedDate(selectedKey,moveDate&&moveDate.value,false)};if(clearMove)clearMove.onclick=function(){if(selectedKey){rememberUndo(selectedKey);delete adjust[selectedKey];delete done[selectedKey];saveAdjust();saveDone();closeSheet();render(lastData)}};if(undoMove)undoMove.onclick=undoLast;if(closeSheetBtn)closeSheetBtn.onclick=closeSheet;if(paySheet)paySheet.onclick=function(e){if(e.target===paySheet)closeSheet()};function tabs(){"
+    "function monthNum(){var found=M.find(function(x){return x[0]===active});return found?found[1]:7}function setAdjustedDate(k,date,paid){var e=eventMap[k],month=Y+'-'+String(monthNum()).padStart(2,'0');if(!e||!date)return;if(String(date).slice(0,7)!==month){if(sheetMeta)sheetMeta.textContent='Choose a date in the visible month.';return}rememberUndo(k);adjust[k]={date:date,originalDate:e.originalDate||e.date,status:paid?'paid':'moved',updatedAt:new Date().toISOString()};if(paid)done[k]=1;saveAdjust();saveDone();closeSheet();render(lastData)}function openSheet(k){selectedKey=k;var e=eventMap[k];if(!e)return;if(sheetTitle)sheetTitle.textContent=e.name;if(sheetMeta)sheetMeta.textContent=money(Math.abs(e.amount))+' · Due '+(e.originalDate||e.date).slice(5)+(e.adjusted?' · Now '+e.date.slice(5):'');if(moveDate)moveDate.value=e.date;if(paySheet)paySheet.classList.add('on')}function closeSheet(){if(paySheet)paySheet.classList.remove('on');selectedKey=null}var paidToday=document.getElementById('paidToday'),paidYesterday=document.getElementById('paidYesterday'),moveChosen=document.getElementById('moveChosen'),clearMove=document.getElementById('clearMove'),undoMove=document.getElementById('undoMove'),closeSheetBtn=document.getElementById('closeSheet'),paySheet=document.getElementById('paySheet'),sheetTitle=document.getElementById('sheetTitle'),sheetMeta=document.getElementById('sheetMeta'),moveDate=document.getElementById('moveDate');if(paidToday)paidToday.onclick=function(){setAdjustedDate(selectedKey,todayIso(0),true)};if(paidYesterday)paidYesterday.onclick=function(){setAdjustedDate(selectedKey,todayIso(-1),true)};if(moveChosen)moveChosen.onclick=function(){setAdjustedDate(selectedKey,moveDate&&moveDate.value,false)};if(clearMove)clearMove.onclick=function(){if(selectedKey){rememberUndo(selectedKey);adjust[selectedKey]={deleted:true,updatedAt:new Date().toISOString()};delete done[selectedKey];saveAdjust();saveDone();closeSheet();render(lastData)}};if(undoMove)undoMove.onclick=undoLast;if(closeSheetBtn)closeSheetBtn.onclick=closeSheet;if(paySheet)paySheet.onclick=function(e){if(e.target===paySheet)closeSheet()};function tabs(){"
   );
 
   html = html.replace(
@@ -296,11 +320,30 @@ app.get("/api/bills", (_req, res) => {
 
 app.post("/api/bills", (req, res) => {
   try {
-    const saved = writeBillsData(req.body);
+    const current = readBillsData();
+    if (!sameSourceVersion(current, req.body)) {
+      return res.status(409).json({
+        error: "Bills data changed on another device",
+        conflict: true,
+        current
+      });
+    }
+    const saved = writeBillsData(prepareFullWrite(current, req.body));
     const exported = writeReadonlySnapshot(saved);
     res.json({ ...saved, revision: exported.revision, readonlyGeneratedAt: exported.generatedAt });
   } catch (_err) {
     res.status(500).json({ error: "Could not save bills control data" });
+  }
+});
+
+app.patch("/api/bills/calendar-state", (req, res) => {
+  try {
+    const current = readBillsData();
+    const saved = writeBillsData(applyCalendarStatePatch(current, req.body));
+    const exported = writeReadonlySnapshot(saved);
+    res.json({ ...saved, revision: exported.revision, readonlyGeneratedAt: exported.generatedAt });
+  } catch (_err) {
+    res.status(500).json({ error: "Could not save calendar state" });
   }
 });
 

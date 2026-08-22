@@ -85,7 +85,7 @@
     if (!Number.isFinite(cleanAmount) || cleanAmount < 0) return false;
     const baseAmount = Math.abs(amountFromKey(key));
     const adjustments = readAmountAdjustments();
-    if (Math.abs(cleanAmount - baseAmount) < 0.005) delete adjustments[key];
+    if (Math.abs(cleanAmount - baseAmount) < 0.005) adjustments[key] = { deleted: true, updatedAt: new Date().toISOString() };
     else adjustments[key] = { amount: cleanAmount, updatedAt: new Date().toISOString() };
     writeAmountAdjustments(adjustments);
     return true;
@@ -761,7 +761,7 @@
   window.BillsOSAmountAdjustments = {
     read: readAmountAdjustments,
     save: saveAmountAdjustment,
-    clear: function (key) { const adjustments = readAmountAdjustments(); delete adjustments[key]; writeAmountAdjustments(adjustments); scheduleSync(); scheduleBalanceSync(); }
+    clear: function (key) { const adjustments = readAmountAdjustments(); adjustments[key] = { deleted: true, updatedAt: new Date().toISOString() }; writeAmountAdjustments(adjustments); scheduleSync(); scheduleBalanceSync(); }
   };
   scheduleSync();
   scheduleBalanceSync();
