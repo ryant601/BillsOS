@@ -20,13 +20,18 @@ test('bill mutations persist immediately with rollback and feedback', () => {
   assert.match(html, /Save failed — your change was not applied/);
 });
 
-test('bill editor provides a browser-independent Start Month selector and persists the engine field', () => {
+test('bill editor provides matching browser-independent month selectors and persists engine fields', () => {
+  assert.match(html, /function installBillMonthSelector/);
   assert.match(html, /function installBillStartSelector/);
-  assert.match(html, /select\.id='billStart'/);
-  assert.match(html, /select\.value=currentMonth\(\)/);
-  assert.match(html, /startMonth:document\.getElementById\('billStart'\)\.value\|\|null/);
+  assert.match(html, /function installBillEndSelector/);
+  assert.match(html, /installBillMonthSelector\('billStart','Start Month','Choose month'/);
+  assert.match(html, /installBillMonthSelector\('billEnd','End Month','No end month'/);
+  assert.match(html, /startMonth:monthSelectorValue\('billStart'\)/);
+  assert.match(html, /endMonth:monthSelectorValue\('billEnd'\)/);
+  assert.match(html, /return validMonthValue\(value\)\?value:null/);
   assert.match(html, /!row\.startMonth/);
   assert.match(html, /monthFromDate\(b\.startDate\)/);
+  assert.match(html, /setMonthSelectorValue\('billEnd',b\.endMonth\|\|''\)/);
   assert.match(html, /delete row\.startDate/);
 });
 
@@ -35,6 +40,14 @@ test('a saved recurring bill begins in its selected calendar month', () => {
   assert.equal(engine.rowsForMonth(data, 8, 0).some(row => row.sourceId === 'start-month-regression'), false);
   assert.equal(engine.rowsForMonth(data, 9, 0).some(row => row.sourceId === 'start-month-regression' && row.iso === '2026-09-20'), true);
   assert.equal(engine.rowsForMonth(data, 10, 0).some(row => row.sourceId === 'start-month-regression'), true);
+});
+
+test('a saved End Month includes that month and stops recurrence afterward', () => {
+  const bill = { id: 'end-month-regression', name: 'Ending bill', amount: 88, dueDay: 12, frequency: 'monthly', startMonth: '2026-08', endMonth: '2026-10', active: true };
+  const data = { bills: [bill], income: [], oneTimeEvents: [] };
+  assert.equal(engine.rowsForMonth(data, 10, 0).some(row => row.sourceId === bill.id && row.iso === '2026-10-12'), true);
+  assert.equal(engine.rowsForMonth(data, 11, 0).some(row => row.sourceId === bill.id), false);
+  assert.equal(engine.rowsForMonth({ ...data, bills: [{ ...bill, endMonth: null }] }, 11, 0).some(row => row.sourceId === bill.id), true);
 });
 
 test('a split bill stays one bill while producing each installment', () => {
