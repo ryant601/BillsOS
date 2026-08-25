@@ -10,7 +10,7 @@
 .split-box{grid-column:1/-1;border:1px solid var(--line);border-radius:15px;padding:12px;background:#f8fafc}.split-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.split-head label{margin:0}.split-rows{display:grid;gap:8px;margin-top:10px}.split-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:end}.split-row label{letter-spacing:.06em}.split-total{margin-top:9px;font-size:12px;font-weight:800;color:var(--mut)}.split-total.ok{color:var(--green)}.split-total.error{color:var(--red)}@media(max-width:850px){.split-row{grid-template-columns:1fr 1fr}.split-row>div:first-child{grid-column:1/-1}.split-row>.btn{align-self:end}}
 </style>
 </head>
-<body>
+<body class="billsos-control">
 <div class="wrap">
   <div class="top"><div><div class="eyebrow">BillsOS</div><h1>Control Center</h1><p class="sub">Edit bills, cash flow adjustments, and income in a safer place. This is built for normal use — no code editing required.</p><div id="status" class="status">Loading saved data…</div></div><div class="nav"><a class="linkbtn" href="/">← Dashboard</a><button class="btn" onclick="loadData()">Refresh</button><button class="btn primary" onclick="saveData()">Save changes</button></div></div>
   <div class="banner"><b>Income setup:</b> if two semi-monthly checks have different amounts, add them as two income rows. Use <b>Monthly on start-date day</b> for each row — one anchored to the first check date and one anchored to the second check date.</div>
