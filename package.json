@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.26-q1-2027.1",
+    "version": "v2026.08.26-year-pills.1",
     "buildDate": "2026-08-26",
-    "buildNote": "Extend the transparent cash-flow projection through March 2027."
+    "buildNote": "Group calendar months beneath collapsible 2026 and 2027 year pills."
   },
   "scripts": {
     "start": "node -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js server.js",
