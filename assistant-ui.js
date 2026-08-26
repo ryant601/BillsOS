@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-var BUILD='assistant-ui-20260826-transparent2',engine=null,lastPlan=null;window.BillsOSModules=window.BillsOSModules||{};
+var BUILD='assistant-ui-20260826-q12027a',engine=null,lastPlan=null;window.BillsOSModules=window.BillsOSModules||{};
 function clean(v){return String(v||'').replace(/\s+/g,' ').trim()}
 function esc(v){return String(v||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function money(v){var n=Number(v);return !isFinite(n)?'—':(n<0?'−':'')+'$'+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
@@ -22,7 +22,7 @@ async function calendar(){
  var r=await fetch('/api/bills?assistant='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('Bills data unavailable');
  var data=await r.json(),model=engine.build(data,{floorNegative:false}),bal={},done=readStore('billsos-generated-done-v5'),amountEdits=readStore('billsos-amount-adjust-v1'),dateEdits=readStore('billsos-pay-adjust-v1');
  (model.balances||[]).forEach(function(b){bal[b.iso]=Number(b.balance)});
- var days=[];(engine.MONTHS||[]).forEach(function(mm){var y=engine.YEAR||2026,m=mm[1],dim=new Date(y,m,0).getDate();for(var d=1;d<=dim;d++){var id=iso(y,m,d);days.push({iso:id,ending:bal[id]})}});
+ var days=[];(engine.MONTHS||[]).forEach(function(mm){var y=mm[3]||engine.YEAR||2026,m=mm[1],dim=new Date(y,m,0).getDate();for(var d=1;d<=dim;d++){var id=iso(y,m,d);days.push({iso:id,ending:bal[id]})}});
  var events=[];(model.events||[]).forEach(function(e){var name=String(e.name||'Item'),low=name.toLowerCase(),type=String(e.type||'').toLowerCase(),key=eventKey(e);if(low.indexOf('billsos action log')>=0||type.indexOf('calculation-only')>=0)return;var amount=Number(e.amount||0),ae=amountEdits[key],de=dateEdits[key],income=isIncome(e),transferKind=engine&&engine.transferKind?engine.transferKind(e):'',kind=transferKind||(income?'income':/adjust|correction|reconciliation/.test(type+' '+low)?'adjustment':'bill');if(ae&&isFinite(Number(ae.amount)))amount=(amount<0?-1:1)*Math.abs(Number(ae.amount));events.push({iso:de&&validIso(de.date)?de.date:e.iso,name:name,amount:amount,income:income,type:type||'item',kind:kind,done:!!done[key],key:key})});
  return {days:days,events:events};
 }

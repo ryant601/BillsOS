@@ -13,8 +13,8 @@ function compactBillsContext(data) {
   const oneTimeEvents = Array.isArray(src.oneTimeEvents) ? src.oneTimeEvents : [];
   return {
     updatedAt: src.updatedAt || null,
-    planningYear: 2026,
-    availableMonths: ["2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"],
+    planningYears: [2026, 2027],
+    availableMonths: ["2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12", "2027-01", "2027-02", "2027-03"],
     billNames: bills.filter(row => row && row.active !== false).slice(0, 100).map(row => row.name || "Bill"),
     incomeNames: income.filter(row => row && row.active !== false).slice(0, 30).map(row => row.name || "Income"),
     oneTimeNames: oneTimeEvents.filter(row => row && !String(row.id || "").startsWith("__billsos_")).slice(0, 80).map(row => row.name || "One-time item")
@@ -52,8 +52,8 @@ function replaceScriptById(html, id, src) {
 function injectBridge(html) {
   let out = normalizeDashboardProjection(html);
   if (typeof out !== "string") return out;
-  out = replaceScriptById(out, "billsosCashflowEngine", "/cashflow-engine.js?v=20260826transparent1");
-  out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260826transparent2");
+  out = replaceScriptById(out, "billsosCashflowEngine", "/cashflow-engine.js?v=20260826q12027a");
+  out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260826q12027a");
   out = replaceScriptById(out, "billsosAssistantAiBridge", "/assistant-ai-bridge.js?v=20260820format1");
   return out;
 }
@@ -245,9 +245,9 @@ function localPlan(question, previousPlan, data) {
     plan.metric = /balance|low|risk/.test(text) ? "minimum_balance" : /income|paycheck|deposit/.test(text) ? "income" : /net/.test(text) ? "net" : "outflow";
     plan.groupBy = "month";
     plan.sort = /best|highest/.test(text) ? "value_desc" : "value_asc";
-    if (!/\b(jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t)?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b/.test(text)) {
+    if (!/\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t)?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b/.test(text) && !/\bq1\b|first quarter/.test(text)) {
       plan.dateStart = "2026-06-01";
-      plan.dateEnd = "2026-12-31";
+      plan.dateEnd = "2027-03-31";
       plan.scopeLabel = "available months";
     }
   } else if (/average|avg|per day|daily average|per month|monthly average/.test(text)) {
@@ -349,7 +349,7 @@ async function parsePlanWithOpenAI(question, data, previousPlan) {
     instructions: [
       "Translate a household-budget question into one general BillsOS query plan. Return strict JSON only.",
       "Do not calculate any values. BillsOS calculates after parsing.",
-      "Use planning year 2026 unless another year is explicit. Available data is 2026-06 through 2026-12.",
+      "Available projection data is June 2026 through March 2027. January, February, and March refer to 2027 in this horizon unless another year is explicit.",
       "Build plans compositionally from date range, event kind, entity, completion state, amount condition, calculation, grouping, and sorting. Do not rely on a small menu of exact phrasings.",
       "Examples: negative/below zero/overdrawn => balance_filter lt 0; biggest bills => event_list bill amount_desc; funding transfer amounts => event_list funding; total funding => event_aggregate funding sum; compare months => period_compare.",
       "Use previousPlan only for follow-ups such as that month, those bills, or what about September.",

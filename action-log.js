@@ -13,7 +13,7 @@
   function themeLabel(){return currentTheme()==='dark'?'☀️':'🌙'}
   function loadCss(id,href){if(document.getElementById(id))return;var l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href=href;document.head.appendChild(l)}
   function loadJs(id,src){if(document.getElementById(id))return;var s=document.createElement('script');s.id=id;s.src=src;s.defer=true;document.head.appendChild(s)}
-  function loadDesign(){loadCss('billsosDesignCss','/billsos-design.css?v=20260629manrope1');loadCss('billsosImpactCss','/billsos-impact.css?v=20260630assistantbubble1');loadCss('billsosDarkA11yCss','/billsos-dark-a11y.css?v=20260629a11y1');loadJs('billsosWeekToggleJs','/billsos-week-toggle.js?v=20260826transparent1');loadJs('billsosCashflowEngine','/cashflow-engine.js?v=20260826transparent1');loadJs('billsosAssistantUi','/assistant-ui.js?v=20260826transparent2');loadJs('billsosAssistantAiBridge','/assistant-ai-bridge.js?v=20260820format1');loadJs('billsosMonthExport','/billsos-month-export.js?v=20260826transparent2')}
+  function loadDesign(){loadCss('billsosDesignCss','/billsos-design.css?v=20260629manrope1');loadCss('billsosImpactCss','/billsos-impact.css?v=20260630assistantbubble1');loadCss('billsosDarkA11yCss','/billsos-dark-a11y.css?v=20260629a11y1');loadJs('billsosWeekToggleJs','/billsos-week-toggle.js?v=20260826q12027a');loadJs('billsosCashflowEngine','/cashflow-engine.js?v=20260826q12027a');loadJs('billsosAssistantUi','/assistant-ui.js?v=20260826q12027a');loadJs('billsosAssistantAiBridge','/assistant-ai-bridge.js?v=20260820format1');loadJs('billsosMonthExport','/billsos-month-export.js?v=20260826transparent2')}
 
   function installSweepVisuals(){
     if(document.getElementById('billsosSweepVisuals'))return;

@@ -8,7 +8,7 @@
   const FIRST_BEGIN = 0;
   const LOW_BALANCE_WARNING = 300;
   const RULE_ID = '__billsos_system_rules__';
-  const MONTHS = [['june', 6, 'June'], ['july', 7, 'July'], ['aug', 8, 'August'], ['sep', 9, 'September'], ['oct', 10, 'October'], ['nov', 11, 'November'], ['dec', 12, 'December']];
+  const MONTHS = [['june', 6, 'June', 2026], ['july', 7, 'July', 2026], ['aug', 8, 'August', 2026], ['sep', 9, 'September', 2026], ['oct', 10, 'October', 2026], ['nov', 11, 'November', 2026], ['dec', 12, 'December', 2026], ['january-2027', 1, 'January', 2027], ['february-2027', 2, 'February', 2027], ['march-2027', 3, 'March', 2027]];
 
   function text(el) { return (el && el.textContent ? el.textContent : '').replace(/\s+/g, ' ').trim(); }
   function normalizedText(el) { return text(el).toLowerCase(); }
@@ -26,8 +26,8 @@
     dayNode.classList.remove('low');
   }
   function absMoney(value) { return Math.abs(parseMoney(value)); }
-  function days(month) { return new Date(YEAR, month, 0).getDate(); }
-  function iso(month, day) { return YEAR + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0'); }
+  function days(month, year) { return new Date(year || YEAR, month, 0).getDate(); }
+  function iso(month, day, year) { return (year || YEAR) + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0'); }
   function rowKey(event) { return (event.originalDate || event.date) + '|' + event.name + '|' + event.amount; }
   function escAttr(value) { return String(value || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function cssEscape(value) { return window.CSS && CSS.escape ? CSS.escape(value) : String(value || '').replace(/["\\]/g, '\\$&'); }
@@ -187,18 +187,19 @@
     return out;
   }
 
-  function generateRows(data, month) {
+  function generateRows(data, month, year) {
+    year = year || YEAR;
     if (window.BillsOSCashflow && typeof window.BillsOSCashflow.rowsForMonth === 'function') {
-      return window.BillsOSCashflow.rowsForMonth(data, month).map(function (row) {
+      return window.BillsOSCashflow.rowsForMonth(data, month, 0, year).map(function (row) {
         return { date: row.iso, day: row.day, name: row.name, amount: row.amount, cls: row.cls, type: row.type, sourceId: row.sourceId || '', requestedBalance: row.requestedBalance, notes: row.notes || '' };
       });
     }
-    const monthKey = YEAR + '-' + String(month).padStart(2, '0');
-    const dim = days(month);
+    const monthKey = year + '-' + String(month).padStart(2, '0');
+    const dim = days(month, year);
     const rows = [];
     function push(day, name, amount, cls, type) {
       const n = Number(day || 0);
-      if (n >= 1 && n <= dim) rows.push({ date: iso(month, n), day: n, name: name || 'Item', amount: Number(amount || 0), cls: cls || 'out', type: type || '' });
+      if (n >= 1 && n <= dim) rows.push({ date: iso(month, n, year), day: n, name: name || 'Item', amount: Number(amount || 0), cls: cls || 'out', type: type || '' });
     }
 
     (data.bills || []).forEach(function (bill) {
@@ -231,8 +232,8 @@
     return rows.sort(function (a, b) { return a.date.localeCompare(b.date) || b.amount - a.amount; });
   }
 
-  function effectiveRows(rows, month) {
-    const monthKey = YEAR + '-' + String(month).padStart(2, '0');
+  function effectiveRows(rows, month, year) {
+    const monthKey = (year || YEAR) + '-' + String(month).padStart(2, '0');
     const amountAdjustments = readAmountAdjustments();
     let adjust = {};
     try { adjust = JSON.parse(localStorage.getItem('billsos-pay-adjust-v1') || '{}') || {}; } catch (_err) {}
@@ -259,7 +260,7 @@
     let balance = FIRST_BEGIN;
     MONTHS.forEach(function (monthDef) {
       let begin = balance;
-      let rows = effectiveRows(generateRows(data, monthDef[1]), monthDef[1]);
+      let rows = effectiveRows(generateRows(data, monthDef[1], monthDef[3]), monthDef[1], monthDef[3]);
       const income = rows.filter(function (row) { return row.amount > 0; }).reduce(function (sum, row) { return sum + row.amount; }, 0);
       const outflow = rows.filter(function (row) { return row.amount < 0; }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
       const sweep = rows.filter(function (row) { return row.amount < 0 && /sweep/i.test(row.name); }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
@@ -328,8 +329,8 @@
     const keys = { funding: new Set(), xfer: new Set(), sweep: new Set() };
     MONTHS.forEach(function (monthDef) {
       const rows = window.BillsOSCashflow && window.BillsOSCashflow.rowsForMonth
-        ? window.BillsOSCashflow.rowsForMonth(data, monthDef[1], 0)
-        : generateRows(data, monthDef[1]);
+        ? window.BillsOSCashflow.rowsForMonth(data, monthDef[1], 0, monthDef[3])
+        : generateRows(data, monthDef[1], monthDef[3]);
       rows.forEach(function (row) {
         const kind = transferKind(row);
         if (keys[kind]) keys[kind].add((row.iso || row.date) + '|' + row.name + '|' + row.amount);

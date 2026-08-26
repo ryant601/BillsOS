@@ -59,7 +59,22 @@ test('comparison composes with a funding filter across available months', () => 
   assert.equal(plan.eventKind, 'funding');
   assert.equal(plan.flow, 'transfer');
   assert.equal(plan.dateStart, '2026-06-01');
-  assert.equal(plan.dateEnd, '2026-12-31');
+  assert.equal(plan.dateEnd, '2027-03-31');
+});
+
+test('Q1 month questions resolve to the 2027 projection', () => {
+  const plan = planner.localPlan('show my bills in January', null, data);
+  assert.equal(plan.operation, 'event_list');
+  assert.equal(plan.dateStart, '2027-01-01');
+  assert.equal(plan.dateEnd, '2027-01-31');
+});
+
+test('Q1 questions use January through March 2027', () => {
+  const plan = planner.localPlan('give me a Q1 2027 summary', null, data);
+  assert.equal(plan.operation, 'summary');
+  assert.equal(plan.dateStart, '2027-01-01');
+  assert.equal(plan.dateEnd, '2027-03-31');
+  assert.equal(plan.scopeLabel, 'Q1 2027');
 });
 
 test('follow-up periods retain the previous calculation', () => {

@@ -19,7 +19,7 @@
   function signedMoney(value) { return (value < 0 ? '−' : '+') + money(Math.abs(value)); }
   function escapeHtml(value) { return String(value || '').replace(/[&<>"']/g, function (char) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]; }); }
   function monthNumber(panel) {
-    const names = { june: '06', july: '07', aug: '08', august: '08', sep: '09', september: '09', oct: '10', october: '10', nov: '11', november: '11', dec: '12', december: '12' };
+    const names = { june: '06', july: '07', aug: '08', august: '08', sep: '09', september: '09', oct: '10', october: '10', nov: '11', november: '11', dec: '12', december: '12', 'jan-2027': '01', 'feb-2027': '02', 'mar-2027': '03' };
     const id = String(panel && panel.id || '').replace(/^panel-/, '').toLowerCase();
     if (names[id]) return names[id];
     const title = String(panel && panel.querySelector('h1,h2') && panel.querySelector('h1,h2').textContent || '').toLowerCase();
@@ -30,7 +30,8 @@
     const mm = monthNumber(panel);
     const numberNode = day.querySelector('.dnum') || day.querySelector('.topline > b') || day.querySelector('.topline b');
     const dd = Number(day.dataset.day || (numberNode && numberNode.textContent) || 0);
-    return mm && dd ? '2026-' + mm + '-' + String(dd).padStart(2, '0') : '';
+    const year = Number(panel && panel.dataset.year) || 2026;
+    return mm && dd ? year + '-' + mm + '-' + String(dd).padStart(2, '0') : '';
   }
   function balanceNodes(day) {
     return {

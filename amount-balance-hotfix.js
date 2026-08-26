@@ -7,13 +7,13 @@
   const RULE_ID = '__billsos_system_rules__';
   const AMOUNT_STORE = 'billsos-amount-adjust-v1';
   const DATE_STORE = 'billsos-pay-adjust-v1';
-  const MONTHS = [['june', 6, 'June'], ['july', 7, 'July'], ['aug', 8, 'August'], ['sep', 9, 'September'], ['oct', 10, 'October'], ['nov', 11, 'November'], ['dec', 12, 'December']];
+  const MONTHS = [['june', 6, 'June', 2026], ['july', 7, 'July', 2026], ['aug', 8, 'August', 2026], ['sep', 9, 'September', 2026], ['oct', 10, 'October', 2026], ['nov', 11, 'November', 2026], ['dec', 12, 'December', 2026], ['january-2027', 1, 'January', 2027], ['february-2027', 2, 'February', 2027], ['march-2027', 3, 'March', 2027]];
 
   function text(el) { return (el && el.textContent ? el.textContent : '').replace(/\s+/g, ' ').trim(); }
   function money(value) { return Number(value || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
   function moneyCents(value) { return Number(value || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-  function days(month) { return new Date(YEAR, month, 0).getDate(); }
-  function iso(month, day) { return YEAR + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0'); }
+  function days(month, year) { return new Date(year || YEAR, month, 0).getDate(); }
+  function iso(month, day, year) { return (year || YEAR) + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0'); }
   function rowKey(event) { return (event.originalDate || event.date) + '|' + event.name + '|' + event.amount; }
   function readStore(key) { try { const parsed = JSON.parse(localStorage.getItem(key) || '{}') || {}; return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}; } catch (_err) { return {}; } }
   function keyIdentity(key) {
@@ -46,9 +46,10 @@
     if (item.type === 'income') return Math.abs(amount);
     return -Math.abs(amount);
   }
-  function generateRows(data, month) {
+  function generateRows(data, month, year) {
+    year = year || YEAR;
     if (window.BillsOSCashflow && typeof window.BillsOSCashflow.rowsForMonth === 'function') {
-      return window.BillsOSCashflow.rowsForMonth(data, month).map(function (row) {
+      return window.BillsOSCashflow.rowsForMonth(data, month, 0, year).map(function (row) {
         return {
           date: row.iso,
           day: row.day,
@@ -59,12 +60,12 @@
         };
       });
     }
-    const monthKey = YEAR + '-' + String(month).padStart(2, '0');
-    const dim = days(month);
+    const monthKey = year + '-' + String(month).padStart(2, '0');
+    const dim = days(month, year);
     const rows = [];
     function push(day, name, amount, type) {
       const n = Number(day || 0);
-      if (n >= 1 && n <= dim) rows.push({ date: iso(month, n), day: n, name: name || 'Item', amount: Number(amount || 0), type: type || '' });
+      if (n >= 1 && n <= dim) rows.push({ date: iso(month, n, year), day: n, name: name || 'Item', amount: Number(amount || 0), type: type || '' });
     }
     (data.bills || []).forEach(function (bill) {
       if (bill.active === false || (bill.frequency && bill.frequency !== 'monthly') || (bill.startMonth && bill.startMonth > monthKey) || (bill.endMonth && bill.endMonth < monthKey)) return;
@@ -91,8 +92,8 @@
     });
     return rows;
   }
-  function effectiveRows(rows, month) {
-    const monthKey = YEAR + '-' + String(month).padStart(2, '0');
+  function effectiveRows(rows, month, year) {
+    const monthKey = (year || YEAR) + '-' + String(month).padStart(2, '0');
     const amountAdjustments = readStore(AMOUNT_STORE);
     const dateAdjustments = readStore(DATE_STORE);
     return rows.map(function (row) {
@@ -112,7 +113,7 @@
     let balance = FIRST_BEGIN;
     MONTHS.forEach(function (monthDef) {
       let begin = balance;
-      let rows = effectiveRows(generateRows(data, monthDef[1]), monthDef[1]);
+      let rows = effectiveRows(generateRows(data, monthDef[1], monthDef[3]), monthDef[1], monthDef[3]);
       const income = rows.filter(function (row) { return row.amount > 0; }).reduce(function (sum, row) { return sum + row.amount; }, 0);
       const outflow = rows.filter(function (row) { return row.amount < 0; }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
       const sweep = rows.filter(function (row) { return row.amount < 0 && /sweep/i.test(row.name); }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);

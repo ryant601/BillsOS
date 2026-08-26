@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.28",
+  "version": "1.0.29",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.26-transparent-cashflow.1",
+    "version": "v2026.08.26-q1-2027.1",
     "buildDate": "2026-08-26",
-    "buildNote": "Require every balance influence to come from visible saved cash-flow data."
+    "buildNote": "Extend the transparent cash-flow projection through March 2027."
   },
   "scripts": {
     "start": "node -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js server.js",

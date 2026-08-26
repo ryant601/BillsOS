@@ -12,7 +12,7 @@ const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, 'data');
 const BILLS_FILE = path.join(DATA_DIR, 'bills.json');
 const CHECKMARK_FILE = path.join(DATA_DIR, 'checkmarks.json');
 const READONLY_FILE = process.env.BILLS_READONLY_FILE || path.join(__dirname, 'calendar-readonly.json');
-const CALCULATION_BUILD = 'cashflow-engine-20260826-transparent1';
+const CALCULATION_BUILD = 'cashflow-engine-20260826-q12027-1';
 
 function readJson(filePath, fallback) {
   try {
