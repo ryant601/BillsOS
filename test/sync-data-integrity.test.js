@@ -116,3 +116,17 @@ test('browser calendar sync uses the calendar-state-only endpoint', () => {
   assert.doesNotMatch(source, /fetch\('\/api\/bills',\{method:'POST'/);
   assert.doesNotMatch(source, /RECENT_LOCAL_MS|localContributed/);
 });
+
+test('browser calendar sync never clears a newer in-flight local change', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'billsos-cross-device-sync-v2.js'), 'utf8');
+  assert.match(source, /var changeVersion=0,syncedVersion=0/);
+  assert.match(source, /var sentVersion=changeVersion,succeeded=false/);
+  assert.match(source, /dirty=changeVersion>syncedVersion/);
+  assert.match(source, /if\(succeeded&&dirty&&!keepalive\).*postState\(localState\(\),false\)/s);
+  assert.match(source, /changeVersion\+\+;dirty=true/);
+});
+
+test('browser calendar sync polls the canonical server frequently', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'billsos-cross-device-sync-v2.js'), 'utf8');
+  assert.match(source, /setInterval\(function\(\)\{if\(!document\.hidden\)reconcile\(false\)\},5000\)/);
+});
