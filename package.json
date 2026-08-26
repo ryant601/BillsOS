@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.26-year-strip.1",
+    "version": "v2026.08.26-year-lead.1",
     "buildDate": "2026-08-26",
-    "buildNote": "Keep both collapsible year groups on one horizontal calendar strip."
+    "buildNote": "Lead each horizontal calendar group with a prominent year control."
   },
   "scripts": {
     "start": "node -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js server.js",

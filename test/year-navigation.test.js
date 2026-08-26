@@ -22,11 +22,16 @@ test('year expansion is remembered and the active year opens automatically', () 
   assert.match(html, /yearTabsHtml\(initialMonth\)/);
 });
 
-test('both year groups remain on one horizontal line with each year at the end', () => {
+test('both year groups remain on one horizontal line with each year at the left', () => {
   assert.match(html, /\.tabs\.year-nav\{display:flex;align-items:center;.*?overflow-x:auto;.*?flex-wrap:nowrap\}/);
   assert.match(html, /\.year-group\{display:flex;align-items:center;.*?flex:0 0 auto\}/);
-  assert.match(html, /\.year-pill\{order:2;/);
-  assert.match(html, /\.year-months\{order:1;flex-wrap:nowrap/);
+  assert.match(html, /\.year-pill\{order:1;/);
+  assert.match(html, /\.year-months\{order:2;flex-wrap:nowrap/);
+});
+
+test('year controls are visually distinct from month pills', () => {
+  assert.match(html, /\.year-pill\{order:1;.*?background:var\(--primary\);border:2px solid var\(--primary\);color:#fff;font-size:14px/);
+  assert.match(html, /box-shadow:0 8px 20px rgba\(31,58,61,\.22\)/);
 });
 
 test('horizontal year navigation remains touch-friendly on mobile', () => {
