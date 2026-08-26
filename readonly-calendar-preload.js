@@ -12,7 +12,8 @@ const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, 'data');
 const BILLS_FILE = path.join(DATA_DIR, 'bills.json');
 const CHECKMARK_FILE = path.join(DATA_DIR, 'checkmarks.json');
 const READONLY_FILE = process.env.BILLS_READONLY_FILE || path.join(__dirname, 'calendar-readonly.json');
-const CALCULATION_BUILD = 'cashflow-engine-20260826-q12027-1';
+const CALCULATION_BUILD = 'cashflow-engine-20260826-fy2027-1';
+const PROJECTION_HORIZON = { start: '2026-06-01', end: '2027-12-31' };
 
 function readJson(filePath, fallback) {
   try {
@@ -67,6 +68,7 @@ function payload(calendarInput) {
   return {
     schema: 'billsos-calendar-readonly-v1',
     calculationBuild: CALCULATION_BUILD,
+    projectionHorizon: PROJECTION_HORIZON,
     readOnly: true,
     revision: calendarRevision(calendarInput || calendar),
     generatedAt: new Date().toISOString(),

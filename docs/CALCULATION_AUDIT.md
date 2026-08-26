@@ -45,7 +45,7 @@ Only these saved, user-visible records may create a cash-flow row:
 
 Balance math starts at zero, applies every visible row in date order, and carries each month end into the next month. There are no name-based mortgage policies, hidden opening balances, July rebases, note-parsed transaction dates, automatic sweep/funding rows, or calculation-active action-log/meta rows.
 
-The active projection horizon runs from June 2026 through March 2027. December 2026 carries directly into January 2027, and the same visible-only calculation rules continue through the end of Q1.
+The active projection horizon runs from June 2026 through December 2027. Every month carries directly into the next, including March into April 2027, and the same visible-only calculation rules continue through the end of 2027.
 
 ## Calculation-neutral preserved data
 

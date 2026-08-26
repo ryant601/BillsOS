@@ -50,6 +50,13 @@ test('a saved End Month includes that month and stops recurrence afterward', () 
   assert.equal(engine.rowsForMonth({ ...data, bills: [{ ...bill, endMonth: null }] }, 11, 0).some(row => row.sourceId === bill.id), true);
 });
 
+test('December 2027 is a valid inclusive End Month from the shared selector contract', () => {
+  const bill = { id: 'end-2027-regression', name: '2027 ending bill', amount: 88, dueDay: 12, frequency: 'monthly', startMonth: '2027-04', endMonth: '2027-12', active: true };
+  const data = { bills: [bill], income: [], oneTimeEvents: [] };
+  assert.equal(engine.rowsForMonth(data, 12, 0, 2027).some(row => row.sourceId === bill.id && row.iso === '2027-12-12'), true);
+  assert.match(html, /lastYear=Math\.max\(2028,now\.getFullYear\(\)\+5\)/);
+});
+
 test('legacy split metadata stays neutral and the visible bill remains authoritative', () => {
   const jeep = {
     id: 'jeep-split', name: 'Jeep', amount: 700, dueDay: 20,

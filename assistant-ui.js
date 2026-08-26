@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-var BUILD='assistant-ui-20260826-q12027a',engine=null,lastPlan=null;window.BillsOSModules=window.BillsOSModules||{};
+var BUILD='assistant-ui-20260826-fy2027a',engine=null,lastPlan=null;window.BillsOSModules=window.BillsOSModules||{};
 function clean(v){return String(v||'').replace(/\s+/g,' ').trim()}
 function esc(v){return String(v||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function money(v){var n=Number(v);return !isFinite(n)?'—':(n<0?'−':'')+'$'+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}

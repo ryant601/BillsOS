@@ -55,32 +55,47 @@ test('active balance paths contain no hard-coded baselines or mortgage policy ro
 test('visible balance corrections remain present in assistant and month exports', () => {
   assert.doesNotMatch(read('assistant-ui.js'), /low\.indexOf\('balance correction'\)/);
   assert.doesNotMatch(read('billsos-month-export.js'), /s\.indexOf\('balance correction'\)/);
-  assert.match(read('assistant-api.js'), /assistant-ui\.js\?v=20260826q12027a/);
+  assert.match(read('assistant-api.js'), /assistant-ui\.js\?v=20260826fy2027a/);
 });
 
-test('projection continues continuously through Q1 2027', () => {
+test('projection continues continuously through December 2027 from visible rows only', () => {
   const model = engine.build({
-    bills: [{ id: 'q1-bill', name: 'Q1 bill', amount: 100, dueDay: 31, frequency: 'monthly', startMonth: '2027-01', endMonth: '2027-02' }],
-    income: [{ id: 'q1-income', name: 'Biweekly income', amount: 1000, schedule: 'biweekly', startDate: '2026-12-25' }],
-    oneTimeEvents: [{ id: 'q1-item', name: 'January item', amount: 50, type: 'bill', date: '2027-01-10' }]
+    bills: [{ id: 'fy-bill', name: 'FY bill', amount: 100, dueDay: 31, frequency: 'monthly', startMonth: '2027-04', endMonth: '2027-12' }],
+    income: [{ id: 'fy-income', name: 'Biweekly income', amount: 1000, schedule: 'biweekly', startDate: '2026-12-25' }],
+    oneTimeEvents: [
+      { id: 'april-item', name: 'April item', amount: 50, type: 'bill', date: '2027-04-10' },
+      { id: 'december-item', name: 'December item', amount: 75, type: 'income', date: '2027-12-20' }
+    ]
   });
-  assert.deepEqual(engine.MONTHS.at(-1), ['march-2027', 3, 'March', 2027]);
+  assert.deepEqual(engine.MONTHS.at(-1), ['december-2027', 12, 'December', 2027]);
   assert.equal(model.months['january-2027'].begin, model.months.december.end);
   assert.equal(model.months['february-2027'].begin, model.months['january-2027'].end);
   assert.equal(model.months['march-2027'].begin, model.months['february-2027'].end);
-  assert.equal(model.months['january-2027'].rows.filter(row => row.name === 'Q1 bill').length, 1);
-  assert.equal(model.months['february-2027'].rows.filter(row => row.name === 'Q1 bill').length, 1);
-  assert.equal(model.months['march-2027'].rows.filter(row => row.name === 'Q1 bill').length, 0);
-  assert.ok(model.balances.some(row => row.iso === '2027-03-31'));
+  assert.equal(model.months['april-2027'].begin, model.months['march-2027'].end);
+  engine.MONTHS.slice(10).forEach((month, index) => {
+    assert.equal(model.months[month[0]].rows.filter(row => row.name === 'FY bill').length, 1, month[0]);
+    if (index) assert.equal(model.months[month[0]].begin, model.months[engine.MONTHS[9 + index][0]].end, month[0]);
+  });
+  assert.equal(model.months['march-2027'].rows.some(row => row.name === 'FY bill'), false);
+  assert.equal(model.months['april-2027'].rows.some(row => row.name === 'April item'), true);
+  assert.equal(model.months['december-2027'].rows.some(row => row.name === 'December item'), true);
+  assert.ok(model.months['december-2027'].rows.some(row => row.name === 'Biweekly income'));
+  assert.ok(model.balances.some(row => row.iso === '2027-12-31'));
   assert.deepEqual(engine.scopeFromQuestion('January bills'), { start: '2027-01-01', end: '2027-01-31', label: 'January 2027', month: 'january-2027' });
+  assert.deepEqual(engine.scopeFromQuestion('April bills'), { start: '2027-04-01', end: '2027-04-30', label: 'April 2027', month: 'april-2027' });
+  assert.deepEqual(engine.scopeFromQuestion('December 2027 bills'), { start: '2027-12-01', end: '2027-12-31', label: 'December 2027', month: 'december-2027' });
+  assert.deepEqual(engine.scopeFromQuestion('full year 2027'), { start: '2027-01-01', end: '2027-12-31', label: '2027' });
   assert.deepEqual(engine.scopeFromQuestion('Q1 2027'), { start: '2027-01-01', end: '2027-03-31', label: 'Q1 2027' });
 });
 
-test('rendered and post-load calendar paths include Q1 2027', () => {
+test('rendered and post-load calendar paths include all of 2027', () => {
   ['generated-v5.html', 'amount-balance-hotfix.js', 'day-details-enhance.js'].forEach(file => {
-    assert.match(read(file), /march-2027/, file);
+    assert.match(read(file), /december-2027/, file);
   });
   assert.match(read('generated-v5.html'), /data-year=/);
+  assert.match(read('generated-v5.html'), /'december-2027':'dec-2027'/);
   assert.match(read('billsos-balance-editor.js'), /panel\.dataset\.year/);
+  assert.match(read('billsos-balance-editor.js'), /'dec-2027': '12'/);
   assert.match(read('billsos-card-editor.js'), /panel&&panel\.dataset\.year/);
+  assert.match(read('billsos-card-editor.js'), /'dec-2027':'12'/);
 });

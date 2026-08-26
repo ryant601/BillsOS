@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20260826q12027a';
+const BUILD = '20260826fy2027a';
 const CRITICAL_ASSETS = [
   'billsos-cross-device-sync-v2.js',
   'billsos-sidebar-calculator.js',

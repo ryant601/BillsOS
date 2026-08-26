@@ -15,12 +15,12 @@
 <section class="hero"><div><div class="eyebrow">BillsOS</div><h1>Bills Dashboard</h1><div class="sub">This view renders from Control Center data. No hidden paychecks, action logs, or system rule rows are used.</div></div><div class="nav"><a href="/">Live Dashboard</a><a href="/control">Control Center</a><a href="/legacy">Legacy</a></div></section>
 <div class="tabs" id="tabs"></div><div id="mount"><div class="loader">Loading calendar…</div></div>
 </div>
-<script id="billsosCashflowEngineSync" src="/cashflow-engine.js?v=20260826q12027a"></script>
+<script id="billsosCashflowEngineSync" src="/cashflow-engine.js?v=20260826fy2027a"></script>
 <script>
 (function(){'use strict';
-var VERSION='20260826yearlead1',LOW_BALANCE_WARNING=300,AMOUNT_KEY='billsos-amount-adjust-v1',DATE_KEY='billsos-pay-adjust-v1',YEAR_NAV_KEY='bills-year-nav-v1';
-var months=[['june','June',6,2026],['july','July',7,2026],['august','August',8,2026],['september','September',9,2026],['october','October',10,2026],['november','November',11,2026],['december','December',12,2026],['january-2027','January',1,2027],['february-2027','February',2,2027],['march-2027','March',3,2027]];
-var shortIds={june:'june',july:'july',august:'aug',september:'sep',october:'oct',november:'nov',december:'dec','january-2027':'jan-2027','february-2027':'feb-2027','march-2027':'mar-2027'};
+var VERSION='20260826fy2027a',LOW_BALANCE_WARNING=300,AMOUNT_KEY='billsos-amount-adjust-v1',DATE_KEY='billsos-pay-adjust-v1',YEAR_NAV_KEY='bills-year-nav-v1';
+var months=[['june','June',6,2026],['july','July',7,2026],['august','August',8,2026],['september','September',9,2026],['october','October',10,2026],['november','November',11,2026],['december','December',12,2026],['january-2027','January',1,2027],['february-2027','February',2,2027],['march-2027','March',3,2027],['april-2027','April',4,2027],['may-2027','May',5,2027],['june-2027','June',6,2027],['july-2027','July',7,2027],['august-2027','August',8,2027],['september-2027','September',9,2027],['october-2027','October',10,2027],['november-2027','November',11,2027],['december-2027','December',12,2027]];
+var shortIds={june:'june',july:'july',august:'aug',september:'sep',october:'oct',november:'nov',december:'dec','january-2027':'jan-2027','february-2027':'feb-2027','march-2027':'mar-2027','april-2027':'apr-2027','may-2027':'may-2027','june-2027':'jun-2027','july-2027':'jul-2027','august-2027':'aug-2027','september-2027':'sep-2027','october-2027':'oct-2027','november-2027':'nov-2027','december-2027':'dec-2027'};
 var mount=document.getElementById('mount'),tabs=document.getElementById('tabs');
 function money(v){return Number(v||0).toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2})}
 function signed(v){return (v>=0?'+':'−')+Number(Math.abs(v)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
@@ -52,6 +52,6 @@ async function load(){try{var engine=await waitForEngine(),data=await loadBillsD
 load();
 })();
 </script>
-<script id="billsosCardEditor" defer src="/billsos-card-editor.js?v=20260826q12027a"></script>
+<script id="billsosCardEditor" defer src="/billsos-card-editor.js?v=20260826fy2027a"></script>
 </body>
 </html>

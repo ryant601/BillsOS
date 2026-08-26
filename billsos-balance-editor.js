@@ -19,7 +19,7 @@
   function signedMoney(value) { return (value < 0 ? '−' : '+') + money(Math.abs(value)); }
   function escapeHtml(value) { return String(value || '').replace(/[&<>"']/g, function (char) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]; }); }
   function monthNumber(panel) {
-    const names = { june: '06', july: '07', aug: '08', august: '08', sep: '09', september: '09', oct: '10', october: '10', nov: '11', november: '11', dec: '12', december: '12', 'jan-2027': '01', 'feb-2027': '02', 'mar-2027': '03' };
+    const names = { june: '06', july: '07', aug: '08', august: '08', sep: '09', september: '09', oct: '10', october: '10', nov: '11', november: '11', dec: '12', december: '12', 'jan-2027': '01', 'feb-2027': '02', 'mar-2027': '03', 'apr-2027': '04', 'may-2027': '05', 'jun-2027': '06', 'jul-2027': '07', 'aug-2027': '08', 'sep-2027': '09', 'oct-2027': '10', 'nov-2027': '11', 'dec-2027': '12' };
     const id = String(panel && panel.id || '').replace(/^panel-/, '').toLowerCase();
     if (names[id]) return names[id];
     const title = String(panel && panel.querySelector('h1,h2') && panel.querySelector('h1,h2').textContent || '').toLowerCase();

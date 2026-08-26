@@ -7,7 +7,7 @@
   const RULE_ID = '__billsos_system_rules__';
   const AMOUNT_STORE = 'billsos-amount-adjust-v1';
   const DATE_STORE = 'billsos-pay-adjust-v1';
-  const MONTHS = [['june', 6, 'June', 2026], ['july', 7, 'July', 2026], ['aug', 8, 'August', 2026], ['sep', 9, 'September', 2026], ['oct', 10, 'October', 2026], ['nov', 11, 'November', 2026], ['dec', 12, 'December', 2026], ['january-2027', 1, 'January', 2027], ['february-2027', 2, 'February', 2027], ['march-2027', 3, 'March', 2027]];
+  const MONTHS = [['june', 6, 'June', 2026], ['july', 7, 'July', 2026], ['aug', 8, 'August', 2026], ['sep', 9, 'September', 2026], ['oct', 10, 'October', 2026], ['nov', 11, 'November', 2026], ['dec', 12, 'December', 2026], ['january-2027', 1, 'January', 2027], ['february-2027', 2, 'February', 2027], ['march-2027', 3, 'March', 2027], ['april-2027', 4, 'April', 2027], ['may-2027', 5, 'May', 2027], ['june-2027', 6, 'June', 2027], ['july-2027', 7, 'July', 2027], ['august-2027', 8, 'August', 2027], ['september-2027', 9, 'September', 2027], ['october-2027', 10, 'October', 2027], ['november-2027', 11, 'November', 2027], ['december-2027', 12, 'December', 2027]];
 
   function text(el) { return (el && el.textContent ? el.textContent : '').replace(/\s+/g, ' ').trim(); }
   function money(value) { return Number(value || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
@@ -124,8 +124,10 @@
     return model;
   }
   function visibleMonth() {
+    const panel = document.querySelector('.month-panel.show');
+    if (panel) return MONTHS.find(function (month) { return month[1] === Number(panel.dataset.month) && month[3] === Number(panel.dataset.year); });
     const title = text(document.querySelector('.monthHead h2')).toLowerCase();
-    return MONTHS.find(function (month) { return title.indexOf(month[2].toLowerCase()) >= 0; });
+    return MONTHS.find(function (month) { return title.indexOf(month[2].toLowerCase()) >= 0 && title.indexOf(String(month[3])) >= 0; });
   }
   function setValue(id, value) { const el = document.getElementById(id); if (el) el.textContent = money(value); }
   function syncDayBalanceClass(dayNode, balance) {
