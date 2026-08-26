@@ -122,6 +122,7 @@ test('browser calendar sync never clears a newer in-flight local change', () => 
   assert.match(source, /var changeVersion=0,syncedVersion=0/);
   assert.match(source, /var sentVersion=changeVersion,succeeded=false/);
   assert.match(source, /dirty=changeVersion>syncedVersion/);
+  assert.match(source, /if\(!dirty\)applyCloud\(remote,false\)/);
   assert.match(source, /if\(succeeded&&dirty&&!keepalive\).*postState\(localState\(\),false\)/s);
   assert.match(source, /changeVersion\+\+;dirty=true/);
 });
