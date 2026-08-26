@@ -1,16 +1,16 @@
 {
   "name": "billsos",
-  "version": "1.0.34",
+  "version": "1.0.35",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.26-full-year-2027.1",
+    "version": "v2026.08.26-full-year-2027.2",
     "buildDate": "2026-08-26",
-    "buildNote": "Extend the visible-only cash-flow projection continuously through December 2027."
+    "buildNote": "Seed Apr-Dec 2027 funding transfers, Jeep splits, and mortgage splits into the live calendar."
   },
   "scripts": {
-    "start": "node -r ./q1-2027-calendar-seed-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js server.js",
+    "start": "node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js server.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
