@@ -29,7 +29,7 @@
       lastRevision=remote.revision;
       syncedVersion=Math.max(syncedVersion,sentVersion);
       dirty=changeVersion>syncedVersion;
-      applyCloud(remote,false);
+      if(!dirty)applyCloud(remote,false);
       setStatus(dirty?'Saving newer change…':'Up to date · rev '+lastRevision);
       succeeded=true;
       return true;
