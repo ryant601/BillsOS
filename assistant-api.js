@@ -53,7 +53,7 @@ function injectBridge(html) {
   let out = normalizeDashboardProjection(html);
   if (typeof out !== "string") return out;
   out = replaceScriptById(out, "billsosCashflowEngine", "/cashflow-engine.js?v=20260826transparent1");
-  out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260820format1");
+  out = replaceScriptById(out, "billsosAssistantUi", "/assistant-ui.js?v=20260826transparent2");
   out = replaceScriptById(out, "billsosAssistantAiBridge", "/assistant-ai-bridge.js?v=20260820format1");
   return out;
 }

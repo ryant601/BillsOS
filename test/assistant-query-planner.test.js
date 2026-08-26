@@ -122,6 +122,7 @@ test('browser assistant has no automatic summary fallback', () => {
   assert.match(source, /engine&&engine\.transferKind/);
   assert.match(source, /if\(p\.operation==='summary'\)return summary/);
   assert.doesNotMatch(source, /return summary\(cal,p,s\)\}\s*function addMsg/);
+  assert.doesNotMatch(source, /low\.indexOf\('balance correction'\)/);
 });
 
 test('assistant answers use explicit title, total, and row styles', () => {

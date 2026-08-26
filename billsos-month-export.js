@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var BUILD='month-export-pdf-tab-20260702-4';
+  var BUILD='month-export-20260826-transparent2';
 
   function clean(v){return String(v||'').replace(/\s+/g,' ').trim()}
   function esc(v){return String(v||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -25,7 +25,7 @@
   function filenameSafe(v){return clean(v).replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'')||'BillsOS-Monthly-Action-List'}
   function timestamp(){var d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')}
   function exportTitle(model){return filenameSafe('BillsOS '+model.title+' Action List '+timestamp())}
-  function isCalculationOnly(ev){var s=clean(ev&&ev.textContent).toLowerCase();return s.indexOf('billsos action log')>=0||s.indexOf('balance correction')>=0}
+  function isCalculationOnly(ev){var s=clean(ev&&ev.textContent).toLowerCase();return s.indexOf('billsos action log')>=0}
 
   function kpiAmount(id){
     var node=document.getElementById(id);

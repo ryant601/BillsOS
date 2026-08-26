@@ -51,3 +51,9 @@ test('active balance paths contain no hard-coded baselines or mortgage policy ro
   assert.doesNotMatch(read('day-details-enhance.js'), /isCalculationOnly\(item\).*balance correction|isCalculationOnly\(item\).*spending account funding/i);
   assert.match(read('day-details-enhance.js'), /function isCalculationOnly\(item\) \{ return isActionLogMeta\(item\); \}/);
 });
+
+test('visible balance corrections remain present in assistant and month exports', () => {
+  assert.doesNotMatch(read('assistant-ui.js'), /low\.indexOf\('balance correction'\)/);
+  assert.doesNotMatch(read('billsos-month-export.js'), /s\.indexOf\('balance correction'\)/);
+  assert.match(read('assistant-api.js'), /assistant-ui\.js\?v=20260826transparent2/);
+});
