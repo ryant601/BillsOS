@@ -26,6 +26,7 @@ test('read-only snapshot preserves saved changes and revision', () => {
 
   const exported = writeReadonlySnapshot(calendar);
 
+  assert.equal(exported.calculationBuild, 'cashflow-engine-20260826-transparent1');
   assert.equal(exported.revision, 42);
   assert.equal(exported.calendar.oneTimeEvents[0].amount, 2400);
   assert.deepEqual(exported.calendar.paymentSplits, calendar.paymentSplits);

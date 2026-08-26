@@ -2,9 +2,7 @@
   'use strict';
 
   const YEAR = 2026;
-  const FIRST_BEGIN = 3671;
-  const JULY_REBASE_DAY = 2;
-  const JULY_REBASE_END = 2310;
+  const FIRST_BEGIN = 0;
   const LOW_BALANCE_WARNING = 300;
   const RULE_ID = '__billsos_system_rules__';
   const AMOUNT_STORE = 'billsos-amount-adjust-v1';
@@ -39,12 +37,7 @@
   function oneDates(item, monthKey) {
     const out = [];
     const explicit = [item && item.date, item && item.iso, item && item.startDate, item && item.effectiveDate].filter(function (date) { return /^20\d{2}-\d{2}-\d{2}$/.test(String(date || '')); });
-    if (explicit.length) {
-      explicit.forEach(function (date) { if (date.slice(0, 7) === monthKey && out.indexOf(date) < 0) out.push(date); });
-      return out;
-    }
-    const matches = String(item.notes || '').match(/20\d{2}-\d{2}-\d{2}/g) || [];
-    matches.forEach(function (date) { if (date.slice(0, 7) === monthKey && out.indexOf(date) < 0) out.push(date); });
+    explicit.forEach(function (date) { if (date.slice(0, 7) === monthKey && out.indexOf(date) < 0) out.push(date); });
     return out;
   }
   function signedAdjustmentAmount(item) {
@@ -75,7 +68,8 @@
     }
     (data.bills || []).forEach(function (bill) {
       if (bill.active === false || (bill.frequency && bill.frequency !== 'monthly') || (bill.startMonth && bill.startMonth > monthKey) || (bill.endMonth && bill.endMonth < monthKey)) return;
-      push(Math.min(Number(bill.dueDay || 1), dim), bill.name || 'Bill', -Math.abs(Number(bill.amount || 0)), bill.type || 'bill');
+      const dueDay = Number(bill.dueDay);
+      if (Number.isInteger(dueDay) && dueDay >= 1) push(Math.min(dueDay, dim), bill.name || 'Bill', -Math.abs(Number(bill.amount || 0)), bill.type || 'bill');
     });
     (data.oneTimeEvents || []).forEach(function (item) {
       if (item.id === RULE_ID) return;
@@ -89,8 +83,11 @@
       const name = income.name || 'Income';
       const schedule = income.schedule || 'manual';
       if (schedule === 'semi-monthly-15-30') { push(15, name, amount, 'income'); push(Math.min(30, dim), name, amount, 'income'); }
-      else if (schedule === 'biweekly') [1, 15, 29].forEach(function (day) { if (day <= dim) push(day, name, amount, 'income'); });
-      else push(1, name, amount, 'income');
+      else if ((schedule === 'biweekly' || schedule === 'monthly' || schedule === 'manual') && /^20\d{2}-\d{2}-\d{2}$/.test(String(income.startDate || ''))) {
+        const start = income.startDate;
+        if (schedule === 'monthly') push(Math.min(Number(start.slice(8, 10)), dim), name, amount, 'income');
+        else if (schedule === 'manual' && start.slice(0, 7) === monthKey) push(Number(start.slice(8, 10)), name, amount, 'income');
+      }
     });
     return rows;
   }
@@ -116,7 +113,6 @@
     MONTHS.forEach(function (monthDef) {
       let begin = balance;
       let rows = effectiveRows(generateRows(data, monthDef[1]), monthDef[1]);
-      if (monthDef[0] === 'july') { begin = JULY_REBASE_END; rows = rows.filter(function (row) { return row.day > JULY_REBASE_DAY; }); }
       const income = rows.filter(function (row) { return row.amount > 0; }).reduce(function (sum, row) { return sum + row.amount; }, 0);
       const outflow = rows.filter(function (row) { return row.amount < 0; }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
       const sweep = rows.filter(function (row) { return row.amount < 0 && /sweep/i.test(row.name); }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
@@ -202,12 +198,6 @@
         const endNode = dayNode.querySelector('.endline b');
         running += Number(openingByDay[dayNum] || 0);
         if (startNode) startNode.textContent = money(running);
-        if (monthDef[0] === 'july' && dayNum <= JULY_REBASE_DAY) {
-          running = JULY_REBASE_END;
-          if (endNode) endNode.textContent = money(running);
-          syncDayBalanceClass(dayNode, running);
-          return;
-        }
         running += Number(byDay[dayNum] || 0);
         if (endNode) endNode.textContent = money(running);
         syncDayBalanceClass(dayNode, running);

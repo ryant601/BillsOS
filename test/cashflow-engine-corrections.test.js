@@ -54,8 +54,8 @@ const carryover = engine.build({ bills: [], income: [], oneTimeEvents: [
   { id: 'late-july', name: 'Late July correction', date: '2026-07-31', amount: 125, type: 'adjustment' },
   { id: 'aug-out', name: 'August bill', date: '2026-08-31', amount: 25, type: 'bill' }
 ] }, { floorNegative: false });
-assert.strictEqual(carryover.months.july.begin, 2310);
-assert.strictEqual(carryover.months.july.end, 2435);
+assert.strictEqual(carryover.months.july.begin, 0);
+assert.strictEqual(carryover.months.july.end, 125);
 assert.strictEqual(carryover.months.august.begin, carryover.months.july.end);
 assert.strictEqual(carryover.months.september.begin, carryover.months.august.end);
 
@@ -69,7 +69,4 @@ assert.strictEqual(negativeCarry.months.september.begin, negativeCarry.months.au
 const renderedCalendar = fs.readFileSync(path.join(__dirname, '..', 'generated-v5.html'), 'utf8');
 assert.match(renderedCalendar, /prevEnd==null\?\(m&&m\.begin\|\|0\):prevEnd/);
 assert.match(renderedCalendar, /style:'currency',currency:'USD'/);
-const mortgageLoader = fs.readFileSync(path.join(__dirname, '..', 'mortgage-reserve-ui-loader.js'), 'utf8');
-const applyBody = mortgageLoader.match(/async function apply\(\)\{([\s\S]*?)return true;/)[1];
-assert.doesNotMatch(applyBody, /updateDayBalances|setChip|decorateDay/);
 console.log('cashflow-engine correction tests passed');

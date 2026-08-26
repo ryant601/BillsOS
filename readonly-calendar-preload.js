@@ -12,6 +12,7 @@ const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, 'data');
 const BILLS_FILE = path.join(DATA_DIR, 'bills.json');
 const CHECKMARK_FILE = path.join(DATA_DIR, 'checkmarks.json');
 const READONLY_FILE = process.env.BILLS_READONLY_FILE || path.join(__dirname, 'calendar-readonly.json');
+const CALCULATION_BUILD = 'cashflow-engine-20260826-transparent1';
 
 function readJson(filePath, fallback) {
   try {
@@ -21,69 +22,6 @@ function readJson(filePath, fallback) {
   } catch (_err) {
     return fallback;
   }
-}
-
-function defaultPaymentSplits(bills) {
-  const explicit = (Array.isArray(bills) ? bills : []).flatMap(bill =>
-    (Array.isArray(bill && bill.paymentSplits) ? bill.paymentSplits : []).map((split, index, all) => ({
-      ...split,
-      id: split.id || `${bill.id || 'bill'}-payment-${index + 1}`,
-      dueDay: Number(split.day || split.dueDay || 0),
-      targetBillId: bill.id || '',
-      targetBillName: bill.name || 'Bill',
-      paymentPart: index + 1,
-      paymentParts: all.length,
-      frequency: bill.frequency || 'monthly',
-      active: bill.active !== false,
-      startMonth: bill.startMonth || null,
-      endMonth: bill.endMonth || null
-    }))
-  );
-  const mortgage = (Array.isArray(bills) ? bills : []).find(bill =>
-    bill && bill.active !== false && /mortgage/i.test(String(bill.name || '')) && /rocket/i.test(String(bill.name || ''))
-  );
-  if (!mortgage || !Number(mortgage.amount) || (Array.isArray(mortgage.paymentSplits) && mortgage.paymentSplits.length)) return explicit;
-
-  const total = Math.abs(Number(mortgage.amount));
-  const firstHalf = Math.round(total * 50) / 100;
-  const secondHalf = Math.round((total - firstHalf) * 100) / 100;
-
-  return explicit.concat([
-    {
-      id: 'policy-mortgage-payment-prior-27',
-      name: 'Mortgage payment · first half',
-      amount: firstHalf,
-      dueDay: 27,
-      frequency: 'monthly',
-      active: true,
-      startMonth: '2026-08',
-      targetBillId: mortgage.id,
-      targetBillName: mortgage.name,
-      targetDueDay: mortgage.dueDay,
-      targetMonthOffset: 1,
-      paymentPart: 1,
-      paymentParts: 2,
-      cashImpact: -firstHalf,
-      notes: 'Actual first mortgage payment for the following month.'
-    },
-    {
-      id: 'policy-mortgage-payment-current-13',
-      name: 'Mortgage payment · second half',
-      amount: secondHalf,
-      dueDay: 13,
-      frequency: 'monthly',
-      active: true,
-      startMonth: '2026-09',
-      targetBillId: mortgage.id,
-      targetBillName: mortgage.name,
-      targetDueDay: mortgage.dueDay,
-      targetMonthOffset: 0,
-      paymentPart: 2,
-      paymentParts: 2,
-      cashImpact: -secondHalf,
-      notes: 'Actual second mortgage payment before the 15th due date.'
-    }
-  ]);
 }
 
 function calendarRevision(source) {
@@ -109,9 +47,7 @@ function cleanBillsData(input) {
     bills,
     oneTimeEvents: Array.isArray(source.oneTimeEvents) ? source.oneTimeEvents : [],
     income: Array.isArray(source.income) ? source.income : [],
-    paymentSplits: Array.isArray(source.paymentSplits) && source.paymentSplits.length
-      ? source.paymentSplits
-      : defaultPaymentSplits(bills),
+    paymentSplits: Array.isArray(source.paymentSplits) ? source.paymentSplits : [],
     updatedAt: source.updatedAt || null
   };
 }
@@ -130,6 +66,7 @@ function payload(calendarInput) {
   const calendar = cleanBillsData(calendarInput);
   return {
     schema: 'billsos-calendar-readonly-v1',
+    calculationBuild: CALCULATION_BUILD,
     readOnly: true,
     revision: calendarRevision(calendarInput || calendar),
     generatedAt: new Date().toISOString(),

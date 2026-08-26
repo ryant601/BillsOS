@@ -1,16 +1,16 @@
 {
   "name": "billsos",
-  "version": "1.0.27",
+  "version": "1.0.28",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.22-safe-sync.1",
-    "buildDate": "2026-08-22",
-    "buildNote": "Protect canonical bills data from stale-device overwrites."
+    "version": "v2026.08.26-transparent-cashflow.1",
+    "buildDate": "2026-08-26",
+    "buildNote": "Require every balance influence to come from visible saved cash-flow data."
   },
   "scripts": {
-    "start": "node -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./mortgage-reserve-ui-loader.js -r ./cache-coherence-preload.js server.js",
+    "start": "node -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js server.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {

@@ -115,8 +115,6 @@
 (function(){
   'use strict';
   var AMOUNT_KEY='billsos-amount-adjust-v1';
-  var JULY_REBASE_DAY=2;
-  var JULY_REBASE_END=2310;
   var timer=0;
   var busy=false;
 
@@ -127,7 +125,7 @@
   function readMap(){try{var map=JSON.parse(localStorage.getItem(AMOUNT_KEY)||'{}');return map&&typeof map==='object'&&!Array.isArray(map)?map:{}}catch(e){return {}}}
   function amountFromKey(key){var parts=String(key||'').split('|'),n=Number(parts[parts.length-1]);return isFinite(n)?n:0}
   function adjustedAmount(key,map){var base=amountFromKey(key),edit=map&&map[key],abs=edit&&isFinite(Number(edit.amount))?Math.abs(Number(edit.amount)):Math.abs(base);return base<0?-abs:abs}
-  function isCalcOnly(ev){var s=text(ev).toLowerCase();return s.indexOf('billsos action log')>=0||s.indexOf('balance correction')>=0||s.indexOf('spending account funding')>=0}
+  function isCalcOnly(ev){return text(ev).toLowerCase().indexOf('billsos action log')>=0}
   function dayNumber(day){var n=day&&day.querySelector&&day.querySelector('.topline span:first-child b,.topline b');return Number(text(n)||0)}
   function visibleMonth(){var h=text(document.querySelector('.monthHead h2')).toLowerCase(),months={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};for(var k in months){if(h.indexOf(k)>=0)return {name:k,num:months[k]}}return null}
   function setText(node,value){if(node&&node.textContent!==value)node.textContent=value}
@@ -158,14 +156,12 @@
     busy=true;
     try{
       var map=readMap();
-      var isJuly=month.name==='july';
       var kbegin=document.getElementById('kbegin'),kin=document.getElementById('kin'),kout=document.getElementById('kout'),kend=document.getElementById('kend'),ksweep=document.getElementById('ksweep'),kopen=document.getElementById('kopen');
-      var anchor=isJuly?JULY_REBASE_END:parseMoney(text(kbegin)||text(startNode(days[0])));
+      var anchor=parseMoney(text(kbegin)||text(startNode(days[0])));
       var running=anchor,income=0,outflow=0,sweep=0,open=0,total=0,done=0;
       days.forEach(function(day){
         var n=dayNumber(day);
         setText(startNode(day),money(running));
-        if(isJuly&&n<=JULY_REBASE_DAY){setText(endNode(day),money(JULY_REBASE_END));running=JULY_REBASE_END;return;}
         var delta=0;
         eventRows(day).forEach(function(ev){
           var input=ev.querySelector('input[data-id]'),key=input&&input.getAttribute('data-id');

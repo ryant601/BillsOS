@@ -50,7 +50,7 @@ test('a saved End Month includes that month and stops recurrence afterward', () 
   assert.equal(engine.rowsForMonth({ ...data, bills: [{ ...bill, endMonth: null }] }, 11, 0).some(row => row.sourceId === bill.id), true);
 });
 
-test('a split bill stays one bill while producing each installment', () => {
+test('legacy split metadata stays neutral and the visible bill remains authoritative', () => {
   const jeep = {
     id: 'jeep-split', name: 'Jeep', amount: 700, dueDay: 20,
     frequency: 'monthly', startMonth: '2026-09', endMonth: '2026-10', active: true,
@@ -58,9 +58,9 @@ test('a split bill stays one bill while producing each installment', () => {
   };
   const september = engine.rowsForMonth({ bills: [jeep], income: [], oneTimeEvents: [] }, 9, 0)
     .filter(row => row.sourceId === jeep.id);
-  assert.equal(september.length, 2);
+  assert.equal(september.length, 1);
   assert.deepEqual(september.map(row => [row.day, row.amount, row.paymentPart, row.paymentParts]), [
-    [5, -300, 1, 2], [20, -400, 2, 2]
+    [20, -700, 0, 0]
   ]);
   assert.equal(engine.rowsForMonth({ bills: [jeep], income: [], oneTimeEvents: [] }, 11, 0)
     .some(row => row.sourceId === jeep.id), false);

@@ -3,13 +3,9 @@
   const CALM_THEME_HREF = '/calm-household.css?v=20260703pill1';
   const MOBILE_FIT_HREF = '/mobile-fit.css?v=20260702fit3';
   const ACTION_LOG_LABEL = 'billsos action log';
-  const BALANCE_CORRECTION_LABEL = 'balance correction';
-  const SPENDING_FUNDING_LABEL = 'spending account funding';
   const AMOUNT_ADJUST_STORE = 'billsos-amount-adjust-v1';
   const YEAR = 2026;
-  const FIRST_BEGIN = 3671;
-  const JULY_REBASE_DAY = 2;
-  const JULY_REBASE_END = 2310;
+  const FIRST_BEGIN = 0;
   const LOW_BALANCE_WARNING = 300;
   const RULE_ID = '__billsos_system_rules__';
   const MONTHS = [['june', 6, 'June'], ['july', 7, 'July'], ['aug', 8, 'August'], ['sep', 9, 'September'], ['oct', 10, 'October'], ['nov', 11, 'November'], ['dec', 12, 'December']];
@@ -17,10 +13,8 @@
   function text(el) { return (el && el.textContent ? el.textContent : '').replace(/\s+/g, ' ').trim(); }
   function normalizedText(el) { return text(el).toLowerCase(); }
   function isActionLogMeta(item) { return normalizedText(item).indexOf(ACTION_LOG_LABEL) >= 0; }
-  function isBalanceCorrection(item) { return normalizedText(item).indexOf(BALANCE_CORRECTION_LABEL) >= 0; }
-  function isAutoSpendingFunding(item) { return normalizedText(item).indexOf(SPENDING_FUNDING_LABEL) >= 0; }
   function transferKind(item) { return window.BillsOSCashflow && window.BillsOSCashflow.transferKind ? window.BillsOSCashflow.transferKind(item) : ''; }
-  function isCalculationOnly(item) { return isActionLogMeta(item) || isBalanceCorrection(item) || isAutoSpendingFunding(item); }
+  function isCalculationOnly(item) { return isActionLogMeta(item); }
   function money(value) { return Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
   function moneyCents(value) { return Number(value || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function signedMoney(value) { const n = Number(value || 0); return (n < 0 ? '−' : '+') + money(Math.abs(n)); }
@@ -187,13 +181,18 @@
 
   function oneDates(item, monthKey) {
     const out = [];
-    const matches = String(item.notes || '').match(/20\d{2}-\d{2}-\d{2}/g) || [];
-    matches.forEach(function (date) { if (date.slice(0, 7) === monthKey && out.indexOf(date) < 0) out.push(date); });
-    if (!out.length && item.date && String(item.date).slice(0, 7) === monthKey) out.push(item.date);
+    [item && item.date, item && item.iso, item && item.startDate, item && item.effectiveDate].forEach(function (date) {
+      if (/^20\d{2}-\d{2}-\d{2}$/.test(String(date || '')) && date.slice(0, 7) === monthKey && out.indexOf(date) < 0) out.push(date);
+    });
     return out;
   }
 
   function generateRows(data, month) {
+    if (window.BillsOSCashflow && typeof window.BillsOSCashflow.rowsForMonth === 'function') {
+      return window.BillsOSCashflow.rowsForMonth(data, month).map(function (row) {
+        return { date: row.iso, day: row.day, name: row.name, amount: row.amount, cls: row.cls, type: row.type, sourceId: row.sourceId || '', requestedBalance: row.requestedBalance, notes: row.notes || '' };
+      });
+    }
     const monthKey = YEAR + '-' + String(month).padStart(2, '0');
     const dim = days(month);
     const rows = [];
@@ -204,7 +203,8 @@
 
     (data.bills || []).forEach(function (bill) {
       if (bill.active === false || (bill.frequency && bill.frequency !== 'monthly') || (bill.startMonth && bill.startMonth > monthKey) || (bill.endMonth && bill.endMonth < monthKey)) return;
-      push(Math.min(Number(bill.dueDay || 1), dim), bill.name || 'Bill', -Math.abs(Number(bill.amount || 0)), 'out', bill.payMethod || bill.paymentMethod || bill.type);
+      const dueDay = Number(bill.dueDay);
+      if (Number.isInteger(dueDay) && dueDay >= 1) push(Math.min(dueDay, dim), bill.name || 'Bill', -Math.abs(Number(bill.amount || 0)), 'out', bill.payMethod || bill.paymentMethod || bill.type);
     });
     (data.oneTimeEvents || []).forEach(function (item) {
       if (item.id === RULE_ID) return;
@@ -221,8 +221,11 @@
       const name = income.name || 'Income';
       const schedule = income.schedule || 'manual';
       if (schedule === 'semi-monthly-15-30') { push(15, name, amount, 'in', 'income'); push(Math.min(30, dim), name, amount, 'in', 'income'); }
-      else if (schedule === 'biweekly') [1, 15, 29].forEach(function (day) { if (day <= dim) push(day, name, amount, 'in', 'income'); });
-      else push(1, name, amount, 'in', 'income');
+      else if ((schedule === 'biweekly' || schedule === 'monthly' || schedule === 'manual') && /^20\d{2}-\d{2}-\d{2}$/.test(String(income.startDate || ''))) {
+        const start = income.startDate;
+        if (schedule === 'monthly') push(Math.min(Number(start.slice(8, 10)), dim), name, amount, 'in', 'income');
+        else if (schedule === 'manual' && start.slice(0, 7) === monthKey) push(Number(start.slice(8, 10)), name, amount, 'in', 'income');
+      }
     });
 
     return rows.sort(function (a, b) { return a.date.localeCompare(b.date) || b.amount - a.amount; });
@@ -257,15 +260,11 @@
     MONTHS.forEach(function (monthDef) {
       let begin = balance;
       let rows = effectiveRows(generateRows(data, monthDef[1]), monthDef[1]);
-      if (monthDef[0] === 'july') {
-        begin = JULY_REBASE_END;
-        rows = effectiveRows(generateRows(data, monthDef[1]), monthDef[1]).filter(function (row) { return row.day > JULY_REBASE_DAY; });
-      }
       const income = rows.filter(function (row) { return row.amount > 0; }).reduce(function (sum, row) { return sum + row.amount; }, 0);
       const outflow = rows.filter(function (row) { return row.amount < 0; }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
       const sweep = rows.filter(function (row) { return row.amount < 0 && /sweep/i.test(row.name); }).reduce(function (sum, row) { return sum + Math.abs(row.amount); }, 0);
       const end = begin + income - outflow;
-      model[monthDef[0]] = { month: monthDef, begin: begin, rows: rows, income: income, outflow: outflow, sweep: sweep, end: end, rebaseDay: monthDef[0] === 'july' ? JULY_REBASE_DAY : null, rebaseEnd: monthDef[0] === 'july' ? JULY_REBASE_END : null };
+      model[monthDef[0]] = { month: monthDef, begin: begin, rows: rows, income: income, outflow: outflow, sweep: sweep, end: end };
       balance = end;
     });
     return model;
@@ -414,12 +413,6 @@
         const startNode = dayNode.querySelector('.topline span:last-child b');
         const endNode = dayNode.querySelector('.endline b');
         if (startNode) startNode.textContent = money(running);
-        if (monthKey === 'july' && dayNum <= JULY_REBASE_DAY) {
-          if (endNode) endNode.textContent = money(JULY_REBASE_END);
-          running = JULY_REBASE_END;
-          syncDayBalanceClass(dayNode, running);
-          return;
-        }
         running += Number(byDay[dayNum] || 0);
         if (endNode) endNode.textContent = money(running);
         syncDayBalanceClass(dayNode, running);

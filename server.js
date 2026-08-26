@@ -163,22 +163,7 @@ function generatedDashboardHtml() {
   );
 
   html = html.replace(
-    "done={},attentionCollapsed=localStorage.getItem('billsos-attention-collapsed-v1')==='1',FIRST_BEGIN=3671,currentRows=[];",
-    "done={},adjust={},attentionCollapsed=localStorage.getItem('billsos-attention-collapsed-v1')==='1',FIRST_BEGIN=3671,currentRows=[],eventMap={},lastData=null,selectedKey=null,selectedDayKey=null,lastUndo=null,resizeState=false;"
-  );
-
-  html = html.replace(
     "function esc(s){return String(s||'').replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}function saveAttention(){localStorage.setItem('billsos-attention-collapsed-v1',attentionCollapsed?'1':'0')}function rowKey(e){return (e.originalDate||e.date)+'|'+e.name+'|'+e.amount}function itemKey(e){return e.originalKey||rowKey(e)}function todayIso(offset){var d=new Date();d.setDate(d.getDate()+(offset||0));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}function saveAdjust(){localStorage.setItem('billsos-pay-adjust-v1',JSON.stringify(adjust))}function saveDone(){localStorage.setItem('billsos-generated-done-v5',JSON.stringify(done))}function rememberUndo(k){lastUndo={key:k,adjust:adjust[k]?Object.assign({},adjust[k]):null,done:!!done[k]}}function undoLast(){if(!lastUndo)return;if(lastUndo.adjust)adjust[lastUndo.key]=lastUndo.adjust;else delete adjust[lastUndo.key];if(lastUndo.done)done[lastUndo.key]=1;else delete done[lastUndo.key];saveAdjust();saveDone();closeSheet();render(lastData);lastUndo=null}function loadDrawerWidth(){var saved=Number(localStorage.getItem('billsos-drawer-width-v1')||260);return isFinite(saved)?Math.max(220,Math.min(560,saved)):260}function applyDrawerWidth(n){var v=Math.max(220,Math.min(560,Number(n)||260));document.documentElement.style.setProperty('--drawer-w',v+'px');localStorage.setItem('billsos-drawer-width-v1',String(v));return v}function initResize(){var handle=document.getElementById('resizeHandle');if(!handle||handle.dataset.bound)return;handle.dataset.bound='1';var startX=0,startW=0;var onMove=function(ev){if(!resizeState)return;var dx=ev.clientX-startX;applyDrawerWidth(startW-dx)};var onUp=function(){if(!resizeState)return;resizeState=false;handle.classList.remove('dragging');window.removeEventListener('pointermove',onMove);window.removeEventListener('pointerup',onUp)};handle.addEventListener('pointerdown',function(ev){if(window.innerWidth<=900)return;resizeState=true;handle.classList.add('dragging');startX=ev.clientX;startW=Number(getComputedStyle(document.documentElement).getPropertyValue('--drawer-w'))||260;handle.setPointerCapture&&handle.setPointerCapture(ev.pointerId);window.addEventListener('pointermove',onMove);window.addEventListener('pointerup',onUp)})}applyDrawerWidth(loadDrawerWidth())"
-  );
-
-  html = html.replace(
-    "function chain(data){var out={},bal=FIRST_BEGIN;M.forEach(function(mm){var begin=mm[0]==='june'?0:bal,rows=gen(data,mm[1],begin),",
-    "function effectiveRows(rows,m){var val=Y+'-'+String(m).padStart(2,'0');return rows.map(function(row){var e=Object.assign({},row),k=rowKey(e),a=adjust[k];e.originalKey=k;e.originalDate=e.date;e.originalDay=e.day;if(a&&a.date){e.date=a.date;e.day=Number(a.date.slice(8,10));e.adjusted=a}return e}).filter(function(e){return e.date.slice(0,7)===val}).sort(function(a,b){return a.date.localeCompare(b.date)||b.amount-a.amount})}function chain(data){var out={},bal=FIRST_BEGIN;M.forEach(function(mm){var begin=mm[0]==='june'?0:bal,rows=effectiveRows(gen(data,mm[1],begin),mm[1]),"
-  );
-
-  html = html.replace(
-    "if(sw.enabled!==false){if(t&&Number(t.amount)>0){",
-    "if(sw.enabled!==false&&val!=='2026-06'){if(t&&Number(t.amount)>0){"
   );
 
   html = html.replace(
@@ -229,7 +214,7 @@ function generatedDashboardHtml() {
   );
 
   if (!html.includes('/day-details-enhance.js')) {
-    html = html.replace('</body>', '<script defer src="/day-details-enhance.js?v=20260820lowbalance300"></script></body>');
+    html = html.replace('</body>', '<script defer src="/day-details-enhance.js?v=20260826transparent1"></script></body>');
   }
 
   return html;
@@ -372,7 +357,7 @@ app.get("/control", (_req, res) => {
     const controlPath = path.join(__dirname, "control.html");
     let html = fs.readFileSync(controlPath, "utf8");
     const themeLink = '<link rel="stylesheet" href="/control-theme.css?v=20260825controldark1">';
-    const previewScript = '<script defer src="/control-preview.js?v=20260823billend1"></script>';
+    const previewScript = '<script defer src="/control-preview.js?v=20260826transparent1"></script>';
     if (!html.includes("/control-theme.css")) html = html.replace("</head>", `${themeLink}\n</head>`);
     if (!html.includes("/control-preview.js")) html = html.replace("</body>", `${previewScript}\n</body>`);
     res.setHeader("Cache-Control", "no-store");
@@ -385,6 +370,10 @@ app.get("/control", (_req, res) => {
 app.get("/", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.send(generatedDashboardHtml());
+});
+
+app.get(["/generated.html", "/generated-v2.html", "/generated-v3.html", "/generated-v4.html", "/latest.html"], (_req, res) => {
+  res.redirect(302, "/?view=calendar");
 });
 
 app.use(express.static(__dirname));
