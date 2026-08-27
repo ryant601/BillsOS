@@ -44,12 +44,21 @@ test('Viewer sync cannot mutate server state', () => {
   assert.deepEqual(serverState, before);
 });
 
-test('missing secrets leave access control in a safe setup state', () => {
+test('legacy Owner credentials keep BillsOS accessible while Viewer is not configured', () => {
+  const access = createAccessControl({ BILLS_USER: 'ryan', BILLS_PASS: 'legacy-owner-secret' });
+  assert.equal(access.ready, true);
+  assert.equal(access.viewer.enabled, false);
+  const owner = access.authenticate('ryan', 'legacy-owner-secret');
+  assert.equal(owner.role, 'owner');
+  const session = access.readSession(access.createSession(owner));
+  assert.equal(session.role, 'owner');
+  assert.equal(access.authenticate('viewer', ''), null);
+});
+
+test('missing Owner password leaves access control in a safe setup state', () => {
   const access = createAccessControl({});
   assert.equal(access.ready, false);
   assert.ok(access.missing.some(name => name.includes('BILLS_OWNER_PASSWORD')));
-  assert.ok(access.missing.some(name => name.includes('BILLS_VIEWER_PASSWORD')));
-  assert.ok(access.missing.some(name => name.includes('BILLS_SESSION_SECRET')));
   assert.equal(access.authenticate('ryan', ''), null);
 });
 
