@@ -20,6 +20,7 @@ test('calendar day event boxes remain vertically scrollable', () => {
 
 test('scroll fix is injected after the calendar markup with a cache-busted build', () => {
   const preload = read('cache-coherence-preload.js');
-  assert.match(preload, /calendar-event-scroll-fix\.js\?v=20260827wheelscroll1/);
+  assert.match(preload, /const BUILD = '20260827weekcollapse1'/);
+  assert.match(preload, /calendar-event-scroll-fix\.js\?v=' \+ BUILD/);
   assert.match(preload, /billsosCalendarEventScrollFixScript/);
 });

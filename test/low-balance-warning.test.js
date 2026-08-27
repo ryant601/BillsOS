@@ -29,7 +29,7 @@ test('compatibility enhancer uses the same threshold and preserves negative card
 });
 
 test('changed client assets use the current cache builds', () => {
-  assert.match(read('cache-coherence-preload.js'), /const BUILD = '20260826fy2027a'/);
+  assert.match(read('cache-coherence-preload.js'), /const BUILD = '20260827weekcollapse1'/);
   assert.match(read('html-hotfix-loader.js'), /amount-balance-hotfix\.js\?v=20260826fy2027a/);
   assert.match(read('control.html'), /action-log\.js\?v=20260826transparent2/);
   assert.match(read('control.html'), /control-preview\.js\?v=20260826transparent1/);

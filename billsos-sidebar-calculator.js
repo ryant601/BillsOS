@@ -75,7 +75,7 @@
     if (document.getElementById('billsosWeekToggleJs')) return;
     const script = document.createElement('script');
     script.id = 'billsosWeekToggleJs';
-    script.src = '/billsos-week-toggle.js?v=20260826fy2027a';
+    script.src = '/billsos-week-toggle.js?v=20260827weekcollapse1';
     script.defer = true;
     document.head.appendChild(script);
   }
