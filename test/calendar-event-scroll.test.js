@@ -1,0 +1,25 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+function read(file) {
+  return fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+}
+
+test('calendar day event boxes remain vertically scrollable', () => {
+  const fix = read('calendar-event-scroll-fix.js');
+  assert.match(fix, /\.day \.events\{/);
+  assert.match(fix, /overflow-y:auto!important/);
+  assert.match(fix, /overflow-x:hidden!important/);
+  assert.match(fix, /scrollbar-gutter:stable/);
+  assert.match(fix, /touch-action:pan-y!important/);
+});
+
+test('scroll fix is injected after the calendar markup with a cache-busted build', () => {
+  const preload = read('cache-coherence-preload.js');
+  assert.match(preload, /calendar-event-scroll-fix\.js\?v=20260827wheelscroll1/);
+  assert.match(preload, /billsosCalendarEventScrollFixScript/);
+});
