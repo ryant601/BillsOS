@@ -1,8 +1,8 @@
 const express = require("express");
 const path = require("path");
-const crypto = require("crypto");
 const fs = require("fs");
 const registerAssistantApi = require("./assistant-api");
+const { createAccessControl } = require("./access-control");
 const { calendarRevision, writeReadonlySnapshot } = require("./readonly-calendar-preload");
 const {
   applyCalendarStatePatch,
@@ -11,12 +11,7 @@ const {
 } = require("./bills-data-integrity");
 
 const app = express();
-
-const USER = process.env.BILLS_USER || "ryan";
-const PASS = process.env.BILLS_PASS || "";
-const TEMP_USER = process.env.BILLS_TEMP_USER || "temp";
-const TEMP_PASS = process.env.BILLS_TEMP_PASS || "";
-const SECRET = process.env.SESSION_SECRET || PASS || TEMP_PASS || "change-me";
+const access = createAccessControl(process.env);
 const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, "data");
 const CHECKMARK_FILE = path.join(DATA_DIR, "checkmarks.json");
 const BILLS_FILE = path.join(DATA_DIR, "bills.json");
@@ -24,39 +19,10 @@ const BILLS_FILE = path.join(DATA_DIR, "bills.json");
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: "2mb" }));
 
-function makeToken(username = USER, password = PASS) {
-  return crypto
-    .createHmac("sha256", SECRET)
-    .update(`${username}:${password}`)
-    .digest("hex");
-}
-
-function validAccounts() {
-  const accounts = [];
-  if (PASS) accounts.push({ username: USER, password: PASS });
-  if (TEMP_PASS) accounts.push({ username: TEMP_USER, password: TEMP_PASS });
-  return accounts;
-}
-
-function authenticate(username, password) {
-  return validAccounts().find(account => account.username === username && account.password === password);
-}
-
-function getCookies(req) {
-  return Object.fromEntries(
-    (req.headers.cookie || "")
-      .split(";")
-      .filter(Boolean)
-      .map(cookie => {
-        const [key, ...value] = cookie.trim().split("=");
-        return [key, decodeURIComponent(value.join("="))];
-      })
-  );
-}
-
-function isLoggedIn(req) {
-  const cookies = getCookies(req);
-  return validAccounts().some(account => cookies.billsos_auth === makeToken(account.username, account.password));
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[character]);
 }
 
 function ensureDataDir() {
@@ -139,7 +105,17 @@ function archiveBillsData() {
   }
 }
 
-function generatedDashboardHtml() {
+function accessMarkup(session) {
+  const safeSession = JSON.stringify({ authenticated: true, role: session.role, username: session.username, viewOnly: session.role === "viewer" });
+  return `<script>window.BillsOSSession=${safeSession};document.documentElement.setAttribute("data-billsos-role",window.BillsOSSession.role);</script>\n<script defer src="/access-control-ui.js?v=20260827owner-viewer1"></script>`;
+}
+
+function injectAccessMarkup(html, session) {
+  if (typeof html !== "string" || !session || html.includes("/access-control-ui.js")) return html;
+  return html.replace("</head>", `${accessMarkup(session)}\n</head>`);
+}
+
+function generatedDashboardHtml(session) {
   const generatedPath = path.join(__dirname, "generated-v5.html");
   let html = fs.readFileSync(generatedPath, "utf8");
 
@@ -217,7 +193,7 @@ function generatedDashboardHtml() {
     html = html.replace('</body>', '<script defer src="/day-details-enhance.js?v=20260826fy2027a"></script></body>');
   }
 
-  return html;
+  return injectAccessMarkup(html, session);
 }
 
 function loginPage(error = "") {
@@ -226,7 +202,7 @@ function loginPage(error = "") {
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BillsOS Login · LIVE BUILD 2026-07-01 v01565cb</title>
+  <title>BillsOS Login</title>
 <style>
     body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: white; min-height: 100vh; display: grid; place-items: center; }
     .card { width: min(92vw, 380px); background: #111827; border: 1px solid #334155; border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
@@ -240,45 +216,74 @@ function loginPage(error = "") {
 </head>
 <body>
 <form class="card" method="POST" action="/login">
-<div style="margin:0 0 14px;padding:10px 12px;border-radius:14px;background:#a8651a;color:#fff;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 20px rgba(0,0,0,.22)">LIVE BUILD · 2026-07-01 · v01565cb</div>
 <h1>BillsOS</h1>
-<p>Sign in to view the dashboard. Build stamp: LIVE BUILD · 2026-07-01 · v01565cb</p>
+<p>Sign in as Owner or Viewer.</p>
 <label>Username</label>
 <input name="username" autocomplete="username" required>
 <label>Password</label>
 <input name="password" type="password" autocomplete="current-password" required>
 <button type="submit">Sign in</button>
-    ${error ? `<div class="error">${error}</div>` : ""}
+    ${error ? `<div class="error">${escapeHtml(error)}</div>` : ""}
 </form>
 </body>
 </html>
 `;
 }
 
+function setupRequiredPage() {
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>BillsOS setup required</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0f172a;color:#fff;font-family:system-ui,sans-serif}.card{width:min(92vw,520px);padding:24px;border:1px solid #334155;border-radius:18px;background:#111827}h1{margin-top:0}p,li{color:#cbd5e1;line-height:1.5}code{color:#bae6fd}</style></head><body><main class="card"><h1>BillsOS setup required</h1><p>Access is locked until the missing Railway variables are configured:</p><ul>${access.missing.map(name => `<li><code>${escapeHtml(name)}</code></li>`).join("")}</ul><p>No credentials are stored in the app.</p></main></body></html>`;
+}
+
 app.get("/login", (req, res) => {
-  if (!validAccounts().length) return res.status(500).send("Set BILLS_PASS or BILLS_TEMP_PASS on Render.");
+  if (!access.ready) return res.status(503).send(setupRequiredPage());
+  if (access.sessionFromRequest(req)) return res.redirect("/");
   res.send(loginPage());
 });
 
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  const account = authenticate(username, password);
+  if (!access.ready) return res.status(503).send(setupRequiredPage());
+  const account = access.authenticate(username, password);
   if (account) {
-    res.setHeader("Set-Cookie", `billsos_auth=${makeToken(account.username, account.password)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`);
+    res.setHeader("Set-Cookie", `${access.COOKIE_NAME}=${encodeURIComponent(access.createSession(account))}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${access.SESSION_MAX_AGE_SECONDS}`);
     return res.redirect("/");
   }
   res.status(401).send(loginPage("Invalid username or password."));
 });
 
-app.get("/logout", (req, res) => {
-  res.setHeader("Set-Cookie", "billsos_auth=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0");
+function logout(_req, res) {
+  res.setHeader("Set-Cookie", `${access.COOKIE_NAME}=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`);
   res.redirect("/login");
+}
+app.get("/logout", logout);
+app.post("/logout", logout);
+
+app.get("/api/session", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const session = access.sessionFromRequest(req);
+  if (!access.ready) return res.status(503).json({ authenticated: false, setupRequired: true, missing: access.missing });
+  if (!session) return res.status(401).json({ authenticated: false, setupRequired: false });
+  res.json({ authenticated: true, role: session.role, username: session.username, viewOnly: session.role === "viewer" });
 });
 
 app.use((req, res, next) => {
-  if (req.path === "/login") return next();
-  if (isLoggedIn(req)) return next();
-  return res.redirect("/login");
+  if (!access.ready) {
+    if (req.path.startsWith("/api/")) return res.status(503).json({ error: "BillsOS setup required", setupRequired: true, missing: access.missing });
+    return res.status(503).send(setupRequiredPage());
+  }
+  const session = access.sessionFromRequest(req);
+  if (!session) {
+    if (req.path.startsWith("/api/")) return res.status(401).json({ error: "Authentication required" });
+    return res.redirect("/login");
+  }
+  req.billsosSession = session;
+  next();
+});
+
+app.use((req, res, next) => {
+  const decision = access.requestAccessDecision(req.billsosSession, req.method, req.path);
+  if (decision.allowed) return next();
+  res.status(decision.status).json({ error: decision.error, role: req.billsosSession && req.billsosSession.role, viewOnly: true });
 });
 
 app.get("/api/checkmarks", (_req, res) => {
@@ -334,25 +339,26 @@ app.patch("/api/bills/calendar-state", (req, res) => {
 
 registerAssistantApi(app, { readBillsData });
 
-app.get("/generated", (_req, res) => {
+app.get("/generated", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.send(generatedDashboardHtml());
+  res.send(generatedDashboardHtml(req.billsosSession));
 });
 
-app.get("/legacy", (_req, res) => {
+app.get("/legacy", (req, res) => {
   try {
     const indexPath = path.join(__dirname, "index.html");
     let html = fs.readFileSync(indexPath, "utf8");
     const syncScript = '<script defer src="/cloud-sync.js?v=20260626cloud2"></script>';
     if (!html.includes("/cloud-sync.js")) html = html.replace("</body>", `${syncScript}\n</body>`);
     res.setHeader("Cache-Control", "no-store");
-    res.send(html);
+    res.send(injectAccessMarkup(html, req.billsosSession));
   } catch (_err) {
     res.sendFile(path.join(__dirname, "index.html"));
   }
 });
 
-app.get("/control", (_req, res) => {
+app.get(["/control", "/control.html"], (req, res) => {
+  if (req.billsosSession.role !== "owner") return res.status(403).send("View only access cannot open Control Center.");
   try {
     const controlPath = path.join(__dirname, "control.html");
     let html = fs.readFileSync(controlPath, "utf8");
@@ -361,20 +367,22 @@ app.get("/control", (_req, res) => {
     if (!html.includes("/control-theme.css")) html = html.replace("</head>", `${themeLink}\n</head>`);
     if (!html.includes("/control-preview.js")) html = html.replace("</body>", `${previewScript}\n</body>`);
     res.setHeader("Cache-Control", "no-store");
-    res.send(html);
+    res.send(injectAccessMarkup(html, req.billsosSession));
   } catch (_err) {
     res.sendFile(path.join(__dirname, "control.html"));
   }
 });
 
-app.get("/", (_req, res) => {
+app.get("/", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.send(generatedDashboardHtml());
+  res.send(generatedDashboardHtml(req.billsosSession));
 });
 
-app.get(["/generated.html", "/generated-v2.html", "/generated-v3.html", "/generated-v4.html", "/latest.html"], (_req, res) => {
+app.get(["/generated.html", "/generated-v2.html", "/generated-v3.html", "/generated-v4.html", "/generated-v5.html", "/latest.html"], (_req, res) => {
   res.redirect(302, "/?view=calendar");
 });
+
+app.get("/index.html", (_req, res) => res.redirect(302, "/legacy"));
 
 app.use(express.static(__dirname));
 
