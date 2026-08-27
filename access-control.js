@@ -34,19 +34,23 @@ function createAccessControl(env = process.env) {
   const owner = {
     role: "owner",
     username: firstValue(env.BILLS_OWNER_USERNAME, env.BILLS_USER, "ryan"),
-    password: firstValue(env.BILLS_OWNER_PASSWORD, env.BILLS_PASS)
+    password: firstValue(env.BILLS_OWNER_PASSWORD, env.BILLS_PASS),
+    enabled: true
   };
   const viewer = {
     role: "viewer",
     username: firstValue(env.BILLS_VIEWER_USERNAME, env.BILLS_TEMP_USER, "viewer"),
-    password: firstValue(env.BILLS_VIEWER_PASSWORD, env.BILLS_TEMP_PASS)
+    password: firstValue(env.BILLS_VIEWER_PASSWORD, env.BILLS_TEMP_PASS),
+    enabled: !!firstValue(env.BILLS_VIEWER_PASSWORD, env.BILLS_TEMP_PASS)
   };
-  const secret = firstValue(env.BILLS_SESSION_SECRET, env.SESSION_SECRET);
+
+  // Prefer a dedicated session secret, but preserve the pre-role BillsOS setup by
+  // falling back to the existing Owner password until Railway is updated.
+  const secret = firstValue(env.BILLS_SESSION_SECRET, env.SESSION_SECRET, owner.password);
   const missing = [];
   if (!owner.password) missing.push("BILLS_OWNER_PASSWORD (or legacy BILLS_PASS)");
-  if (!viewer.password) missing.push("BILLS_VIEWER_PASSWORD (or legacy BILLS_TEMP_PASS)");
   if (!secret) missing.push("BILLS_SESSION_SECRET (or legacy SESSION_SECRET)");
-  if (owner.username === viewer.username) missing.push("distinct Owner and Viewer usernames");
+  if (viewer.enabled && owner.username === viewer.username) missing.push("distinct Owner and Viewer usernames");
 
   function credentialTag(account) {
     return crypto.createHash("sha256").update(account.password).digest("hex").slice(0, 20);
@@ -57,7 +61,7 @@ function createAccessControl(env = process.env) {
   }
 
   function createSession(account, now = Date.now()) {
-    if (!account || missing.length) return "";
+    if (!account || account.enabled === false || missing.length) return "";
     const payload = Buffer.from(JSON.stringify({
       role: account.role,
       username: account.username,
@@ -74,7 +78,7 @@ function createAccessControl(env = process.env) {
     try {
       const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
       const account = parsed.role === "owner" ? owner : parsed.role === "viewer" ? viewer : null;
-      if (!account || parsed.username !== account.username || parsed.credentialTag !== credentialTag(account)) return null;
+      if (!account || account.enabled === false || parsed.username !== account.username || parsed.credentialTag !== credentialTag(account)) return null;
       if (!Number.isFinite(parsed.expiresAt) || parsed.expiresAt <= now) return null;
       return { role: account.role, username: account.username, expiresAt: parsed.expiresAt };
     } catch (_err) {
@@ -84,7 +88,8 @@ function createAccessControl(env = process.env) {
 
   function authenticate(username, password) {
     if (missing.length) return null;
-    return [owner, viewer].find(account => timingSafeEqual(username, account.username) && timingSafeEqual(password, account.password)) || null;
+    const accounts = viewer.enabled ? [owner, viewer] : [owner];
+    return accounts.find(account => timingSafeEqual(username, account.username) && timingSafeEqual(password, account.password)) || null;
   }
 
   function sessionFromRequest(req) {
