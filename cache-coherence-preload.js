@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20260826syncv2b';
+const BUILD = '20260827wheelscroll1';
 const CRITICAL_ASSETS = [
   'billsos-cross-device-sync-v2.js',
   'billsos-sidebar-calculator.js',
@@ -12,7 +12,8 @@ const CRITICAL_ASSETS = [
   'billsos-week-toggle.js',
   'day-details-enhance.js',
   'billsos-v2-ui.js',
-  'assistant-calendar-consistency.js'
+  'assistant-calendar-consistency.js',
+  'calendar-event-scroll-fix.js'
 ];
 
 function forceVersion(html) {
@@ -31,6 +32,12 @@ function ensureAssistantConsistency(html, isDashboard) {
   return html.replace('</body>', tag + '\n</body>');
 }
 
+function ensureCalendarEventScroll(html, isDashboard) {
+  if (!isDashboard || html.includes('id="billsosCalendarEventScrollFixScript"')) return html;
+  const tag = '<script id="billsosCalendarEventScrollFixScript" defer src="/calendar-event-scroll-fix.js?v=' + BUILD + '"></script>';
+  return html.replace('</body>', tag + '\n</body>');
+}
+
 fs.readFileSync = function coherentReadFileSync(filePath, options) {
   const result = originalReadFileSync.apply(this, arguments);
   const name = String(filePath || '');
@@ -40,6 +47,6 @@ fs.readFileSync = function coherentReadFileSync(filePath, options) {
   const isHtml = isDashboard || name.endsWith('control.html') || name.endsWith('index.html');
   if (!isText || !isHtml) return result;
   const html = Buffer.isBuffer(result) ? result.toString('utf8') : String(result);
-  const updated = ensureAssistantConsistency(forceVersion(html), isDashboard);
+  const updated = ensureCalendarEventScroll(ensureAssistantConsistency(forceVersion(html), isDashboard), isDashboard);
   return Buffer.isBuffer(result) ? Buffer.from(updated, 'utf8') : updated;
 };
