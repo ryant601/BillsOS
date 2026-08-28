@@ -5,12 +5,12 @@
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.28-everyday-spending.1",
+    "version": "v2026.08.28-everyday-spending.2",
     "buildDate": "2026-08-28",
-    "buildNote": "Add the Everyday Spending snapshot as a native BillsOS section with dashboard navigation."
+    "buildNote": "Serve Everyday Spending through the shared BillsOS app shell and sidebar navigation."
   },
   "scripts": {
-    "start": "node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js server.js",
+    "start": "node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js -r ./spending-route-preload.js server.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
