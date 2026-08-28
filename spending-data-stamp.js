@@ -1,6 +1,7 @@
 (function(){
   'use strict';
   var BALANCE_AS_OF='2026-08-28T10:22:49.416360Z';
+  var TRANSACTIONS_QUERIED_AT='2026-08-28T18:28:06Z';
   var TRANSACTION_FRESHNESS='unknown';
 
   function formatAsOf(iso){
@@ -19,8 +20,8 @@
     var stamp=document.createElement('div');
     stamp.id='spendingBankingStamp';
     stamp.className='spending-banking-stamp';
-    stamp.innerHTML='<span class="spending-live-dot"></span><strong>Banking balance as of '+formatAsOf(BALANCE_AS_OF)+'</strong>'+
-      (TRANSACTION_FRESHNESS==='unknown'?'<span class="spending-freshness-note">Transaction feed freshness timestamp unavailable</span>':'');
+    stamp.innerHTML='<span class="spending-live-dot"></span><strong>Bank balance as of '+formatAsOf(BALANCE_AS_OF)+'</strong>'+
+      '<span class="spending-freshness-note">Transactions queried '+formatAsOf(TRANSACTIONS_QUERIED_AT)+(TRANSACTION_FRESHNESS==='unknown'?' · banking transaction freshness unavailable':'')+'</span>';
     anchor.insertAdjacentElement('afterend',stamp);
   }
 
