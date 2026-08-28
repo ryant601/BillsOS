@@ -40,7 +40,7 @@ test('every direct calendar asset reference uses its current cache build', () =>
     const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
     const relevant = source.split(/\r?\n/).filter(line => /(?:cashflow-engine|day-details-enhance|billsos-week-toggle)\.js\?v=/.test(line));
     relevant.forEach(line => {
-      const expected = /billsos-week-toggle\.js/.test(line) ? /v=20260827weekcollapse1/ : /v=20260826fy2027a/;
+      const expected = /billsos-week-toggle\.js/.test(line) ? /v=20260828rowcollapse1/ : /v=20260826fy2027a/;
       assert.match(line, expected, file + ': ' + line);
     });
   });

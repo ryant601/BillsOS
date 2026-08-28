@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.41",
+  "version": "1.0.42",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.27-past-week-collapse.1",
-    "buildDate": "2026-08-27",
-    "buildNote": "Collapse completed full calendar weeks by default and keep past-month visibility inside the built-in navigation."
+    "version": "v2026.08.28-past-row-collapse.1",
+    "buildDate": "2026-08-28",
+    "buildNote": "Collapse every completed calendar row, including partial edge rows, while current and future rows stay open."
   },
   "scripts": {
     "start": "node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js server.js",

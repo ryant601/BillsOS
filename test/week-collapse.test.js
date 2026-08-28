@@ -10,27 +10,29 @@ function read(file) {
   return fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 }
 
-test('late August 2026 collapses only completed full weeks 1 through 3', () => {
-  assert.deepEqual(policy.fullWeeks(2026, 8), [
-    { number: 1, startDay: 2, endDay: 8 },
-    { number: 2, startDay: 9, endDay: 15 },
-    { number: 3, startDay: 16, endDay: 22 },
-    { number: 4, startDay: 23, endDay: 29 }
+test('late August 2026 collapses the Aug 1 partial row and every completed row', () => {
+  assert.deepEqual(policy.calendarRows(2026, 8), [
+    { number: 1, startDay: 1, endDay: 1 },
+    { number: 2, startDay: 2, endDay: 8 },
+    { number: 3, startDay: 9, endDay: 15 },
+    { number: 4, startDay: 16, endDay: 22 },
+    { number: 5, startDay: 23, endDay: 29 },
+    { number: 6, startDay: 30, endDay: 31 }
   ]);
   assert.deepEqual(
-    policy.eligibleFullWeeks(2026, 8, new Date(2026, 7, 27)).map(week => week.number),
-    [1, 2, 3]
+    policy.eligibleRows(2026, 8, new Date(2026, 7, 28)).map(row => [row.startDay, row.endDay]),
+    [[1, 1], [2, 8], [9, 15], [16, 22]]
   );
 });
 
-test('a week becomes eligible only after its final day', () => {
+test('a calendar row becomes eligible only after its final real day', () => {
   assert.deepEqual(
-    policy.eligibleFullWeeks(2026, 8, new Date(2026, 7, 22)).map(week => week.number),
-    [1, 2]
+    policy.eligibleRows(2026, 8, new Date(2026, 7, 22)).map(row => row.endDay),
+    [1, 8, 15]
   );
   assert.deepEqual(
-    policy.eligibleFullWeeks(2026, 8, new Date(2026, 7, 23)).map(week => week.number),
-    [1, 2, 3]
+    policy.eligibleRows(2026, 8, new Date(2026, 7, 23)).map(row => row.endDay),
+    [1, 8, 15, 22]
   );
 });
 
@@ -42,12 +44,18 @@ test('runtime uses current panel dates, default collapse, local overrides, and b
   assert.match(source, /hasOwn\(state,key\)\?!!state\[key\]:true/);
   assert.match(source, /Expand past weeks/);
   assert.match(source, /Collapse past weeks/);
-  assert.match(source, /actual\.length!==7/);
-  assert.match(source, /Current week/);
+  assert.match(source, /eligibleRows/);
+  assert.match(source, /row-.*startDay.*endDay/);
+  assert.match(source, /Show row/);
+  assert.match(source, /Hide row/);
+  assert.match(source, /Current row/);
+  assert.doesNotMatch(source, /weekLabel/);
 });
 
 test('all week-toggle loaders request the current cache build', () => {
-  assert.match(read('billsos-sidebar-calculator.js'), /billsos-week-toggle\.js\?v=20260827weekcollapse1/);
-  assert.match(read('action-log.js'), /billsos-week-toggle\.js\?v=20260827weekcollapse1/);
-  assert.match(read('cache-coherence-preload.js'), /const BUILD = '20260827weekcollapse1'/);
+  assert.match(read('html-hotfix-loader.js'), /billsos-sidebar-calculator\.js\?v=20260828rowcollapse1/);
+  assert.match(read('billsos-sidebar-calculator.js'), /billsos-week-toggle\.js\?v=20260828rowcollapse1/);
+  assert.match(read('control.html'), /action-log\.js\?v=20260828rowcollapse1/);
+  assert.match(read('action-log.js'), /billsos-week-toggle\.js\?v=20260828rowcollapse1/);
+  assert.match(read('cache-coherence-preload.js'), /const BUILD = '20260828rowcollapse1'/);
 });
