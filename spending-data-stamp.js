@@ -1,0 +1,29 @@
+(function(){
+  'use strict';
+  var BALANCE_AS_OF='2026-08-28T10:22:49.416360Z';
+  var TRANSACTION_FRESHNESS='unknown';
+
+  function formatAsOf(iso){
+    try{
+      return new Intl.DateTimeFormat('en-US',{
+        timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',
+        hour:'numeric',minute:'2-digit',timeZoneName:'short'
+      }).format(new Date(iso));
+    }catch(_e){return iso;}
+  }
+
+  function install(){
+    if(document.getElementById('spendingBankingStamp'))return;
+    var anchor=document.querySelector('.muted,.subtle');
+    if(!anchor)return;
+    var stamp=document.createElement('div');
+    stamp.id='spendingBankingStamp';
+    stamp.className='spending-banking-stamp';
+    stamp.innerHTML='<span class="spending-live-dot"></span><strong>Banking balance as of '+formatAsOf(BALANCE_AS_OF)+'</strong>'+
+      (TRANSACTION_FRESHNESS==='unknown'?'<span class="spending-freshness-note">Transaction feed freshness timestamp unavailable</span>':'');
+    anchor.insertAdjacentElement('afterend',stamp);
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});
+  else install();
+})();
