@@ -41,10 +41,15 @@ function spendingHistoryPatch(html){
   return html.replace('</body>','<script defer src="/spending-history.js?v=20260828a"></script>\n</body>');
 }
 
+function spendingAssistantPatch(html){
+  if(html.includes('/spending-assistant.js'))return html;
+  return html.replace('</body>','<script defer src="/spending-assistant.js?v=20260828a"></script>\n</body>');
+}
+
 function serveSpendingHtml(filePath, includeLiveStamp, res, next){
   try {
     let html = fs.readFileSync(filePath, 'utf8');
-    html = spendingNavPatch(spendingHistoryPatch(html));
+    html = spendingNavPatch(spendingHistoryPatch(spendingAssistantPatch(html)));
     if(includeLiveStamp) html = spendingDataStampPatch(html);
     html = spendingThemePatch(html);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
