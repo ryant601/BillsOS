@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20260828rowcollapse1';
+const BUILD = '20260828spending1';
 const CRITICAL_ASSETS = [
   'billsos-cross-device-sync-v2.js',
   'billsos-sidebar-calculator.js',
@@ -38,6 +38,14 @@ function ensureCalendarEventScroll(html, isDashboard) {
   return html.replace('</body>', tag + '\n</body>');
 }
 
+function ensureSpendingNavigation(html, isDashboard) {
+  if (!isDashboard || html.includes('href="/spending/"')) return html;
+  if (html.includes('<a href="/control">Control Center</a>')) {
+    return html.replace('<a href="/control">Control Center</a>', '<a href="/spending/">Everyday Spending</a><a href="/control">Control Center</a>');
+  }
+  return html;
+}
+
 fs.readFileSync = function coherentReadFileSync(filePath, options) {
   const result = originalReadFileSync.apply(this, arguments);
   const name = String(filePath || '');
@@ -47,6 +55,6 @@ fs.readFileSync = function coherentReadFileSync(filePath, options) {
   const isHtml = isDashboard || name.endsWith('control.html') || name.endsWith('index.html');
   if (!isText || !isHtml) return result;
   const html = Buffer.isBuffer(result) ? result.toString('utf8') : String(result);
-  const updated = ensureCalendarEventScroll(ensureAssistantConsistency(forceVersion(html), isDashboard), isDashboard);
+  const updated = ensureSpendingNavigation(ensureCalendarEventScroll(ensureAssistantConsistency(forceVersion(html), isDashboard), isDashboard), isDashboard);
   return Buffer.isBuffer(result) ? Buffer.from(updated, 'utf8') : updated;
 };
