@@ -36,18 +36,34 @@ function spendingDataStampPatch(html){
   return html.replace('</body>','<script defer src="/spending-data-stamp.js?v=20260828b"></script>\n</body>');
 }
 
+function spendingHistoryPatch(html){
+  if(html.includes('/spending-history.js'))return html;
+  return html.replace('</body>','<script defer src="/spending-history.js?v=20260828a"></script>\n</body>');
+}
+
+function serveSpendingHtml(filePath, includeLiveStamp, res, next){
+  try {
+    let html = fs.readFileSync(filePath, 'utf8');
+    html = spendingNavPatch(spendingHistoryPatch(html));
+    if(includeLiveStamp) html = spendingDataStampPatch(html);
+    html = spendingThemePatch(html);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    return res.status(200).send(html);
+  } catch (err) { return next(err); }
+}
+
 express.static = function billsOsStatic(root, options) {
   const middleware = originalStatic.call(express, root, options);
   return function billsOsStaticWithSpendingShell(req, res, next) {
     const url = String(req.url || '').split('?')[0];
     if (url === '/spending/' || url === '/spending/index.html') {
-      try {
-        let html = fs.readFileSync(SPENDING_PATH, 'utf8');
-        html = spendingThemePatch(spendingDataStampPatch(spendingNavPatch(html)));
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-store, max-age=0');
-        return res.status(200).send(html);
-      } catch (err) { return next(err); }
+      return serveSpendingHtml(SPENDING_PATH, true, res, next);
+    }
+    const archiveMatch = url.match(/^\/spending\/archive\/(\d{4}-\d{2}-\d{2})\/?(?:index\.html)?$/);
+    if (archiveMatch) {
+      const archivePath = path.join(__dirname, 'spending', 'archive', archiveMatch[1], 'index.html');
+      return serveSpendingHtml(archivePath, false, res, next);
     }
     return middleware(req, res, next);
   };
