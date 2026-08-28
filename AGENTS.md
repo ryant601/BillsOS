@@ -41,6 +41,14 @@ These rules exist so future ChatGPT sessions handle this repository consistently
   - `Starting`, `Income`, `Outflow`, `Ending`, `Open`
 - Move technical explanations, generation notes, and implementation details out of the main dashboard.
 
+## Calendar card scrolling invariant
+
+- Busy calendar day boxes must always retain the BillsOS-owned visible internal scrollbar implemented by `calendar-event-scroll-fix.js`.
+- Preserve the fixed calendar-card height and the internal `.events` scrolling viewport; do not allow busy cards to expand vertically to fit all events.
+- Do not remove or bypass `.billsos-card-scrollrail`, `.billsos-card-scrollthumb`, or the `billsos-has-scroll` behavior.
+- `calendar-event-scroll-fix.js` must remain in `CRITICAL_ASSETS` and must continue to be injected by `cache-coherence-preload.js` for the dashboard.
+- Any calendar UI/CSS refactor must keep `test/calendar-event-scroll.test.js` passing. Treat a failure of that test as a blocking regression, not an optional visual change.
+
 ## Tone of the app
 
 - The dashboard should feel calm and operational.
