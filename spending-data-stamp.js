@@ -1,7 +1,7 @@
 (function(){
   'use strict';
-  var BALANCE_AS_OF='2026-08-28T10:22:49.416360Z';
-  var TRANSACTIONS_QUERIED_AT='2026-08-28T18:28:06Z';
+  var BALANCE_AS_OF='2026-08-29T10:22:27.449259Z';
+  var TRANSACTIONS_QUERIED_AT='2026-08-29T12:02:09Z';
   var TRANSACTION_FRESHNESS='unknown';
 
   function formatAsOf(iso){
