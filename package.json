@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.44",
+  "version": "1.0.45",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.29-bills-balance.1",
+    "version": "v2026.08.29-spending-layout.1",
     "buildDate": "2026-08-29",
-    "buildNote": "Display the exact TD Bill Payments available balance on the home card without changing cash-flow calculations."
+    "buildNote": "Keep Everyday Spending content beside the fixed BillsOS sidebar on desktop and full-width on mobile."
   },
   "scripts": {
     "start": "node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js -r ./spending-route-preload.js server.js",

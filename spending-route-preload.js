@@ -11,6 +11,7 @@ function spendingThemePatch(html) {
   if (html.includes('id="billsosSpendingThemePatch"')) return html;
   const patch = `<style id="billsosSpendingThemePatch">
 html[data-billsos-theme="dark"]{--bg:#111418!important;--paper:#1B2025!important;--paper2:#22282D!important;--paper3:#262D32!important;--ink:#F2F4F3!important;--muted:#AEB8B3!important;--line:#30383D!important;--green:#79B98D!important;--purple:#B59BD0!important;--p:#1B2025!important;--p2:#22282D!important;--i:#F2F4F3!important;--m:#AEB8B3!important;--l:#30383D!important;--g:#79B98D!important;--pu:#B59BD0!important;color-scheme:dark}
+body.bo-app.bo-spending{padding-left:220px!important}body.bo-app.bo-spending>.app{width:100%;min-width:0;margin-left:auto!important;margin-right:auto!important}@media(max-width:760px){body.bo-app.bo-spending{padding-left:0!important}}
 html[data-billsos-theme="dark"] body{background:#111418!important;color:#F2F4F3!important}html[data-billsos-theme="dark"] .app{color:#F2F4F3!important}
 html[data-billsos-theme="dark"] .metric,html[data-billsos-theme="dark"] .runway,html[data-billsos-theme="dark"] .cat,html[data-billsos-theme="dark"] .vendor,html[data-billsos-theme="dark"] .tx{background:#1B2025!important;border-color:#30383D!important;color:#F2F4F3!important}
 html[data-billsos-theme="dark"] .sub,html[data-billsos-theme="dark"] .subcategory{background:#22282D!important;border-color:#30383D!important;color:#F2F4F3!important}
@@ -22,6 +23,17 @@ html[data-billsos-theme="dark"] .status{color:#B9C6BF!important}html[data-billso
 .spending-banking-stamp{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:8px 0 2px;color:#526058;font-size:10px;line-height:1.35}.spending-live-dot{width:7px;height:7px;border-radius:50%;background:#39a160;box-shadow:0 0 0 3px rgba(57,161,96,.12)}.spending-freshness-note{color:#7c857f;font-weight:500}html[data-billsos-theme="dark"] .spending-banking-stamp{color:#D7DFDB!important}html[data-billsos-theme="dark"] .spending-freshness-note{color:#9DA9A3!important}
 </style>`;
   return html.replace('</head>', patch+'\n</head>');
+}
+
+function spendingLayoutPatch(html) {
+  return html.replace(/<body\b([^>]*)>/i, function(match, attrs) {
+    const classMatch = attrs.match(/\bclass=(['"])(.*?)\1/i);
+    if (classMatch) {
+      if (/(?:^|\s)bo-spending(?:\s|$)/.test(classMatch[2])) return match;
+      return match.replace(classMatch[0], 'class=' + classMatch[1] + classMatch[2] + ' bo-spending' + classMatch[1]);
+    }
+    return '<body' + attrs + ' class="bo-spending">';
+  });
 }
 
 function spendingNavPatch(html) {
@@ -49,6 +61,7 @@ function spendingAssistantPatch(html){
 function serveSpendingHtml(filePath, includeLiveStamp, res, next){
   try {
     let html = fs.readFileSync(filePath, 'utf8');
+    html = spendingLayoutPatch(html);
     html = spendingNavPatch(spendingHistoryPatch(spendingAssistantPatch(html)));
     if(includeLiveStamp) html = spendingDataStampPatch(html);
     html = spendingThemePatch(html);
@@ -73,3 +86,6 @@ express.static = function billsOsStatic(root, options) {
     return middleware(req, res, next);
   };
 };
+
+module.exports.spendingLayoutPatch = spendingLayoutPatch;
+module.exports.spendingThemePatch = spendingThemePatch;
