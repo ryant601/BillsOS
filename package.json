@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.46",
+  "version": "1.0.47",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.29-spending-categories.1",
+    "version": "v2026.08.29-spending-categories.2",
     "buildDate": "2026-08-29",
-    "buildNote": "Allow Owner-confirmed Everyday Spending category overrides through Ask Bills OS."
+    "buildNote": "Allow unique merchant and amount recategorization without requiring a date or dollar sign."
   },
   "scripts": {
     "start": "node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js -r ./spending-route-preload.js server.js",

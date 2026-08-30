@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const vm = require('node:vm');
 const { createSpendingCategoryStore, parseSnapshotTransactions } = require('../spending-category-overrides');
 
 const snapshot = '<script>const T=[' + [
@@ -74,5 +75,32 @@ test('client assistant requires confirmation, preserves totals, and uses the ver
   assert.match(source, /session\.role!==\'owner\'/);
   assert.match(source, /\(!hasOverrides&&!categoriesPatched\)/);
   assert.match(source, /categoriesPatched=hasOverrides/);
-  assert.match(route, /spending-assistant\.js\?v=20260829categories1/);
+  assert.match(route, /spending-assistant\.js\?v=20260829categories2/);
+});
+
+test('chatbot accepts a unique merchant and decimal amount without a date or dollar sign', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'spending-assistant.js'), 'utf8');
+  const context = {
+    window: {},
+    document: { readyState: 'loading', addEventListener() {} },
+    setTimeout() {},
+    fetch() {},
+    T: [
+      { date: '2026-08-28', m: 'Venmo', a: 5.50, p: false, c: 'Other', s: 'Other', n: '' },
+      { date: '2026-08-28', m: 'Sephora', a: 27.72, p: false, c: 'Personal Care', s: 'Personal Care', n: '' }
+    ]
+  };
+  vm.createContext(context);
+  vm.runInContext(source.replace(/\}\)\(\);\s*$/, 'window.__categoryTest={suggest:suggest,setSession:function(value){session=value}};})();'), context);
+  context.window.__categoryTest.setSession({ role: 'owner' });
+  const result = context.window.__categoryTest.suggest('recategorize the 5.50 Venmo transaction to Personal Care');
+  assert.equal(result.transaction.date, '2026-08-28');
+  assert.equal(result.transaction.merchant, 'Venmo');
+  assert.equal(result.transaction.amount, 5.50);
+  assert.equal(result.category, 'Personal Care');
+  assert.equal(result.subcategory, 'Personal Care');
+
+  context.T.push({ date: '2026-08-27', m: 'Venmo', a: 5.50, p: false, c: 'Other', s: 'Other', n: '' });
+  const ambiguous = context.window.__categoryTest.suggest('recategorize the 5.50 Venmo transaction to Personal Care');
+  assert.match(ambiguous.error, /2 matching transactions.*Add the date/);
 });
