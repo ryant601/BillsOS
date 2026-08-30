@@ -3,6 +3,28 @@
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
 
+function normalizeBillPaymentsBalance(stamp) {
+  const expected = { institution: 'TD Bank', name: 'Bill Payments', officialName: 'TD BEYOND CHECKING', mask: '6189' };
+  const account = stamp && stamp.account;
+  const exactAccount = account && account.institution === expected.institution && account.name === expected.name &&
+    account.officialName === expected.officialName && String(account.mask || '') === expected.mask;
+  if (!stamp || stamp.schema !== 'billsos-bill-payments-balance' || stamp.version !== 1 || !exactAccount) return null;
+  if (!stamp.balance || !Object.prototype.hasOwnProperty.call(stamp.balance, 'available')) return null;
+  const available = stamp.balance.available;
+  if (typeof available !== 'number' || !Number.isFinite(available) || available < 0 || stamp.balance.currency !== 'USD') return null;
+  if (typeof stamp.bankingAsOf !== 'string' || Number.isNaN(Date.parse(stamp.bankingAsOf))) return null;
+  if (stamp.source !== 'Finances' || stamp.sourceField !== 'balances.available') return null;
+  return {
+    schema: stamp.schema,
+    version: stamp.version,
+    account: expected,
+    balance: { available, currency: 'USD' },
+    bankingAsOf: stamp.bankingAsOf,
+    source: 'Finances',
+    sourceField: 'balances.available'
+  };
+}
+
 function upsertScript(html, script) {
   const match = script.match(/src="([^"]+)/);
   if (!match) return html;
@@ -19,9 +41,14 @@ const appUi = String.raw`<script id="billsosAppUi">
   if(window.__billsosAppUi)return;
   window.__billsosAppUi=true;
 
+  var normalizeBillPaymentsBalance=${normalizeBillPaymentsBalance.toString()};
   var DONE_KEY='billsos-generated-done-v5',AMOUNT_KEY='billsos-amount-adjust-v1',DATE_KEY='billsos-pay-adjust-v1',RULE_ID='__billsos_system_rules__';
-  var homeState={data:null,upcoming:[],metrics:{start:0,income:0,outflow:0,end:0}};
+  var homeState={data:null,upcoming:[],metrics:{start:0,income:0,outflow:0,end:0},bankBalance:null};
   function money(value){return Number(value||0).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0})}
+  function bankMoney(value){return Number(value).toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2})}
+  function bankAsOf(value){try{return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(new Date(value))}catch(_e){return 'timestamp unavailable'}}
+  function applyBankBalance(stamp){if(!stamp)return;homeState.bankBalance=stamp;var card=document.querySelector('[data-bo-detail="cash"]'),value=card&&card.querySelector('.bo-kpi-value'),note=card&&card.querySelector('.bo-kpi-note');if(value&&note){value.textContent=bankMoney(stamp.balance.available);note.textContent='Bank balance as of '+bankAsOf(stamp.bankingAsOf)}}
+  function loadBankBalance(){fetch('/bill-payments-balance.json?home='+Date.now(),{cache:'no-store'}).then(function(response){if(!response.ok)throw new Error('balance unavailable');return response.json()}).then(function(candidate){var stamp=normalizeBillPaymentsBalance(candidate);if(stamp)applyBankBalance(stamp)}).catch(function(){})}
   function esc(value){return String(value==null?'':value).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
   function text(node){return String(node&&node.textContent||'').trim()}
   function num(node){var raw=text(node).replace(/[^0-9.-]/g,'');return Number(raw||0)}
@@ -97,7 +124,7 @@ const appUi = String.raw`<script id="billsosAppUi">
 
   function openDetail(kind){
     var drawer=document.getElementById('boDetailDrawer'),title=document.getElementById('boDetailTitle'),sub=document.getElementById('boDetailSubtitle'),content=document.getElementById('boDetailContent');if(!drawer||!title||!content)return;
-    var data=homeState.data||{},c=homeState.metrics||{},upcoming=homeState.upcoming||[];
+    var data=homeState.data||{},c=homeState.metrics||{},upcoming=homeState.upcoming||[],bank=homeState.bankBalance;
     if(kind==='upcoming'){
       title.textContent='Upcoming bills';sub.textContent='Bills and calendar status for the next 14 days';
       content.innerHTML='<div class="bo-detail-list">'+(upcoming.length?upcoming.map(function(x){return upcomingRow(x,true)}).join(''):'<div class="bo-empty">No bills are due in the next 14 days.</div>')+'</div><a class="bo-detail-action" href="/?view=calendar">Open calendar</a>';
@@ -106,7 +133,7 @@ const appUi = String.raw`<script id="billsosAppUi">
     } else if(kind==='ending'){
       title.textContent='Projected month end';sub.textContent='How the projection is built';content.innerHTML='<div class="bo-detail-breakdown"><div class="bo-detail-breakdown-row"><span>Starting balance</span><strong>'+money(c.start)+'</strong></div><div class="bo-detail-breakdown-row"><span>Income</span><strong>+'+money(c.income)+'</strong></div><div class="bo-detail-breakdown-row"><span>Outflow</span><strong>−'+money(Math.abs(c.outflow))+'</strong></div><div class="bo-detail-breakdown-row"><span>Projected ending</span><strong>'+money(c.end)+'</strong></div></div><a class="bo-detail-action" href="/?view=calendar">Review calendar</a>';
     } else {
-      title.textContent='Cash available';sub.textContent='Current planning balance';content.innerHTML='<div class="bo-detail-breakdown"><div class="bo-detail-breakdown-row"><span>Current available</span><strong>'+money(c.start||c.end)+'</strong></div><div class="bo-detail-breakdown-row"><span>Projected month end</span><strong>'+money(c.end)+'</strong></div></div><a class="bo-detail-action" href="/?view=calendar">View cash-flow calendar</a>';
+      if(bank){title.textContent='Cash available';sub.textContent='TD Bank · Bill Payments ••••6189';content.innerHTML='<div class="bo-detail-breakdown"><div class="bo-detail-breakdown-row"><span>Available balance</span><strong>'+bankMoney(bank.balance.available)+'</strong></div><div class="bo-detail-breakdown-row"><span>Bank balance as of</span><strong>'+bankAsOf(bank.bankingAsOf)+'</strong></div></div><a class="bo-detail-action" href="/?view=calendar">View cash-flow calendar</a>'}else{title.textContent='Cash available';sub.textContent='Current planning balance';content.innerHTML='<div class="bo-detail-breakdown"><div class="bo-detail-breakdown-row"><span>Current available</span><strong>'+money(c.start||c.end)+'</strong></div><div class="bo-detail-breakdown-row"><span>Projected month end</span><strong>'+money(c.end)+'</strong></div></div><a class="bo-detail-action" href="/?view=calendar">View cash-flow calendar</a>'}
     }
     document.body.classList.add('bo-detail-open');drawer.setAttribute('aria-hidden','false')
   }
@@ -117,9 +144,10 @@ const appUi = String.raw`<script id="billsosAppUi">
     document.body.classList.add('bo-home-active');installDetailDrawer();
     var home=document.createElement('main');home.id='boHome';home.className='bo-home is-active';home.innerHTML='<section class="bo-home-head"><div><h1>'+greeting()+', Ryan</h1><p>Here is what is happening with your cash flow.</p></div><div class="bo-month">'+new Date().toLocaleString([], {month:'long',year:'numeric'})+'</div></section><section class="bo-kpis" id="boHomeKpis"></section><section class="bo-home-grid"><article class="bo-panel"><h2>Upcoming bills</h2><div id="boUpcoming" class="bo-upcoming"><div class="bo-empty">Loading upcoming bills…</div></div></article><aside><article class="bo-panel"><h2>Quick actions</h2><div class="bo-actions"><a class="bo-action" href="/control#bills">＋ Add bill</a><a class="bo-action" href="/control#income">＋ Add income</a><a class="bo-action" href="/control#bills">＋ One-time item</a><a class="bo-action" href="/?view=calendar">Open calendar</a></div></article><article class="bo-panel bo-attention"><h2>Attention</h2><div id="boAttention" class="bo-empty">Checking your month…</div></article></aside></section>';
     document.body.appendChild(home);
+    loadBankBalance();
     fetch('/api/bills?home='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(data){
       var upcoming=upcomingBills(data),openUpcoming=upcoming.filter(function(x){return !x.completed}),total=openUpcoming.reduce(function(s,x){return s+x.amount},0),income=(data.income||[]).filter(function(x){return x&&x.active!==false}).reduce(function(s,x){return s+Math.abs(Number(x.amount||0))},0);homeState.data=data;homeState.upcoming=upcoming;
-      function renderMetrics(){var c=readCalendarMetrics();homeState.metrics=c;var cards=[['cash','Cash available',c.start||c.end||0,'Current planning balance','▣'],['upcoming','Upcoming (14 days)',openUpcoming.length+' due',money(total)+' remaining','▦'],['income','Income remaining',income,money(income)+' scheduled','♙'],['ending','Projected month end',c.end||0,c.end<0?'Needs attention':'On track','↗']];document.getElementById('boHomeKpis').innerHTML=cards.map(function(x){return '<article class="bo-kpi is-clickable" data-bo-detail="'+x[0]+'" role="button" tabindex="0"><span class="bo-kpi-chevron">›</span><div class="bo-kpi-label">'+x[1]+'</div><div class="bo-kpi-value">'+(typeof x[2]==='number'?money(x[2]):x[2])+'</div><div class="bo-kpi-note">'+x[3]+'</div><div class="bo-kpi-icon">'+x[4]+'</div></article>'}).join('');document.querySelectorAll('[data-bo-detail]').forEach(function(card){card.onclick=function(){openDetail(this.dataset.boDetail)};card.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail(this.dataset.boDetail)}}});var attention=document.getElementById('boAttention');attention.className=c.end<0?'bo-attention-item':'bo-empty';attention.textContent=c.end<0?'Projected month end is below zero. Review the calendar.':'No urgent cash-flow issues detected.'}
+      function renderMetrics(){var c=readCalendarMetrics();homeState.metrics=c;var cards=[['cash','Cash available',c.start||c.end||0,'Current planning balance','▣'],['upcoming','Upcoming (14 days)',openUpcoming.length+' due',money(total)+' remaining','▦'],['income','Income remaining',income,money(income)+' scheduled','♙'],['ending','Projected month end',c.end||0,c.end<0?'Needs attention':'On track','↗']];document.getElementById('boHomeKpis').innerHTML=cards.map(function(x){return '<article class="bo-kpi is-clickable" data-bo-detail="'+x[0]+'" role="button" tabindex="0"><span class="bo-kpi-chevron">›</span><div class="bo-kpi-label">'+x[1]+'</div><div class="bo-kpi-value">'+(typeof x[2]==='number'?money(x[2]):x[2])+'</div><div class="bo-kpi-note">'+x[3]+'</div><div class="bo-kpi-icon">'+x[4]+'</div></article>'}).join('');applyBankBalance(homeState.bankBalance);document.querySelectorAll('[data-bo-detail]').forEach(function(card){card.onclick=function(){openDetail(this.dataset.boDetail)};card.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail(this.dataset.boDetail)}}});var attention=document.getElementById('boAttention');attention.className=c.end<0?'bo-attention-item':'bo-empty';attention.textContent=c.end<0?'Projected month end is below zero. Review the calendar.':'No urgent cash-flow issues detected.'}
       renderMetrics();setTimeout(renderMetrics,1200);
       document.getElementById('boUpcoming').innerHTML=upcoming.length?upcoming.map(function(x){return upcomingRow(x,false)}).join(''):'<div class="bo-empty">No bills due in the next 14 days.</div>'
     }).catch(function(){document.getElementById('boUpcoming').innerHTML='<div class="bo-empty">Could not load upcoming bills.</div>'})
@@ -152,3 +180,5 @@ fs.readFileSync = function patchedReadFileSync(filePath, options) {
   if (!html.includes('id="billsosAppUi"')) html = html.replace('</body>', appUi + '\n</body>');
   return Buffer.isBuffer(result) ? Buffer.from(html, 'utf8') : html;
 };
+
+module.exports.normalizeBillPaymentsBalance = normalizeBillPaymentsBalance;

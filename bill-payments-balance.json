@@ -1,0 +1,17 @@
+{
+  "schema": "billsos-bill-payments-balance",
+  "version": 1,
+  "account": {
+    "institution": "TD Bank",
+    "name": "Bill Payments",
+    "officialName": "TD BEYOND CHECKING",
+    "mask": "6189"
+  },
+  "balance": {
+    "available": 1459.92,
+    "currency": "USD"
+  },
+  "bankingAsOf": "2026-08-29T10:22:27.449259Z",
+  "source": "Finances",
+  "sourceField": "balances.available"
+}
