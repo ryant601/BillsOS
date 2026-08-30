@@ -28,9 +28,12 @@ test('Viewer writes are 403 while Owner writes are allowed', () => {
   const owner = access.readSession(access.createSession(access.authenticate('owner', 'owner-secret')));
   assert.equal(access.requestAccessDecision(viewer, 'POST', '/api/bills').status, 403);
   assert.equal(access.requestAccessDecision(viewer, 'POST', '/api/checkmarks').status, 403);
+  assert.equal(access.requestAccessDecision(viewer, 'POST', '/api/spending/category-overrides').status, 403);
+  assert.equal(access.requestAccessDecision(viewer, 'DELETE', '/api/spending/category-overrides/example').status, 403);
   assert.equal(access.requestAccessDecision(viewer, 'PATCH', '/api/bills/calendar-state').status, 403);
   assert.deepEqual(access.requestAccessDecision(owner, 'POST', '/api/bills'), { allowed: true });
   assert.deepEqual(access.requestAccessDecision(owner, 'PATCH', '/api/bills/calendar-state'), { allowed: true });
+  assert.deepEqual(access.requestAccessDecision(owner, 'POST', '/api/spending/category-overrides'), { allowed: true });
 });
 
 test('Viewer sync cannot mutate server state', () => {

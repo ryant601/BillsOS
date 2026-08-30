@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const registerAssistantApi = require("./assistant-api");
 const { createAccessControl } = require("./access-control");
+const { createSpendingCategoryStore } = require("./spending-category-overrides");
 const { calendarRevision, writeReadonlySnapshot } = require("./readonly-calendar-preload");
 const {
   applyCalendarStatePatch,
@@ -15,6 +16,10 @@ const access = createAccessControl(process.env);
 const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, "data");
 const CHECKMARK_FILE = path.join(DATA_DIR, "checkmarks.json");
 const BILLS_FILE = path.join(DATA_DIR, "bills.json");
+const spendingCategoryStore = createSpendingCategoryStore({
+  dataDir: DATA_DIR,
+  snapshotPath: path.join(__dirname, "spending", "index.html")
+});
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: "2mb" }));
@@ -334,6 +339,27 @@ app.patch("/api/bills/calendar-state", (req, res) => {
     res.json({ ...saved, revision: exported.revision, readonlyGeneratedAt: exported.generatedAt });
   } catch (_err) {
     res.status(500).json({ error: "Could not save calendar state" });
+  }
+});
+
+app.get("/api/spending/category-overrides", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json(spendingCategoryStore.publicState());
+});
+
+app.post("/api/spending/category-overrides", (req, res) => {
+  try {
+    res.status(201).json(spendingCategoryStore.save(req.body, req.billsosSession.username));
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.status ? error.message : "Could not save the category change" });
+  }
+});
+
+app.delete("/api/spending/category-overrides/:id", (req, res) => {
+  try {
+    res.json({ removed: spendingCategoryStore.remove(req.params.id, req.billsosSession.username) });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.status ? error.message : "Could not undo the category change" });
   }
 });
 

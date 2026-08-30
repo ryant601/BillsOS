@@ -55,7 +55,7 @@ function spendingHistoryPatch(html){
 
 function spendingAssistantPatch(html){
   if(html.includes('/spending-assistant.js'))return html;
-  return html.replace('</body>','<script defer src="/spending-assistant.js?v=20260828a"></script>\n</body>');
+  return html.replace('</body>','<script defer src="/spending-assistant.js?v=20260829categories1"></script>\n</body>');
 }
 
 function serveSpendingHtml(filePath, includeLiveStamp, res, next){
