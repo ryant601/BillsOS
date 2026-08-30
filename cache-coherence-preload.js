@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20260829billsbalance1';
+const BUILD = '20260830income14d1';
 const CRITICAL_ASSETS = [
   'billsos-cross-device-sync-v2.js',
   'billsos-sidebar-calculator.js',
@@ -13,7 +13,8 @@ const CRITICAL_ASSETS = [
   'day-details-enhance.js',
   'billsos-v2-ui.js',
   'assistant-calendar-consistency.js',
-  'calendar-event-scroll-fix.js'
+  'calendar-event-scroll-fix.js',
+  'income-14day-home.js'
 ];
 
 function forceVersion(html) {
@@ -35,6 +36,12 @@ function ensureAssistantConsistency(html, isDashboard) {
 function ensureCalendarEventScroll(html, isDashboard) {
   if (!isDashboard || html.includes('id="billsosCalendarEventScrollFixScript"')) return html;
   const tag = '<script id="billsosCalendarEventScrollFixScript" defer src="/calendar-event-scroll-fix.js?v=' + BUILD + '"></script>';
+  return html.replace('</body>', tag + '\n</body>');
+}
+
+function ensureIncome14Day(html, isDashboard) {
+  if (!isDashboard || html.includes('id="billsosIncome14DayHome"')) return html;
+  const tag = '<script id="billsosIncome14DayHome" defer src="/income-14day-home.js?v=' + BUILD + '"></script>';
   return html.replace('</body>', tag + '\n</body>');
 }
 
@@ -87,6 +94,7 @@ fs.readFileSync = function coherentReadFileSync(filePath, options) {
   let updated = forceVersion(html);
   updated = ensureAssistantConsistency(updated, isDashboard);
   updated = ensureCalendarEventScroll(updated, isDashboard);
+  updated = ensureIncome14Day(updated, isDashboard);
   updated = removeLegacySpendingHeaderLink(updated, isDashboard);
   updated = ensureSpendingSidebar(updated);
   return Buffer.isBuffer(result) ? Buffer.from(updated, 'utf8') : updated;
