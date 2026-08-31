@@ -37,4 +37,14 @@ test('custom calendar scrollbar is mandatory in the dashboard preload path', () 
   assert.match(preload, /calendar-event-scroll-fix\.js\?v=' \+ BUILD/);
   assert.match(preload, /billsosCalendarEventScrollFixScript/);
   assert.match(preload, /CRITICAL_ASSETS[\s\S]*calendar-event-scroll-fix\.js/);
+  assert.match(preload, /CRITICAL_ASSETS[\s\S]*billsos-card-editor\.js/);
+});
+
+test('card editor preserves the fixed viewport and compacts events without replacing the BillsOS scrollbar', () => {
+  const editor = read('billsos-card-editor.js');
+  assert.match(editor, /height:172px!important;min-height:172px!important;max-height:172px!important/);
+  assert.match(editor, /flex:0 0 76px!important;height:76px!important/);
+  assert.match(editor, /scrollbar-width:none!important/);
+  assert.match(editor, /min-height:36px!important/);
+  assert.match(editor, /grid-template-columns:18px minmax\(0,1fr\) 22px 22px!important/);
 });

@@ -36,6 +36,21 @@ test('a calendar row becomes eligible only after its final real day', () => {
   );
 });
 
+test('September partial rows ignore blanks and stay open until their last real date passes', () => {
+  assert.deepEqual(policy.calendarRows(2026, 9), [
+    { number: 1, startDay: 1, endDay: 5 },
+    { number: 2, startDay: 6, endDay: 12 },
+    { number: 3, startDay: 13, endDay: 19 },
+    { number: 4, startDay: 20, endDay: 26 },
+    { number: 5, startDay: 27, endDay: 30 }
+  ]);
+  assert.deepEqual(policy.eligibleRows(2026, 9, new Date(2026, 8, 5)), []);
+  assert.deepEqual(
+    policy.eligibleRows(2026, 9, new Date(2026, 8, 6)).map(row => [row.startDay, row.endDay]),
+    [[1, 5]]
+  );
+});
+
 test('runtime uses current panel dates, default collapse, local overrides, and bulk expansion', () => {
   const source = read('billsos-week-toggle.js');
   assert.match(source, /billsos-hidden-weeks-v2/);
@@ -57,5 +72,5 @@ test('all week-toggle loaders request the current cache build', () => {
   assert.match(read('billsos-sidebar-calculator.js'), /billsos-week-toggle\.js\?v=20260828rowcollapse1/);
   assert.match(read('control.html'), /action-log\.js\?v=20260828rowcollapse1/);
   assert.match(read('action-log.js'), /billsos-week-toggle\.js\?v=20260828rowcollapse1/);
-  assert.match(read('cache-coherence-preload.js'), /const BUILD = '20260829billsbalance1'/);
+  assert.match(read('cache-coherence-preload.js'), /const BUILD = '20260831calendarregression1'/);
 });

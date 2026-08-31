@@ -2,12 +2,13 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20260830income14d1';
+const BUILD = '20260831calendarregression1';
 const CRITICAL_ASSETS = [
   'billsos-cross-device-sync-v2.js',
   'billsos-sidebar-calculator.js',
   'amount-balance-hotfix.js',
   'billsos-balance-editor.js',
+  'billsos-card-editor.js',
   'cashflow-engine.js',
   'billsos-week-toggle.js',
   'day-details-enhance.js',
