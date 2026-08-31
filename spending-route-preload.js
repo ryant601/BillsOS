@@ -6,6 +6,7 @@ const express = require('express');
 const originalStatic = express.static;
 
 const SPENDING_PATH = path.join(__dirname, 'spending', 'index.html');
+const SPENDING_BUILD = '20260831txrecategorize1';
 
 function spendingThemePatch(html) {
   if (html.includes('id="billsosSpendingThemePatch"')) return html;
@@ -45,24 +46,29 @@ function spendingNavPatch(html) {
 
 function spendingDataStampPatch(html){
   if(html.includes('/spending-data-stamp.js'))return html;
-  return html.replace('</body>','<script defer src="/spending-data-stamp.js?v=20260828b"></script>\n</body>');
+  return html.replace('</body>','<script defer src="/spending-data-stamp.js?v='+SPENDING_BUILD+'"></script>\n</body>');
 }
 
 function spendingHistoryPatch(html){
   if(html.includes('/spending-history.js'))return html;
-  return html.replace('</body>','<script defer src="/spending-history.js?v=20260828a"></script>\n</body>');
+  return html.replace('</body>','<script defer src="/spending-history.js?v='+SPENDING_BUILD+'"></script>\n</body>');
 }
 
 function spendingAssistantPatch(html){
   if(html.includes('/spending-assistant.js'))return html;
-  return html.replace('</body>','<script defer src="/spending-assistant.js?v=20260829categories2"></script>\n</body>');
+  return html.replace('</body>','<script defer src="/spending-assistant.js?v='+SPENDING_BUILD+'"></script>\n</body>');
+}
+
+function spendingTransactionRecategorizePatch(html){
+  if(html.includes('/spending-transaction-recategorize.js'))return html;
+  return html.replace('</body>','<script defer src="/spending-transaction-recategorize.js?v='+SPENDING_BUILD+'"></script>\n</body>');
 }
 
 function serveSpendingHtml(filePath, includeLiveStamp, res, next){
   try {
     let html = fs.readFileSync(filePath, 'utf8');
     html = spendingLayoutPatch(html);
-    html = spendingNavPatch(spendingHistoryPatch(spendingAssistantPatch(html)));
+    html = spendingNavPatch(spendingHistoryPatch(spendingAssistantPatch(spendingTransactionRecategorizePatch(html))));
     if(includeLiveStamp) html = spendingDataStampPatch(html);
     html = spendingThemePatch(html);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
