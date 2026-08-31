@@ -75,7 +75,18 @@ test('client assistant requires confirmation, preserves totals, and uses the ver
   assert.match(source, /session\.role!==\'owner\'/);
   assert.match(source, /\(!hasOverrides&&!categoriesPatched\)/);
   assert.match(source, /categoriesPatched=hasOverrides/);
-  assert.match(route, /spending-assistant\.js\?v=20260829categories2/);
+  assert.match(route, /spending-assistant\.js\?v='\+SPENDING_BUILD/);
+  assert.match(route, /spending-transaction-recategorize\.js\?v='\+SPENDING_BUILD/);
+});
+
+test('transaction rows can open an owner-only recategorization picker without changing totals', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'spending-transaction-recategorize.js'), 'utf8');
+  assert.match(source, /closest\('\.tx \.row'\)/);
+  assert.match(source, /Recategorize transaction/);
+  assert.match(source, /session\.role!==\'owner\'/);
+  assert.match(source, /\/api\/spending\/category-overrides/);
+  assert.match(source, /Only this transaction moves\. Spending totals and balances stay unchanged/);
+  assert.match(source, /More than one transaction matches this row, so BillsOS will not guess/);
 });
 
 test('chatbot accepts a unique merchant and decimal amount without a date or dollar sign', () => {
