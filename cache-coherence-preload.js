@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20260831rowcontrols2';
+const BUILD = '20260831singlelinebills1';
 const CRITICAL_ASSETS = [
   'billsos-cross-device-sync-v2.js',
   'billsos-sidebar-calculator.js',
@@ -16,6 +16,7 @@ const CRITICAL_ASSETS = [
   'assistant-calendar-consistency.js',
   'calendar-event-scroll-fix.js',
   'calendar-row-controls-fix.js',
+  'calendar-single-line-bills.js',
   'income-14day-home.js'
 ];
 
@@ -44,6 +45,12 @@ function ensureCalendarEventScroll(html, isDashboard) {
 function ensureCalendarRowControls(html, isDashboard) {
   if (!isDashboard || html.includes('id="billsosCalendarRowControlsFix"')) return html;
   const tag = '<script id="billsosCalendarRowControlsFix" defer src="/calendar-row-controls-fix.js?v=' + BUILD + '"></script>';
+  return html.replace('</body>', tag + '\n</body>');
+}
+
+function ensureCalendarSingleLineBills(html, isDashboard) {
+  if (!isDashboard || html.includes('id="billsosCalendarSingleLineBills"')) return html;
+  const tag = '<script id="billsosCalendarSingleLineBills" defer src="/calendar-single-line-bills.js?v=' + BUILD + '"></script>';
   return html.replace('</body>', tag + '\n</body>');
 }
 
@@ -103,6 +110,7 @@ fs.readFileSync = function coherentReadFileSync(filePath, options) {
   updated = ensureAssistantConsistency(updated, isDashboard);
   updated = ensureCalendarEventScroll(updated, isDashboard);
   updated = ensureCalendarRowControls(updated, isDashboard);
+  updated = ensureCalendarSingleLineBills(updated, isDashboard);
   updated = ensureIncome14Day(updated, isDashboard);
   updated = removeLegacySpendingHeaderLink(updated, isDashboard);
   updated = ensureSpendingSidebar(updated);
