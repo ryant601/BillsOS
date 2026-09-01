@@ -108,7 +108,7 @@ test('transaction rows can open an owner-only recategorization picker without ch
   assert.match(source, /More than one transaction matches this row, so BillsOS will not guess/);
   assert.match(source, /occurrence:t\.occurrence/);
   assert.match(source, /dataset\.txOccurrence/);
-  assert.match(route, /20260901txduplicate1/);
+  assert.match(route, /20260901txdateformat1/);
 });
 
 test('clicked duplicate row resolves to its stable occurrence', () => {
@@ -123,8 +123,8 @@ test('clicked duplicate row resolves to its stable occurrence', () => {
   };
   const parent = { querySelectorAll() { return rows; } };
   const makeRow = () => ({
-    children: [{ textContent: '2026-08-31' }], dataset: {}, parentElement: parent,
-    textContent: '2026-08-31 Wawa ATM cash Pending $45.00',
+    children: [{ textContent: '08-31' }], dataset: {}, parentElement: parent,
+    textContent: '08-31 Wawa ATM cash Pending $45.00',
     querySelector(selector) { return selector === '.amt' ? { textContent: '$45.00' } : null; }
   });
   const rows = [makeRow(), makeRow()];
