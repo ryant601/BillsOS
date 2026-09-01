@@ -98,15 +98,20 @@ function createSpendingCategoryStore(options = {}) {
     const tx = request.transaction && typeof request.transaction === 'object' ? request.transaction : {};
     const requested = {
       date: cleanText(tx.date), merchant: cleanText(tx.merchant), amount: Number(tx.amount),
-      pending: tx.pending === true, note: cleanText(tx.note)
+      pending: tx.pending === true, note: cleanText(tx.note), occurrence: Number(tx.occurrence)
     };
     if (!/^20\d{2}-\d{2}-\d{2}$/.test(requested.date) || !requested.merchant || !Number.isFinite(requested.amount)) {
       throw Object.assign(new Error('An exact date, merchant, and amount are required'), { status: 400 });
     }
     const rows = snapshotRows();
-    const exact = rows.filter(row => row.date === requested.date && row.merchant === requested.merchant && cents(row.amount) === cents(requested.amount) && row.pending === requested.pending && row.note === requested.note);
+    const stable = rows.filter(row => row.date === requested.date && row.merchant === requested.merchant && cents(row.amount) === cents(requested.amount));
+    const hasOccurrence = Number.isInteger(requested.occurrence) && requested.occurrence > 0;
+    const exact = hasOccurrence
+      ? [stable[requested.occurrence - 1]].filter(row => row && row.pending === requested.pending && row.note === requested.note)
+      : stable.filter(row => row.pending === requested.pending && row.note === requested.note);
     if (exact.length !== 1) {
-      throw Object.assign(new Error(exact.length ? 'More than one transaction matches; no change was saved' : 'The exact transaction is no longer in the current report'), { status: 409 });
+      const ambiguous = !hasOccurrence && exact.length > 1;
+      throw Object.assign(new Error(ambiguous ? 'More than one transaction matches; no change was saved' : 'The exact transaction is no longer in the current report'), { status: 409 });
     }
     const category = cleanText(request.category);
     const subcategory = cleanText(request.subcategory);

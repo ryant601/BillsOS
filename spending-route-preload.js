@@ -6,7 +6,7 @@ const express = require('express');
 const originalStatic = express.static;
 
 const SPENDING_PATH = path.join(__dirname, 'spending', 'index.html');
-const SPENDING_BUILD = '20260831txrecategorize1';
+const SPENDING_BUILD = '20260901txduplicate1';
 
 function spendingThemePatch(html) {
   if (html.includes('id="billsosSpendingThemePatch"')) return html;

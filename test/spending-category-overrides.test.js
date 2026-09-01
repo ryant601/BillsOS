@@ -52,6 +52,24 @@ test('rejects a stale or inexact transaction without overwriting the last known 
   assert.equal(fs.readFileSync(path.join(dir, 'spending-category-overrides.json'), 'utf8'), before);
 });
 
+test('uses occurrence to safely recategorize one of two identical transactions', () => {
+  const duplicateSnapshot = '<script>const T=[' + [
+    { date: '2026-08-31', m: 'Wawa', a: 45, p: true, c: 'Financial / Fees', s: 'Cash withdrawal', n: 'ATM cash' },
+    { date: '2026-08-31', m: 'Wawa', a: 45, p: true, c: 'Financial / Fees', s: 'Cash withdrawal', n: 'ATM cash' },
+    { date: '2026-08-30', m: 'Wawa', a: 12, p: false, c: 'Gas / Transportation', s: 'Gas', n: '' }
+  ].map(JSON.stringify).join(',') + '];const M={};</script>';
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'billsos-duplicate-categories-'));
+  const snapshotPath = path.join(dir, 'index.html');
+  fs.writeFileSync(snapshotPath, duplicateSnapshot);
+  const store = createSpendingCategoryStore({ dataDir: dir, snapshotPath });
+  const transaction = { date: '2026-08-31', merchant: 'Wawa', amount: 45, pending: true, note: 'ATM cash' };
+  assert.throws(() => store.save({ transaction, category: 'Gas / Transportation', subcategory: 'Gas' }, 'owner'), /More than one transaction matches/);
+  const saved = store.save({ transaction: { ...transaction, occurrence: 2 }, category: 'Gas / Transportation', subcategory: 'Gas' }, 'owner');
+  assert.equal(saved.match.occurrence, 2);
+  assert.equal(saved.originalSubcategory, 'Cash withdrawal');
+  assert.equal(store.publicState().overrides.length, 1);
+});
+
 test('rejects invented category pairs and supports audited undo', () => {
   const { store } = fixture();
   const request = {
@@ -81,12 +99,39 @@ test('client assistant requires confirmation, preserves totals, and uses the ver
 
 test('transaction rows can open an owner-only recategorization picker without changing totals', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'spending-transaction-recategorize.js'), 'utf8');
+  const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
   assert.match(source, /closest\('\.tx \.row'\)/);
   assert.match(source, /Recategorize transaction/);
   assert.match(source, /session\.role!==\'owner\'/);
   assert.match(source, /\/api\/spending\/category-overrides/);
   assert.match(source, /Only this transaction moves\. Spending totals and balances stay unchanged/);
   assert.match(source, /More than one transaction matches this row, so BillsOS will not guess/);
+  assert.match(source, /occurrence:t\.occurrence/);
+  assert.match(source, /dataset\.txOccurrence/);
+  assert.match(route, /20260901txduplicate1/);
+});
+
+test('clicked duplicate row resolves to its stable occurrence', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'spending-transaction-recategorize.js'), 'utf8');
+  const context = {
+    window: {},
+    document: { readyState: 'loading', addEventListener() {} },
+    T: [
+      { date: '2026-08-31', m: 'Wawa', a: 45, p: true, c: 'Financial / Fees', s: 'Cash withdrawal', n: 'ATM cash' },
+      { date: '2026-08-31', m: 'Wawa', a: 45, p: true, c: 'Financial / Fees', s: 'Cash withdrawal', n: 'ATM cash' }
+    ]
+  };
+  const parent = { querySelectorAll() { return rows; } };
+  const makeRow = () => ({
+    children: [{ textContent: '2026-08-31' }], dataset: {}, parentElement: parent,
+    textContent: '2026-08-31 Wawa ATM cash Pending $45.00',
+    querySelector(selector) { return selector === '.amt' ? { textContent: '$45.00' } : null; }
+  });
+  const rows = [makeRow(), makeRow()];
+  vm.createContext(context);
+  vm.runInContext(source.replace(/\}\)\(\);\s*$/, 'window.__txTest={findTransaction:findTransaction};})();'), context);
+  const found = context.window.__txTest.findTransaction(rows[1]);
+  assert.equal(found.transaction.occurrence, 2);
 });
 
 test('chatbot accepts a unique merchant and decimal amount without a date or dollar sign', () => {
