@@ -7,18 +7,20 @@ const path = require('node:path');
 
 test('Everyday Spending native section contains the current snapshot', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'spending', 'index.html'), 'utf8');
+  const snapshot = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'spending', 'current.json'), 'utf8'));
   assert.match(html, /Everyday Spending/);
   assert.match(html, /Spending since transfer/);
-  assert.match(html, /\$2,250\.00/);
-  assert.match(html, /\$1,602\.25/);
-  assert.match(html, /\$1,208\.26/);
-  assert.match(html, /Dining/);
-  assert.match(html, /Groceries/);
+  assert.match(html, /fetch\('\/spending\/current\.json\?v=20260902-1633'/);
+  assert.equal(snapshot.metrics.transferredIn, 2250);
+  assert.equal(snapshot.metrics.totalSpent, 2361.36);
+  assert.equal(snapshot.metrics.remainingAvailable, 291.91);
+  assert.ok(snapshot.transactions.some(row => row.c === 'Dining'));
+  assert.ok(snapshot.transactions.some(row => row.c === 'Groceries'));
 });
 
 test('dashboard preload injects Everyday Spending navigation and cache version', () => {
   const preload = fs.readFileSync(path.join(__dirname, '..', 'cache-coherence-preload.js'), 'utf8');
-  assert.match(preload, /20260831calendarregression1/);
+  assert.match(preload, /20260902calendarstableedit1/);
   assert.match(preload, /a\.href='\/spending\/'/);
   assert.match(preload, /nav\.querySelector\('a\[href="\/spending\/"\]'\)/);
   assert.match(preload, /ensureSpendingSidebar/);

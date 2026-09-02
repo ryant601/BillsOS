@@ -1,0 +1,17 @@
+{
+  "schema": "billsos-savings-account-balance",
+  "version": 1,
+  "account": {
+    "institution": "TD Bank",
+    "name": "Savings Account",
+    "officialName": "TD SIMPLE SAVINGS",
+    "mask": "2468"
+  },
+  "balance": {
+    "available": 1500,
+    "currency": "USD"
+  },
+  "bankingAsOf": "2026-09-02T20:33:19.846990Z",
+  "source": "Finances",
+  "sourceField": "balances.available"
+}

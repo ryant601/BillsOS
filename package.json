@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.47",
+  "version": "1.0.48",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.08.29-spending-categories.2",
-    "buildDate": "2026-08-29",
-    "buildNote": "Allow unique merchant and amount recategorization without requiring a date or dollar sign."
+    "version": "v2026.09.02-savings-tile.1",
+    "buildDate": "2026-09-02",
+    "buildNote": "Show the exact TD Savings available balance and banking timestamp on Home."
   },
   "scripts": {
     "start": "node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js -r ./spending-route-preload.js server.js",
