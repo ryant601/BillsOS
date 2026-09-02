@@ -12,6 +12,7 @@ const home = fs.readFileSync(path.join(root, 'html-hotfix-loader.js'), 'utf8');
 const cache = fs.readFileSync(path.join(root, 'cache-coherence-preload.js'), 'utf8');
 const stamp = JSON.parse(fs.readFileSync(path.join(root, 'bill-payments-balance.json'), 'utf8'));
 const savingsStamp = JSON.parse(fs.readFileSync(path.join(root, 'savings-account-balance.json'), 'utf8'));
+const spendingSnapshot = JSON.parse(fs.readFileSync(path.join(root, 'spending/current.json'), 'utf8'));
 
 test('static balance stamp uses the exact TD Bill Payments identity and available field', () => {
   assert.deepEqual(stamp.account, {
@@ -71,7 +72,7 @@ test('missing or invalid balance data preserves the existing card fallback', () 
   assert.equal(bridge.normalizeBillPaymentsBalance({ ...stamp, balance: { current: 1460.39, currency: 'USD' } }), null);
   assert.match(home, /if\(stamp\)applyBankBalance\(stamp\)/);
   assert.match(home, /\.catch\(function\(\)\{\}\)/);
-  assert.match(home, /\['cash','Cash available',c\.start\|\|c\.end\|\|0,'Current planning balance'/);
+  assert.match(home, /\['cash','Bills account',c\.start\|\|c\.end\|\|0,'Available balance'/);
   assert.doesNotMatch(home, /available:\s*0/);
   assert.equal(bridge.normalizeSavingsAccountBalance(null), null);
   assert.equal(bridge.normalizeSavingsAccountBalance({ ...savingsStamp, balance: { available: null, currency: 'USD' } }), null);
@@ -79,18 +80,38 @@ test('missing or invalid balance data preserves the existing card fallback', () 
   assert.match(home, /if\(stamp\)applySavingsBalance\(stamp\)/);
 });
 
-test('home renders a responsive, display-only Savings tile without changing sidebar navigation', () => {
+test('home renders three responsive, display-only account tiles without changing sidebar navigation', () => {
   assert.match(home, /fetch\('\/savings-account-balance\.json\?home='/);
   assert.match(home, /querySelector\('\[data-bo-detail="savings"\]'\)/);
-  assert.match(home, /\['savings','Savings available','—','Mortgage funding account','◇'\]/);
+  assert.match(home, /\['savings','Savings account','—','Mortgage funding','◇'\]/);
   assert.match(home, /TD Bank · Savings Account ••••2468/);
   assert.match(home, /bankMoney\(savings\.balance\.available\)/);
+  assert.match(home, /\['cash','Bills account'/);
+  assert.match(home, /\['spending-account','Everyday spending','—','Available balance','◉'\]/);
+  assert.match(home, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(home, /@media\(max-width:760px\).*\.bo-kpis\{grid-template-columns:1fr\}/);
   assert.equal((home.match(/function installSidebar\(\)/g) || []).length, 1);
   assert.doesNotMatch(home, /cashflow-engine/);
 });
 
-test('home client fetch patches only the Cash Available value and note and keeps the detail display-only', () => {
+test('Everyday Spending tile uses only the published available balance and banking timestamp', () => {
+  const normalized = bridge.normalizeEverydaySpendingBalance(spendingSnapshot);
+  assert.deepEqual(normalized, {
+    available: 291.91,
+    bankingAsOf: '2026-09-02T20:33:19.846990Z'
+  });
+  assert.equal(bridge.normalizeEverydaySpendingBalance(null), null);
+  assert.equal(bridge.normalizeEverydaySpendingBalance({ ...spendingSnapshot, metrics: { remainingAvailable: null } }), null);
+  assert.equal(bridge.normalizeEverydaySpendingBalance({ ...spendingSnapshot, freshness: { balanceAsOf: null } }), null);
+  assert.match(home, /fetch\('\/spending\/current\.json\?home='/);
+  assert.match(home, /querySelector\('\[data-bo-detail="spending-account"\]'\)/);
+  assert.match(home, /if\(stamp\)applySpendingBalance\(stamp\)/);
+  assert.match(home, /bankMoney\(spending\.available\)/);
+  assert.match(home, /TD Bank · Everything Else/);
+  assert.match(home, /href="\/spending\/"/);
+});
+
+test('home client fetch patches only the Bills account value and note and keeps the detail display-only', () => {
   assert.match(home, /fetch\('\/bill-payments-balance\.json\?home='/);
   assert.match(home, /querySelector\('\[data-bo-detail="cash"\]'\)/);
   assert.match(home, /card&&card\.querySelector\('\.bo-kpi-value'\)/);
