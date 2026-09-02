@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.50",
+  "version": "1.0.51",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.09.02-calendar-ending.1",
+    "version": "v2026.09.02-forward-outlook.1",
     "buildDate": "2026-09-02",
-    "buildNote": "Use the related month's final calendar-card ending balance for Home projection."
+    "buildNote": "Show final calendar-card ending balances for every remaining month of the year on Home."
   },
   "scripts": {
     "start": "node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js -r ./spending-route-preload.js server.js",
