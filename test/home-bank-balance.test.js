@@ -89,7 +89,7 @@ test('home renders three responsive, display-only account tiles without changing
   assert.match(home, /\['cash','Bills account'/);
   assert.match(home, /\['spending-account','Everyday spending','—','Available balance','◉'\]/);
   assert.match(home, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(home, /@media\(max-width:760px\).*\.bo-kpis,\.bo-forecast-grid\{grid-template-columns:1fr\}/);
+  assert.match(home, /@media\(max-width:760px\).*\.bo-kpis\{grid-template-columns:1fr\}/);
   assert.equal((home.match(/function installSidebar\(\)/g) || []).length, 1);
   assert.doesNotMatch(home, /cashflow-engine/);
 });
@@ -120,12 +120,14 @@ test('month-end outlook comes from every remaining month final calendar card', (
   assert.match(home, /function remainingMonthEnds\(\)/);
   assert.match(home, /month<=12/);
   assert.match(home, /Month-end outlook/);
-  assert.match(home, /Projected ending balances through December/);
+  assert.match(home, /Ending balances through December/);
   assert.match(home, /data-bo-detail="forecast-/);
   assert.doesNotMatch(home, /\['ending','Projected month end'/);
   assert.match(home, /end:calendarEnd==null\?num\(document\.querySelector\('#kend'\)\):calendarEnd/);
-  assert.match(home, /\.bo-forecast-grid\{display:grid;grid-template-columns:repeat\(4/);
-  assert.match(home, /@media\(max-width:760px\).*\.bo-kpis,\.bo-forecast-grid\{grid-template-columns:1fr\}/);
+  assert.match(home, /bo-kpi bo-outlook-card/);
+  assert.match(home, /\.bo-outlook-values\{display:grid;grid-template-columns:repeat\(4/);
+  assert.doesNotMatch(home, /bo-forecast-grid|id="boForecastGrid"/);
+  assert.match(home, /@media\(max-width:760px\).*\.bo-kpis\{grid-template-columns:1fr\}/);
   assert.match(home, /setTimeout\(renderMetrics,2400\)/);
 });
 
