@@ -111,6 +111,16 @@ test('Everyday Spending tile uses only the published available balance and banki
   assert.match(home, /href="\/spending\/"/);
 });
 
+test('Projected month end comes from the related month final calendar card', () => {
+  assert.match(home, /\.month-panel\[data-year=/);
+  assert.match(home, /\[data-month=/);
+  assert.match(home, /panel\.querySelectorAll\('\.day\[data-day\]'\)/);
+  assert.match(home, /Number\(a\.dataset\.day\|\|0\)-Number\(b\.dataset\.day\|\|0\)/);
+  assert.match(home, /querySelector\('\.eod b,\.endline b'\)/);
+  assert.match(home, /end:calendarEnd==null\?num\(document\.querySelector\('#kend'\)\):calendarEnd/);
+  assert.match(home, /setTimeout\(renderMetrics,2400\)/);
+});
+
 test('home client fetch patches only the Bills account value and note and keeps the detail display-only', () => {
   assert.match(home, /fetch\('\/bill-payments-balance\.json\?home='/);
   assert.match(home, /querySelector\('\[data-bo-detail="cash"\]'\)/);
