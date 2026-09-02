@@ -16,9 +16,17 @@ function cleanText(value) {
 }
 
 function parseSnapshotTransactions(html) {
-  const match = String(html || '').match(/const T=(\[[\s\S]*?\]);const M=/);
-  if (!match) throw Object.assign(new Error('Everyday Spending snapshot is unavailable'), { status: 503 });
-  const rows = JSON.parse(match[1]);
+  const source = String(html || '');
+  let rows = null;
+  try {
+    const current = JSON.parse(source);
+    if (current && Array.isArray(current.transactions)) rows = current.transactions;
+  } catch (_err) {}
+  if (!rows) {
+    const match = source.match(/const T=(\[[\s\S]*?\]);const M=/);
+    if (match) rows = JSON.parse(match[1]);
+  }
+  if (!rows) throw Object.assign(new Error('Everyday Spending snapshot is unavailable'), { status: 503 });
   if (!Array.isArray(rows)) throw Object.assign(new Error('Everyday Spending snapshot is invalid'), { status: 503 });
   return rows.map(row => ({
     date: cleanText(row.date),

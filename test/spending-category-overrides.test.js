@@ -14,6 +14,11 @@ const snapshot = '<script>const T=[' + [
   { date: '2026-08-28', m: 'McDonald\'s', a: 11.08, p: true, c: 'Dining', s: 'Fast Food', n: '' }
 ].map(JSON.stringify).join(',') + '];const M={};</script>';
 
+const currentSnapshot = JSON.stringify({ transactions: [
+  { date: '2026-08-31', m: 'Wawa', a: 45, p: true, c: 'Financial / Fees', s: 'Cash withdrawal', n: 'ATM cash' },
+  { date: '2026-08-31', m: 'Apple', a: 10.65, p: true, c: 'Services', s: 'Services', n: '' }
+] });
+
 function fixture() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'billsos-categories-'));
   const snapshotPath = path.join(dir, 'index.html');
@@ -36,6 +41,28 @@ test('parses exact transaction identity and uses the requested existing category
   assert.equal(saved.subcategory, 'Gas');
   assert.equal(saved.originalCategory, 'Household / Shopping');
   assert.equal(store.publicState().overrides.length, 1);
+});
+
+test('parses the current JSON transaction source used by the live spending page', () => {
+  const rows = parseSnapshotTransactions(currentSnapshot);
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows[0], {
+    date: '2026-08-31', merchant: 'Wawa', amount: 45, pending: true,
+    category: 'Financial / Fees', subcategory: 'Cash withdrawal', note: 'ATM cash'
+  });
+});
+
+test('saves an override against the live current JSON snapshot', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'billsos-current-json-'));
+  const snapshotPath = path.join(dir, 'current.json');
+  fs.writeFileSync(snapshotPath, currentSnapshot);
+  const store = createSpendingCategoryStore({ dataDir: dir, snapshotPath });
+  const saved = store.save({
+    transaction: { date: '2026-08-31', merchant: 'Wawa', amount: 45, pending: true, note: 'ATM cash', occurrence: 1 },
+    category: 'Services', subcategory: 'Services'
+  }, 'owner');
+  assert.equal(saved.match.occurrence, 1);
+  assert.equal(saved.category, 'Services');
 });
 
 test('rejects a stale or inexact transaction without overwriting the last known state', () => {
@@ -108,7 +135,9 @@ test('transaction rows can open an owner-only recategorization picker without ch
   assert.match(source, /More than one transaction matches this row, so BillsOS will not guess/);
   assert.match(source, /occurrence:t\.occurrence/);
   assert.match(source, /dataset\.txOccurrence/);
-  assert.match(route, /20260901txdateformat1/);
+  assert.match(source, /fetch\('current\.json'/);
+  assert.match(route, /20260901txdatasource1/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8'), /"spending", "current\.json"/);
 });
 
 test('clicked duplicate row resolves to its stable occurrence', () => {
@@ -116,11 +145,12 @@ test('clicked duplicate row resolves to its stable occurrence', () => {
   const context = {
     window: {},
     document: { readyState: 'loading', addEventListener() {} },
-    T: [
+    fetch() {},
+  };
+  const transactions = [
       { date: '2026-08-31', m: 'Wawa', a: 45, p: true, c: 'Financial / Fees', s: 'Cash withdrawal', n: 'ATM cash' },
       { date: '2026-08-31', m: 'Wawa', a: 45, p: true, c: 'Financial / Fees', s: 'Cash withdrawal', n: 'ATM cash' }
-    ]
-  };
+  ];
   const parent = { querySelectorAll() { return rows; } };
   const makeRow = () => ({
     children: [{ textContent: '08-31' }], dataset: {}, parentElement: parent,
@@ -129,7 +159,8 @@ test('clicked duplicate row resolves to its stable occurrence', () => {
   });
   const rows = [makeRow(), makeRow()];
   vm.createContext(context);
-  vm.runInContext(source.replace(/\}\)\(\);\s*$/, 'window.__txTest={findTransaction:findTransaction};})();'), context);
+  vm.runInContext(source.replace(/\}\)\(\);\s*$/, 'window.__txTest={findTransaction:findTransaction,setSource:function(value){sourceRows=value}};})();'), context);
+  context.window.__txTest.setSource(transactions);
   const found = context.window.__txTest.findTransaction(rows[1]);
   assert.equal(found.transaction.occurrence, 2);
 });
