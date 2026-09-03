@@ -74,6 +74,23 @@ test('subcategory transaction counts sit apart from the type name', () => {
   assert.match(route, /\.sub>summary b\+small\{margin-left:8px/);
 });
 
+test('runway days stop the morning the paycheck lands', () => {
+  const runway = require('../spending-runway.js');
+  const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
+  assert.equal(runway.runwayDays('2026-09-02', '2026-09-04'), 2);
+  assert.equal(runway.runwayDays('2026-09-03', '2026-09-04'), 1);
+  assert.equal(runway.runwayDays('2026-09-04', '2026-09-04'), 0);
+  assert.equal(runway.runwayDays('2026-09-05', '2026-09-04'), 0);
+  const adjusted = runway.applyRunway({
+    cycle: { nextTransfer: '2026-09-04', daysLeft: 3 },
+    metrics: { remainingAvailable: 241.08, availablePerDay: 80.36 }
+  }, '2026-09-02');
+  assert.equal(adjusted.cycle.daysLeft, 2);
+  assert.equal(adjusted.metrics.availablePerDay, 120.54);
+  assert.match(route, /spending-runway\.js\?v='\s*\+\s*SPENDING_BUILD/);
+  assert.match(route, /html = spendingRunwayPatch\(html\)/);
+});
+
 test('Everyday Spending keeps the shared app sidebar and drops the page-owned nav', () => {
   const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
   assert.match(route, /html = String\(html \|\| ''\)\.replace\(/);

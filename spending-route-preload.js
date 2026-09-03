@@ -6,7 +6,12 @@ const express = require('express');
 const originalStatic = express.static;
 
 const SPENDING_PATH = path.join(__dirname, 'spending', 'index.html');
-const SPENDING_BUILD = '20260903space1';
+const SPENDING_BUILD = '20260903runway1';
+
+function spendingRunwayPatch(html) {
+  if (html.includes('/spending-runway.js')) return html;
+  return html.replace('</head>', '<script src="/spending-runway.js?v=' + SPENDING_BUILD + '"></script>\n</head>');
+}
 
 function spendingThemePatch(html) {
   if (html.includes('id="billsosSpendingThemePatch"')) return html;
@@ -98,6 +103,7 @@ function serveSpendingHtml(filePath, includeLiveStamp, res, next){
     html = spendingLayoutPatch(html);
     html = spendingNavPatch(spendingHistoryPatch(spendingAssistantPatch(spendingTransactionRecategorizePatch(html))));
     if(includeLiveStamp) html = spendingDataStampPatch(html);
+    html = spendingRunwayPatch(html);
     html = spendingThemePatch(html);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store, max-age=0');
