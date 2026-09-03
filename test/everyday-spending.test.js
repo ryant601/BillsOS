@@ -36,6 +36,18 @@ test('Everyday Spending shell clears the fixed sidebar on desktop and returns fu
   assert.match(route, /class="bo-spending"/);
 });
 
+test('Where it went category rows keep icon, name, and full amount on one line', () => {
+  const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
+  const assistant = fs.readFileSync(path.join(__dirname, '..', 'spending-assistant.js'), 'utf8');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'spending', 'index.html'), 'utf8');
+  assert.match(route, /grid-template-columns:40px minmax\(0,1fr\) auto 22px!important/);
+  assert.match(route, /white-space:nowrap;justify-self:end/);
+  assert.match(assistant, /<div class="ico">'\+meta\[0\]/);
+  assert.doesNotMatch(assistant, /!hasOverrides&&!categoriesPatched/);
+  assert.match(html, /class="ico"/);
+  assert.match(html, /grid-template-columns:40px minmax\(0,1fr\) auto 22px/);
+});
+
 test('Everyday Spending keeps the shared app sidebar and drops the page-owned nav', () => {
   const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
   assert.match(route, /html = String\(html \|\| ''\)\.replace\(/);
