@@ -25,7 +25,7 @@ test('static balance stamp uses the exact TD Bill Payments identity and availabl
   assert.equal(stamp.version, 1);
   assert.equal(stamp.balance.available, 411.43);
   assert.equal(stamp.balance.currency, 'USD');
-  assert.equal(stamp.bankingAsOf, '2026-09-02T20:33:19.846990Z');
+  assert.equal(stamp.bankingAsOf, '2026-09-03T01:31:01.615529Z');
   assert.equal(stamp.source, 'Finances');
   assert.equal(stamp.sourceField, 'balances.available');
 });
@@ -97,8 +97,8 @@ test('home renders three responsive, display-only account tiles without changing
 test('Everyday Spending tile uses only the published available balance and banking timestamp', () => {
   const normalized = bridge.normalizeEverydaySpendingBalance(spendingSnapshot);
   assert.deepEqual(normalized, {
-    available: 291.91,
-    bankingAsOf: '2026-09-02T20:33:19.846990Z'
+    available: 241.08,
+    bankingAsOf: '2026-09-03T01:31:01.615529Z'
   });
   assert.equal(bridge.normalizeEverydaySpendingBalance(null), null);
   assert.equal(bridge.normalizeEverydaySpendingBalance({ ...spendingSnapshot, metrics: { remainingAvailable: null } }), null);
@@ -145,6 +145,6 @@ test('home client fetch patches only the Bills account value and note and keeps 
 test('cache build changes without changing the server start or preload chain', () => {
   const expectedStart = 'node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js -r ./spending-route-preload.js server.js';
   assert.equal(packageJson.scripts.start, expectedStart);
-  assert.match(cache, /const BUILD = '20260903claude4'/);
+  assert.match(cache, /const BUILD = '20260903sort1'/);
   assert.doesNotMatch(packageJson.scripts.start, /bill-payments-balance|bills-account-balance/);
 });

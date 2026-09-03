@@ -122,9 +122,9 @@ input[type="checkbox"]{accent-color:#c15f3c}
   .tabs button,.tab{flex:0 1 calc(33.333% - 8px)!important;min-width:0!important;max-width:none!important;padding:16px 10px!important;text-align:center!important;white-space:nowrap!important}
   .card{overflow:hidden!important}
   .kpis{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;overflow:visible!important;width:100%!important}
-  .kpi{min-width:0!important;min-height:96px!important;padding:13px 12px!important;border-radius:14px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-start!important;overflow:hidden!important}
+  .kpi{min-width:0!important;min-height:96px!important;padding:13px 12px!important;border-radius:14px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-start!important;overflow:visible!important}
   .kpi span{font-size:10px!important;line-height:1.18!important;letter-spacing:.09em!important;white-space:normal!important;overflow-wrap:anywhere!important;max-width:100%!important}
-  .kpi b{font-size:clamp(24px,8.4vw,34px)!important;line-height:1!important;letter-spacing:-.035em!important;white-space:nowrap!important;max-width:100%!important;overflow:hidden!important;text-overflow:clip!important}
+  .kpi b{font-size:clamp(22px,7.6vw,34px)!important;line-height:1!important;letter-spacing:-.035em!important;white-space:nowrap!important;max-width:100%!important;overflow:visible!important;text-overflow:clip!important}
   .kpis .kpi:nth-child(5),.kpis .kpi:nth-child(6){grid-column:auto!important}
   .kpis .kpi:nth-child(5) b{font-size:clamp(23px,7.6vw,32px)!important;padding:2px 8px!important;border-radius:10px!important}
 }

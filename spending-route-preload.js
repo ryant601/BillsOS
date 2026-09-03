@@ -6,7 +6,7 @@ const express = require('express');
 const originalStatic = express.static;
 
 const SPENDING_PATH = path.join(__dirname, 'spending', 'index.html');
-const SPENDING_BUILD = '20260903where1';
+const SPENDING_BUILD = '20260903sort1';
 
 function spendingThemePatch(html) {
   if (html.includes('id="billsosSpendingThemePatch"')) return html;
@@ -32,9 +32,20 @@ body.bo-spending .cat>summary .name{min-width:0;overflow:hidden;font-size:15px;f
 body.bo-spending .cat>summary .name small{display:block;margin-top:3px;font-size:11px;font-weight:500;color:var(--muted,#6b6a63)}
 body.bo-spending .cat>summary>b{font-size:18px!important;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap;justify-self:end}
 body.bo-spending .cat>summary .chev,body.bo-spending .cat>summary>span:last-child{justify-self:center;color:var(--muted,#6b6a63);font-size:16px;line-height:1}
-body.bo-spending .sub>summary,body.bo-spending .vendor>summary{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:12px!important;align-items:center!important}
-body.bo-spending .sub .right,body.bo-spending .vendor .right{display:flex;align-items:center;gap:8px;white-space:nowrap}
-body.bo-spending .sub .right b,body.bo-spending .vendor .right b{font-variant-numeric:tabular-nums}
+body.bo-spending .cards{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+body.bo-spending .metric,body.bo-spending .r{min-width:0}
+body.bo-spending .metric b,body.bo-spending .r b{white-space:nowrap;overflow:visible;font-variant-numeric:tabular-nums}
+body.bo-spending .rgrid{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+body.bo-spending .sub>summary,body.bo-spending .vendor>summary{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:12px!important;align-items:center!important;min-width:0!important}
+body.bo-spending .sub>summary>div:first-child,body.bo-spending .vendor>summary>div:first-child,body.bo-spending .sub>summary .name,body.bo-spending .vendor>summary .name{min-width:0;overflow:hidden}
+body.bo-spending .sub .right,body.bo-spending .vendor .right{display:flex;align-items:center;gap:8px;white-space:nowrap;flex:0 0 auto}
+body.bo-spending .sub .right b,body.bo-spending .vendor .right b{font-variant-numeric:tabular-nums;white-space:nowrap}
+body.bo-spending .row{display:grid!important;grid-template-columns:72px minmax(0,1fr) auto max-content!important;column-gap:8px!important;align-items:center!important;min-width:0!important}
+body.bo-spending .row>div,body.bo-spending .row>strong{min-width:0;overflow:hidden}
+body.bo-spending .row .status{white-space:nowrap}
+body.bo-spending .row .amt{white-space:nowrap;justify-self:end;font-variant-numeric:tabular-nums;overflow:visible}
+@media(max-width:980px){body.bo-spending .cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}body.bo-spending .rgrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:760px){body.bo-spending .row{grid-template-columns:54px minmax(0,1fr) max-content!important}}
 html[data-billsos-theme="dark"] body.bo-spending .cat>summary .ico{background:color-mix(in srgb,var(--accent,#d97757) 22%,#30302e)}
 html[data-billsos-theme="dark"] body.bo-spending .cat>summary .name small{color:#b3b0a8!important}
 </style>`;

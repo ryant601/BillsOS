@@ -10,17 +10,17 @@ test('Everyday Spending native section contains the current snapshot', () => {
   const snapshot = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'spending', 'current.json'), 'utf8'));
   assert.match(html, /Everyday Spending/);
   assert.match(html, /Spending since transfer/);
-  assert.match(html, /fetch\('\/spending\/current\.json\?v=20260902-1633'/);
+  assert.match(html, /fetch\('\/spending\/current\.json\?v=20260903-013101'/);
   assert.equal(snapshot.metrics.transferredIn, 2250);
-  assert.equal(snapshot.metrics.totalSpent, 2361.36);
-  assert.equal(snapshot.metrics.remainingAvailable, 291.91);
+  assert.equal(snapshot.metrics.totalSpent, 2412.19);
+  assert.equal(snapshot.metrics.remainingAvailable, 241.08);
   assert.ok(snapshot.transactions.some(row => row.c === 'Dining'));
   assert.ok(snapshot.transactions.some(row => row.c === 'Groceries'));
 });
 
 test('dashboard preload injects Everyday Spending navigation and cache version', () => {
   const preload = fs.readFileSync(path.join(__dirname, '..', 'cache-coherence-preload.js'), 'utf8');
-  assert.match(preload, /20260903claude4/);
+  assert.match(preload, /20260903sort1/);
   assert.match(preload, /a\.href='\/spending\/'/);
   assert.match(preload, /nav\.querySelector\('a\[href="\/spending\/"\]'\)/);
   assert.match(preload, /ensureSpendingSidebar/);
@@ -46,6 +46,25 @@ test('Where it went category rows keep icon, name, and full amount on one line',
   assert.doesNotMatch(assistant, /!hasOverrides&&!categoriesPatched/);
   assert.match(html, /class="ico"/);
   assert.match(html, /grid-template-columns:40px minmax\(0,1fr\) auto 22px/);
+});
+
+test('Where it went vendors and transactions sort high to low by amount', () => {
+  const assistant = fs.readFileSync(path.join(__dirname, '..', 'spending-assistant.js'), 'utf8');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'spending', 'index.html'), 'utf8');
+  assert.match(assistant, /Object\.keys\(vendors\)\.sort\(function\(a,b\)\{return sum\(vendors\[b\]\)-sum\(vendors\[a\]\)\}\)/);
+  assert.match(assistant, /tx\.slice\(\)\.sort\(function\(a,b\)\{return Number\(b\.amount\|\|0\)-Number\(a\.amount\|\|0\)/);
+  assert.doesNotMatch(assistant, /tx\.sort\(function\(a,b\)\{return a\.date\.localeCompare/);
+  assert.match(html, /const rows=\[\.\.\.r\]\.sort\(\(a,b\)=>Number\(b\.a\|\|0\)-Number\(a\.a\|\|0\)\)/);
+  assert.match(html, /Object\.entries\(vs\)\.sort\(\(a,b\)=>total\(b\[1\]\)-total\(a\[1\]\)\)/);
+});
+
+test('Spending and home amount rows keep the dollar value fully visible', () => {
+  const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
+  const home = fs.readFileSync(path.join(__dirname, '..', 'html-hotfix-loader.js'), 'utf8');
+  assert.match(route, /grid-template-columns:72px minmax\(0,1fr\) auto max-content!important/);
+  assert.match(route, /\.row \.amt\{white-space:nowrap;justify-self:end/);
+  assert.match(home, /bo-outlook-month strong\{display:block;margin-top:5px;overflow:visible/);
+  assert.match(home, /\.bo-outlook-values\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
 });
 
 test('Everyday Spending keeps the shared app sidebar and drops the page-owned nav', () => {
