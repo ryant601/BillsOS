@@ -391,7 +391,7 @@ app.get(["/control", "/control.html"], (req, res) => {
   try {
     const controlPath = path.join(__dirname, "control.html");
     let html = fs.readFileSync(controlPath, "utf8");
-    const themeLink = '<link rel="stylesheet" href="/control-theme.css?v=20260903claude1">';
+    const themeLink = '<link rel="stylesheet" href="/control-theme.css?v=20260903claude2">';
     const previewScript = '<script defer src="/control-preview.js?v=20260826transparent1"></script>';
     if (!html.includes("/control-theme.css")) html = html.replace("</head>", `${themeLink}\n</head>`);
     if (!html.includes("/control-preview.js")) html = html.replace("</body>", `${previewScript}\n</body>`);

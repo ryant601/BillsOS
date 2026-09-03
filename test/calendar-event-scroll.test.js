@@ -45,6 +45,7 @@ test('card editor preserves the fixed viewport and compacts events without repla
   assert.match(editor, /height:172px!important;min-height:172px!important;max-height:172px!important/);
   assert.match(editor, /flex:0 0 76px!important;height:76px!important/);
   assert.match(editor, /scrollbar-width:none!important/);
-  assert.match(editor, /min-height:36px!important/);
-  assert.match(editor, /grid-template-columns:18px minmax\(0,1fr\) 22px 22px!important/);
+  assert.match(editor, /min-height:35px!important/);
+  assert.match(editor, /grid-template-columns:minmax\(0,1fr\)!important/);
+  assert.doesNotMatch(editor, /grid-template-columns:18px minmax\(0,1fr\) 22px 22px/);
 });

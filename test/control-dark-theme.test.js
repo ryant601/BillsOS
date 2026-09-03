@@ -19,5 +19,5 @@ test('Control Center owns the Claude warm-neutral dark theme', () => {
   assert.match(css, /\.tablewrap,[\s\S]*background:#30302E!important/);
   assert.match(css, /outline:2px solid #D97757!important/);
   assert.doesNotMatch(css, /body\.billsos-control[\s\S]{0,300}#f0b47e/i);
-  assert.match(server, /control-theme\.css\?v=20260903claude1/);
+  assert.match(server, /control-theme\.css\?v=20260903claude2/);
 });

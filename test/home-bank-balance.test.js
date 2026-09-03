@@ -145,6 +145,6 @@ test('home client fetch patches only the Bills account value and note and keeps 
 test('cache build changes without changing the server start or preload chain', () => {
   const expectedStart = 'node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js -r ./spending-route-preload.js server.js';
   assert.equal(packageJson.scripts.start, expectedStart);
-  assert.match(cache, /const BUILD = '20260903claude1'/);
+  assert.match(cache, /const BUILD = '20260903claude2'/);
   assert.doesNotMatch(packageJson.scripts.start, /bill-payments-balance|bills-account-balance/);
 });
