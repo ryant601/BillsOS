@@ -151,7 +151,7 @@
     html[data-billsos-theme="dark"] th{background:#3a3a37!important;color:#b3b0a8!important;border-color:#3d3d3a!important}\
     html[data-billsos-theme="dark"] td{border-color:#343431!important}\
     html[data-billsos-theme="dark"] tr:hover td{background:#3a3a37!important}\
-    html[data-billsos-theme="dark"] .btn,html[data-billsos-theme="dark"] .linkbtn,html[data-billsos-theme="dark"] .tab,html[data-billsos-theme="dark"] #billsosThemeToggleV2{background:#3a3a37!important;color:#f5f4ef!important;border-color:#45453f!important;box-shadow:none!important}\
+    html[data-billsos-theme="dark"] .btn,html[data-billsos-theme="dark"] .linkbtn,html[data-billsos-theme="dark"] .tab,html[data-billsos-theme="dark"] #billsosThemeToggleV2,html[data-billsos-theme="dark"] #boMenu{background:#3a3a37!important;color:#f5f4ef!important;border-color:#45453f!important;box-shadow:none!important}\
     html[data-billsos-theme="dark"] .btn.primary,html[data-billsos-theme="dark"] .tab.active,html[data-billsos-theme="dark"] body.bo-app .btn.primary{background:#d97757!important;color:#241a15!important;border-color:transparent!important}\
     html[data-billsos-theme="dark"] #billsosThemeToggleV2 .bo-theme-icon{background:#3a2a23!important;color:#d97757!important}\
     html[data-billsos-theme="dark"] .ar-suggestion,html[data-billsos-theme="dark"] .ar-stat,html[data-billsos-theme="dark"] .ar-entry,html[data-billsos-theme="dark"] .ar-audit-row{background:#30302e!important;border-color:#3d3d3a!important;color:#f5f4ef!important}\

@@ -32,3 +32,13 @@ test('hash navigation switches the panel and active sidebar item', () => {
   assert.match(control, /BillsOSSyncSidebarActive\(id\)/);
   assert.match(control, /history\.replaceState\(null,'','#'\+id\)/);
 });
+
+test('calendar uses overlay hamburger navigation so day cells can use the full width', () => {
+  assert.match(loader, /body\.classList\.toggle\('bo-calendar', dashboard && view==='calendar'\)/);
+  assert.match(loader, /body\.bo-calendar #boMenu\{display:grid/);
+  assert.match(loader, /body\.bo-calendar\.bo-open \.bo-sidebar\{transform:translateX\(0\)\}/);
+  assert.match(loader, /body\.bo-calendar>\.wrap,body\.bo-calendar \.billsos-main>\.wrap\{margin-left:0!important/);
+  assert.match(loader, /body\.bo-calendar \.billsos-sidebar/);
+  assert.match(loader, /aria-label','Open navigation'/);
+  assert.doesNotMatch(loader, /body\.bo-home #boMenu\{display:grid/);
+});
