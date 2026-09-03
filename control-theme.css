@@ -1,31 +1,30 @@
 /* BillsOS Control Center · Calm Household skin · 2026-07-02 */
 :root{
-  --bg:#F5F4EF!important;
+  --bg:#eef1f4!important;
   --card:#FFFFFF!important;
-  --ink:#202623!important;
-  --mut:#6E7A73!important;
-  --faint:#8A928E!important;
-  --line:rgba(79,124,104,.18)!important;
-  --line2:rgba(79,124,104,.11)!important;
-  --green:#2F855A!important;
-  --in:#2F855A!important;
-  --red:#C53030!important;
-  --out:#C53030!important;
-  --warn:#C05621!important;
-  --gold:#C05621!important;
-  --xfer:#9A6B2F!important;
-  --blue:#4F7C68!important;
-  --primary:#4F7C68!important;
-  --softgreen:#E4F1EA!important;
-  --softred:#F8E7E4!important;
-  --softgold:#F5EBDD!important;
-  --softblue:#E7EFEA!important;
+  --ink:#121a1e!important;
+  --mut:#5c6a72!important;
+  --faint:#7a8790!important;
+  --line:rgba(26,111,118,.16)!important;
+  --line2:rgba(26,111,118,.10)!important;
+  --green:#1f7a56!important;
+  --in:#1f7a56!important;
+  --red:#b54b42!important;
+  --out:#b54b42!important;
+  --warn:#9a7230!important;
+  --gold:#9a7230!important;
+  --xfer:#9a7230!important;
+  --blue:#1a6f76!important;
+  --primary:#1a6f76!important;
+  --softgreen:#E5F4EC!important;
+  --softred:#F8E9E7!important;
+  --softgold:#F6EFD8!important;
+  --softblue:#E4F3F3!important;
 }
 body{
   background:
-    radial-gradient(circle at 9% -4%, rgba(127,181,157,.22), transparent 33%),
-    radial-gradient(circle at 92% 2%, rgba(192,86,33,.09), transparent 30%),
-    linear-gradient(135deg,#F5F4EF 0%,#ECEFE8 100%)!important;
+    radial-gradient(circle at 9% -4%, rgba(26,111,118,.14), transparent 33%),
+    linear-gradient(180deg,#eef1f4 0%,#e4eaef 100%)!important;
   color:var(--ink)!important;
 }
 .eyebrow{font-weight:900!important;color:var(--primary)!important;letter-spacing:.18em!important}
@@ -38,8 +37,8 @@ body{
   box-shadow:0 7px 18px rgba(45,66,55,.06)!important;
 }
 .btn.primary,.tab.active{
-  background:linear-gradient(135deg,#4F7C68,#7FB59D)!important;
-  border-color:rgba(79,124,104,.36)!important;
+  background:#1a6f76!important;
+  border-color:transparent!important;
   color:#fff!important;
 }
 .btn.danger{color:var(--red)!important}
@@ -49,7 +48,7 @@ body{
   border-radius:20px!important;
   box-shadow:0 18px 44px rgba(45,66,55,.09)!important;
 }
-.banner{background:#F5EBDD!important;border-color:rgba(192,86,33,.22)!important;color:#7A4D16!important}
+.banner{background:#F6EFD8!important;border-color:rgba(154,114,48,.20)!important;color:#7a5a1c!important}
 .advanced{background:rgba(255,255,255,.74)!important}
 input,select,textarea{
   background:rgba(255,255,255,.92)!important;
@@ -57,18 +56,18 @@ input,select,textarea{
   color:var(--ink)!important;
 }
 input:focus,select:focus,textarea:focus{
-  outline:2px solid rgba(79,124,104,.38)!important;
+  outline:2px solid rgba(26,111,118,.38)!important;
   outline-offset:2px!important;
-  box-shadow:0 0 0 4px rgba(79,124,104,.14)!important;
+  box-shadow:0 0 0 4px rgba(26,111,118,.14)!important;
 }
-th{background:#EEF2ED!important;color:var(--mut)!important}
+th{background:#F3F6F8!important;color:var(--mut)!important}
 th,td{border-bottom-color:var(--line2)!important}
-.pill{background:#EEF2EF!important;color:var(--mut)!important;border-color:var(--line)!important}
+.pill{background:#EEF3F5!important;color:var(--mut)!important;border-color:var(--line)!important}
 .pill.on{background:var(--softgreen)!important;color:var(--green)!important}
 .pill.off{background:var(--softred)!important;color:var(--red)!important}
 .pill.auto{background:var(--softblue)!important;color:var(--primary)!important}
-.pill.manual{background:var(--softgold)!important;color:#7A4D16!important}
-.code{background:#F8F7F2!important;border-color:var(--line)!important}
+.pill.manual{background:var(--softgold)!important;color:#7a5a1c!important}
+.code{background:#F3F6F8!important;border-color:var(--line)!important}
 
 /* Keep the Control Center aligned with the neutral BillsOS dark workspace. */
 html[data-billsos-theme="dark"] body.billsos-control{

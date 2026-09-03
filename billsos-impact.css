@@ -25,7 +25,7 @@
   gap:10px;
   min-height:30px;
   margin:4px 0 -2px;
-  color:var(--billsos-muted,#7d6f62);
+  color:var(--billsos-muted,#5c6a72);
   font-size:12px;
   font-weight:800;
 }
@@ -33,22 +33,22 @@
   content:"";
   flex:1;
   height:1px;
-  background:rgba(84,60,34,.10);
+  background:rgba(18,40,48,.10);
   order:3;
 }
 .weekToggleRow span{order:2;white-space:nowrap}
 .weekToggleBtn{
   order:1;
-  border:1px solid rgba(84,60,34,.13);
+  border:1px solid rgba(26,111,118,.16);
   border-radius:999px;
-  background:rgba(255,252,247,.74);
-  color:var(--billsos-ink,#231f1a);
+  background:#fff;
+  color:var(--billsos-ink,#121a1e);
   padding:5px 9px;
   font-size:11px;
   font-weight:800;
   cursor:pointer;
 }
-.weekToggleBtn:hover{background:rgba(244,224,202,.9)}
+.weekToggleBtn:hover{background:#e4f3f3}
 .day.week-hidden{display:none!important}
 .day{
   min-height:148px!important;
@@ -64,7 +64,7 @@
   scrollbar-width:thin;
 }
 .day .events::-webkit-scrollbar{width:5px}
-.day .events::-webkit-scrollbar-thumb{background:rgba(84,60,34,.22);border-radius:999px}
+.day .events::-webkit-scrollbar-thumb{background:rgba(26,111,118,.28);border-radius:999px}
 .day .ev{
   min-height:34px!important;
 }

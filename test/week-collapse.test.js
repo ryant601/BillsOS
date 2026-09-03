@@ -72,5 +72,5 @@ test('all week-toggle loaders request the current cache build', () => {
   assert.match(read('billsos-sidebar-calculator.js'), /billsos-week-toggle\.js\?v=20260828rowcollapse1/);
   assert.match(read('control.html'), /action-log\.js\?v=20260828rowcollapse1/);
   assert.match(read('action-log.js'), /billsos-week-toggle\.js\?v=20260828rowcollapse1/);
-  assert.match(read('cache-coherence-preload.js'), /const BUILD = '20260902calendarstableedit1'/);
+  assert.match(read('cache-coherence-preload.js'), /const BUILD = '20260903freshdesign1'/);
 });

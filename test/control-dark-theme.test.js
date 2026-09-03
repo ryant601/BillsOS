@@ -19,5 +19,5 @@ test('Control Center owns a neutral dark theme instead of the shared amber palet
   assert.match(css, /\.tablewrap,[\s\S]*background:#1B2025!important/);
   assert.match(css, /outline:2px solid #79B98D!important/);
   assert.doesNotMatch(css, /body\.billsos-control[\s\S]{0,300}#f0b47e/i);
-  assert.match(server, /control-theme\.css\?v=20260825controldark1/);
+  assert.match(server, /control-theme\.css\?v=20260903freshdesign1/);
 });

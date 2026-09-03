@@ -209,14 +209,15 @@ function loginPage(error = "") {
 <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BillsOS Login</title>
 <style>
-    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: white; min-height: 100vh; display: grid; place-items: center; }
-    .card { width: min(92vw, 380px); background: #111827; border: 1px solid #334155; border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
-    h1 { margin: 0 0 8px; font-size: 24px; }
-    p { margin: 0 0 18px; color: #cbd5e1; }
-    label { display: block; margin: 14px 0 6px; color: #cbd5e1; }
-    input { width: 100%; box-sizing: border-box; padding: 12px; border-radius: 10px; border: 1px solid #475569; background: #020617; color: white; font-size: 16px; }
-    button { width: 100%; margin-top: 18px; padding: 12px; border: 0; border-radius: 10px; background: #38bdf8; color: #082f49; font-weight: 700; font-size: 16px; }
-    .error { margin-top: 12px; color: #fecaca; font-size: 14px; }
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+    body { margin: 0; font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: radial-gradient(circle at 18% 0%, rgba(94,196,200,.16), transparent 34%), #0d1215; color: #eef3f5; min-height: 100vh; display: grid; place-items: center; }
+    .card { width: min(92vw, 380px); background: #161d22; border: 1px solid rgba(238,243,245,.12); border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+    h1 { margin: 0 0 8px; font-size: 24px; letter-spacing: -.04em; }
+    p { margin: 0 0 18px; color: #9aabb4; }
+    label { display: block; margin: 14px 0 6px; color: #9aabb4; font-size: 12px; font-weight: 700; }
+    input { width: 100%; box-sizing: border-box; padding: 12px; border-radius: 12px; border: 1px solid rgba(238,243,245,.16); background: #10161a; color: #eef3f5; font-size: 16px; }
+    button { width: 100%; margin-top: 18px; padding: 12px; border: 0; border-radius: 12px; background: #5ec4c8; color: #0d1215; font-weight: 800; font-size: 16px; }
+    .error { margin-top: 12px; color: #f0a8a0; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -388,7 +389,7 @@ app.get(["/control", "/control.html"], (req, res) => {
   try {
     const controlPath = path.join(__dirname, "control.html");
     let html = fs.readFileSync(controlPath, "utf8");
-    const themeLink = '<link rel="stylesheet" href="/control-theme.css?v=20260825controldark1">';
+    const themeLink = '<link rel="stylesheet" href="/control-theme.css?v=20260903freshdesign1">';
     const previewScript = '<script defer src="/control-preview.js?v=20260826transparent1"></script>';
     if (!html.includes("/control-theme.css")) html = html.replace("</head>", `${themeLink}\n</head>`);
     if (!html.includes("/control-preview.js")) html = html.replace("</body>", `${previewScript}\n</body>`);

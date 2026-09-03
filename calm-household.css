@@ -1,53 +1,52 @@
 /* BillsOS Calm Household skin · 2026-07-03 */
 :root{
-  --bg:#F5F4EF;
+  --bg:#eef1f4;
   --card:#FFFFFF;
   --glass:#FFFFFF;
-  --glass2:#F8F7F2;
-  --ink:#202623;
-  --mut:#6E7A73;
-  --faint:#8A928E;
-  --line:rgba(79,124,104,.18);
-  --line2:rgba(79,124,104,.11);
-  --in:#2F855A;
-  --in-dim:#276749;
-  --out:#C53030;
-  --red:#C53030;
-  --warn:#C05621;
-  --xfer:#9A6B2F;
-  --gold:#C05621;
-  --violet:#4F7C68;
-  --blue:#4F7C68;
-  --primary:#4F7C68;
-  --green:#2F855A;
-  --outflow:#C53030;
-  --billsos-warm-bg:#F5F4EF;
-  --billsos-warm-bg-2:#ECEFE8;
+  --glass2:#f6f9fb;
+  --ink:#121a1e;
+  --mut:#5c6a72;
+  --faint:#7a8790;
+  --line:rgba(26,111,118,.16);
+  --line2:rgba(26,111,118,.10);
+  --in:#1f7a56;
+  --in-dim:#1a6a4a;
+  --out:#b54b42;
+  --red:#b54b42;
+  --warn:#9a7230;
+  --xfer:#9a7230;
+  --gold:#9a7230;
+  --violet:#1a6f76;
+  --blue:#1a6f76;
+  --primary:#1a6f76;
+  --green:#1f7a56;
+  --outflow:#b54b42;
+  --billsos-warm-bg:#eef1f4;
+  --billsos-warm-bg-2:#e4eaef;
   --billsos-surface:rgba(255,255,255,.88);
   --billsos-surface-solid:#FFFFFF;
-  --billsos-ink:#202623;
-  --billsos-muted:#6E7A73;
-  --billsos-line:rgba(79,124,104,.18);
-  --billsos-accent:#4F7C68;
-  --billsos-accent-2:#7FB59D;
-  --billsos-green:#2F855A;
-  --billsos-red:#C53030;
-  --billsos-gold:#C05621;
-  --softgreen:#E4F1EA;
-  --softred:#F8E7E4;
-  --softgold:#F5EBDD;
-  --softblue:#E7EFEA;
+  --billsos-ink:#121a1e;
+  --billsos-muted:#5c6a72;
+  --billsos-line:rgba(26,111,118,.16);
+  --billsos-accent:#1a6f76;
+  --billsos-accent-2:#2d8d8f;
+  --billsos-green:#1f7a56;
+  --billsos-red:#b54b42;
+  --billsos-gold:#9a7230;
+  --softgreen:#E5F4EC;
+  --softred:#F8E9E7;
+  --softgold:#F6EFD8;
+  --softblue:#E4F3F3;
   color-scheme:light;
 }
 
 body{
   background:
-    radial-gradient(circle at 9% -4%, rgba(127,181,157,.22), transparent 33%),
-    radial-gradient(circle at 92% 2%, rgba(192,86,33,.09), transparent 30%),
-    linear-gradient(135deg,#F5F4EF 0%,#ECEFE8 100%)!important;
+    radial-gradient(circle at 9% -4%, rgba(26,111,118,.14), transparent 33%),
+    linear-gradient(180deg,#eef1f4 0%,#e4eaef 100%)!important;
   color:var(--ink)!important;
 }
-body::before{background:radial-gradient(60% 50% at 16% -6%, rgba(79,124,104,.08), transparent 72%),radial-gradient(56% 44% at 94% 4%, rgba(127,181,157,.09), transparent 74%)!important}
+body::before{background:radial-gradient(60% 50% at 16% -6%, rgba(26,111,118,.08), transparent 72%),radial-gradient(56% 44% at 94% 4%, rgba(45,141,143,.09), transparent 74%)!important}
 
 .hero,.card,.calPanel,.spark,.legend,.global-briefing,.reminders-panel,.detail-drawer,.drawer,.ops-card,.shortcut-panel,.status-hero,.conf-card,.status-card,.tablewrap{
   background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(248,249,245,.90))!important;
@@ -65,8 +64,8 @@ body::before{background:radial-gradient(60% 50% at 16% -6%, rgba(79,124,104,.08)
   box-shadow:0 7px 18px rgba(45,66,55,.06)!important;
 }
 .nav a:first-child,.btn.primary,.tab.active,.tabs button.active,.sheetGrid button.primary,.shortcut-actions button:not(.secondary){
-  background:linear-gradient(135deg,#4F7C68,#7FB59D)!important;
-  border-color:rgba(79,124,104,.36)!important;
+  background:#1a6f76!important;
+  border-color:transparent!important;
   color:#FFFFFF!important;
 }
 .btn.danger,.sheetGrid button.warn{color:var(--out)!important}
@@ -104,10 +103,10 @@ input,select,textarea,.sheetGrid input{
   border-color:var(--line)!important;
   color:var(--ink)!important;
 }
-input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px solid rgba(79,124,104,.38)!important;outline-offset:2px!important;box-shadow:0 0 0 4px rgba(79,124,104,.14)!important}
-input[type="checkbox"]{accent-color:#4F7C68}
-.tablewrap,table,th,td{border-color:var(--line2)!important}th{background:#EEF2ED!important;color:var(--mut)!important}td{color:var(--ink)!important}
-.bar,.pbar,.conf-bar{background:rgba(79,124,104,.13)!important}.bar i,.pbar i,.conf-bar i{background:linear-gradient(90deg,#4F7C68,#7FB59D)!important}
+input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2px solid rgba(26,111,118,.38)!important;outline-offset:2px!important;box-shadow:0 0 0 4px rgba(26,111,118,.14)!important}
+input[type="checkbox"]{accent-color:#1a6f76}
+.tablewrap,table,th,td{border-color:var(--line2)!important}th{background:#F3F6F8!important;color:var(--mut)!important}td{color:var(--ink)!important}
+.bar,.pbar,.conf-bar{background:rgba(26,111,118,.12)!important}.bar i,.pbar i,.conf-bar i{background:linear-gradient(90deg,#1a6f76,#2d8d8f)!important}
 .drawerBalanceBridge{display:none!important}
 
 @media(max-width:760px){
@@ -133,46 +132,45 @@ input[type="checkbox"]{accent-color:#4F7C68}
 }
 
 html[data-billsos-theme="dark"],body[data-billsos-theme="dark"]{
-  --bg:#111715;
-  --card:#1A2220;
-  --glass:#1A2220;
-  --glass2:#202A27;
-  --ink:#EEF2EF;
-  --mut:#A3ADA8;
-  --faint:#8F9B96;
-  --line:rgba(127,181,157,.24);
-  --line2:rgba(127,181,157,.15);
-  --in:#68D391;
-  --in-dim:#48BB78;
-  --out:#FC8181;
-  --red:#FC8181;
-  --warn:#F6AD55;
-  --xfer:#F6AD55;
-  --gold:#F6AD55;
-  --violet:#7FB59D;
-  --blue:#7FB59D;
-  --primary:#7FB59D;
-  --green:#68D391;
-  --outflow:#FC8181;
-  --billsos-warm-bg:#111715;
-  --billsos-warm-bg-2:#18201D;
-  --billsos-surface:rgba(26,34,32,.90);
-  --billsos-surface-solid:#1A2220;
-  --billsos-ink:#EEF2EF;
-  --billsos-muted:#A3ADA8;
-  --billsos-line:rgba(127,181,157,.24);
-  --billsos-accent:#7FB59D;
-  --billsos-accent-2:#A8D5C1;
-  --billsos-green:#68D391;
-  --billsos-red:#FC8181;
-  --billsos-gold:#F6AD55;
+  --bg:#0d1215;
+  --card:#161d22;
+  --glass:#161d22;
+  --glass2:#1a2228;
+  --ink:#eef3f5;
+  --mut:#9aabb4;
+  --faint:#7a8790;
+  --line:rgba(238,243,245,.12);
+  --line2:rgba(238,243,245,.08);
+  --in:#7ed0a8;
+  --in-dim:#5ec498;
+  --out:#f0a8a0;
+  --red:#f0a8a0;
+  --warn:#e2c37a;
+  --xfer:#e2c37a;
+  --gold:#e2c37a;
+  --violet:#5ec4c8;
+  --blue:#5ec4c8;
+  --primary:#5ec4c8;
+  --green:#7ed0a8;
+  --outflow:#f0a8a0;
+  --billsos-warm-bg:#0d1215;
+  --billsos-warm-bg-2:#141b20;
+  --billsos-surface:rgba(22,29,34,.88);
+  --billsos-surface-solid:#161d22;
+  --billsos-ink:#eef3f5;
+  --billsos-muted:#9aabb4;
+  --billsos-line:rgba(238,243,245,.12);
+  --billsos-accent:#5ec4c8;
+  --billsos-accent-2:#3d9ea3;
+  --billsos-green:#7ed0a8;
+  --billsos-red:#f0a8a0;
+  --billsos-gold:#e2c37a;
   color-scheme:dark;
 }
 html[data-billsos-theme="dark"] body,body[data-billsos-theme="dark"]{
   background:
-    radial-gradient(circle at 9% -4%, rgba(127,181,157,.18), transparent 35%),
-    radial-gradient(circle at 92% 2%, rgba(246,173,85,.10), transparent 28%),
-    linear-gradient(135deg,#111715 0%,#18201D 100%)!important;
+    radial-gradient(circle at 10% 0%, rgba(94,196,200,.16) 0, rgba(94,196,200,0) 32%),
+    linear-gradient(180deg,#0b1013 0%,#141b20 100%)!important;
   color:var(--ink)!important;
 }
 html[data-billsos-theme="dark"] .hero,html[data-billsos-theme="dark"] .card,html[data-billsos-theme="dark"] .calPanel,html[data-billsos-theme="dark"] .spark,html[data-billsos-theme="dark"] .legend,html[data-billsos-theme="dark"] .detail-drawer,html[data-billsos-theme="dark"] .drawer,html[data-billsos-theme="dark"] .global-briefing,html[data-billsos-theme="dark"] .reminders-panel,html[data-billsos-theme="dark"] .tablewrap{
@@ -190,8 +188,8 @@ html[data-billsos-theme="dark"] .nav a,html[data-billsos-theme="dark"] .btn,html
   color:var(--ink)!important;
 }
 html[data-billsos-theme="dark"] .nav a:first-child,html[data-billsos-theme="dark"] .btn.primary,html[data-billsos-theme="dark"] .tab.active,html[data-billsos-theme="dark"] .tabs button.active,html[data-billsos-theme="dark"] .sheetGrid button.primary{
-  background:linear-gradient(135deg,#7FB59D,#A8D5C1)!important;
-  color:#102019!important;
+  background:#5ec4c8!important;
+  color:#0d1215!important;
 }
 html[data-billsos-theme="dark"] .ev{background:rgba(32,42,39,.96)!important;color:var(--ink)!important;border-color:var(--line2)!important}
 html[data-billsos-theme="dark"] .ev.in{background:rgba(38,74,52,.88)!important;color:#BFF2D4!important}
