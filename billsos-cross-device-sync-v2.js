@@ -4,6 +4,7 @@
   var AMOUNT_KEY='billsos-amount-adjust-v1';
   var DONE_KEY='billsos-generated-done-v5';
   var RULE_ID='__billsos_system_rules__';
+  var PENDING_KEY='billsos-calendar-sync-pending-v1';
   var initialized=false,suppress=false,dirty=false,pushing=false,pushTimer=0,pullTimer=0,lastRevision=0;
   var changeVersion=0,syncedVersion=0;
 
@@ -15,6 +16,9 @@
   function cloudState(data){var rows=Array.isArray(data&&data.oneTimeEvents)?data.oneTimeEvents:[],sys=rows.find(function(x){return x&&x.id===RULE_ID}),rules=readRules(sys);return clean(rules.calendarState||{dateAdjustments:rules.dateAdjustments||{},amountAdjustments:rules.amountAdjustments||{},completed:rules.completed||{},revision:Number(data&&data.revision||0)})}
   function same(a,b){try{return JSON.stringify(a||{})===JSON.stringify(b||{})}catch(e){return false}}
   function setStatus(text){var el=document.getElementById('billsosSyncStatus');if(el)el.textContent=text}
+  function rememberPending(){try{sessionStorage.setItem(PENDING_KEY,'1')}catch(e){}}
+  function clearPending(){try{sessionStorage.removeItem(PENDING_KEY)}catch(e){}}
+  function restorePending(){try{if(sessionStorage.getItem(PENDING_KEY)==='1'){dirty=true;changeVersion=Math.max(changeVersion,1)}}catch(e){}}
   function applyCloud(next,reload){var before=localState();writeJson(DATE_KEY,next.dateAdjustments);writeJson(AMOUNT_KEY,next.amountAdjustments);writeJson(DONE_KEY,next.completed);var changed=!same(before,localState());if(changed&&reload&&document.querySelector('.month-panel,.cal'))setTimeout(function(){location.reload()},80);return changed}
   async function fetchBills(tag){var r=await fetch('/api/bills?syncv2='+encodeURIComponent(tag||'pull')+'&t='+Date.now(),{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
   async function postState(next,keepalive){
@@ -29,7 +33,7 @@
       lastRevision=remote.revision;
       syncedVersion=Math.max(syncedVersion,sentVersion);
       dirty=changeVersion>syncedVersion;
-      if(!dirty)applyCloud(remote,false);
+      if(!dirty){applyCloud(remote,false);clearPending()}
       setStatus(dirty?'Saving newer change…':'Up to date · rev '+lastRevision);
       succeeded=true;
       return true;
@@ -42,10 +46,10 @@
       if(succeeded&&dirty&&!keepalive){clearTimeout(pushTimer);pushTimer=setTimeout(function(){postState(localState(),false)},0)}
     }
   }
-  function schedulePush(){if(!initialized||suppress)return;changeVersion++;dirty=true;setStatus('Saving…');clearTimeout(pushTimer);pushTimer=setTimeout(function(){postState(localState(),false)},80)}
+  function schedulePush(){if(!initialized||suppress)return;changeVersion++;dirty=true;rememberPending();setStatus('Saving…');clearTimeout(pushTimer);pushTimer=setTimeout(function(){postState(localState(),false)},80)}
   async function reconcile(initial){
     if(pushing)return;
-    if(dirty){await postState(localState(),false);return}
+    if(dirty){initialized=true;await postState(localState(),false);return}
     try{
       var data=await fetchBills(initial?'initial':'pull'),remote=cloudState(data);
       lastRevision=Math.max(lastRevision,remote.revision);
@@ -55,8 +59,8 @@
       if(changed&&initial&&document.querySelector('.month-panel,.cal'))setTimeout(function(){location.reload()},80)
     }catch(e){initialized=true;setStatus('Offline')}
   }
-  function installStorageGuard(){if(window.__billsosSyncV2Guard)return;window.__billsosSyncV2Guard=true;var original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){var result=original.apply(this,arguments);if(this===localStorage&&!suppress&&(key===DATE_KEY||key===AMOUNT_KEY||key===DONE_KEY))schedulePush();return result}}
-  function start(){installStorageGuard();reconcile(true);clearInterval(pullTimer);pullTimer=setInterval(function(){if(!document.hidden)reconcile(false)},5000)}
+  function installStorageGuard(){if(window.__billsosSyncV2Guard)return;window.__billsosSyncV2Guard=true;var original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){var result=original.apply(this,arguments);if(this===localStorage&&!suppress&&(key===DATE_KEY||key===AMOUNT_KEY||key===DONE_KEY)){rememberPending();schedulePush()}return result}}
+  function start(){installStorageGuard();restorePending();reconcile(true);clearInterval(pullTimer);pullTimer=setInterval(function(){if(!document.hidden)reconcile(false)},5000)}
   window.BillsOSForceThisDeviceSync=function(){if(!initialized)return Promise.resolve(false);dirty=true;return postState(localState(),false)};
   window.addEventListener('focus',function(){setTimeout(function(){reconcile(false)},80)});
   window.addEventListener('pagehide',function(){if(dirty)postState(localState(),true)});

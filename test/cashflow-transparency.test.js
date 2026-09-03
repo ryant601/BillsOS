@@ -98,4 +98,6 @@ test('rendered and post-load calendar paths include all of 2027', () => {
   assert.match(read('billsos-balance-editor.js'), /'dec-2027': '12'/);
   assert.match(read('billsos-card-editor.js'), /panel&&panel\.dataset\.year/);
   assert.match(read('billsos-card-editor.js'), /'dec-2027':'12'/);
+  assert.match(read('generated-v5.html'), /function matchingOverride\(map,key\)/);
+  assert.match(read('generated-v5.html'), /dateEdit=matchingOverride\(dateMap,key\)/);
 });

@@ -40,6 +40,12 @@ test('custom calendar scrollbar is mandatory in the dashboard preload path', () 
   assert.match(preload, /CRITICAL_ASSETS[\s\S]*billsos-card-editor\.js/);
 });
 
+test('calendar single-line helper styles pills without installing a second date editor', () => {
+  const source = read('calendar-single-line-bills.js');
+  assert.match(source, /billsosSingleLineBillStyles/);
+  assert.doesNotMatch(source, /billsosStableEdit|openStableEditor|DATE_KEY|billsos-pay-adjust/);
+});
+
 test('card editor preserves the fixed viewport and compacts events without replacing the BillsOS scrollbar', () => {
   const editor = read('billsos-card-editor.js');
   assert.match(editor, /height:172px!important;min-height:172px!important;max-height:172px!important/);

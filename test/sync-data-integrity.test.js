@@ -122,9 +122,20 @@ test('browser calendar sync never clears a newer in-flight local change', () => 
   assert.match(source, /var changeVersion=0,syncedVersion=0/);
   assert.match(source, /var sentVersion=changeVersion,succeeded=false/);
   assert.match(source, /dirty=changeVersion>syncedVersion/);
-  assert.match(source, /if\(!dirty\)applyCloud\(remote,false\)/);
+  assert.match(source, /if\(!dirty\)\{applyCloud\(remote,false\);clearPending\(\)\}/);
   assert.match(source, /if\(succeeded&&dirty&&!keepalive\).*postState\(localState\(\),false\)/s);
   assert.match(source, /changeVersion\+\+;dirty=true/);
+});
+
+test('browser calendar sync keeps an unsynced local move across reload', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'billsos-cross-device-sync-v2.js'), 'utf8');
+  assert.match(source, /PENDING_KEY='billsos-calendar-sync-pending-v1'/);
+  assert.match(source, /sessionStorage.setItem\(PENDING_KEY/);
+  assert.match(source, /sessionStorage.removeItem\(PENDING_KEY/);
+  assert.match(source, /function restorePending/);
+  assert.match(source, /restorePending\(\);reconcile\(true\)/);
+  assert.match(source, /if\(dirty\)\{initialized=true;await postState/);
+  assert.match(source, /rememberPending\(\);schedulePush\(\)/);
 });
 
 test('browser calendar sync polls the canonical server frequently', () => {
