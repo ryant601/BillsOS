@@ -3,199 +3,154 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BillsOS Fresh Design Preview</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>BillsOS · Claude design preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#eef1f4;
-  --bg-2:#e4eaef;
-  --card:#ffffff;
-  --ink:#121a1e;
-  --mut:#5c6a72;
-  --line:rgba(18,40,48,.12);
-  --primary:#1a6f76;
-  --primary-2:#2d8d8f;
-  --income:#1f7a56;
-  --outflow:#b54b42;
-  --gold:#9a7230;
-  --softgreen:#e5f4ec;
-  --softred:#f8e9e7;
-  --softgold:#f6efd8;
-  --softblue:#e4f3f3;
-  --radius-xl:18px;
-  --radius-lg:14px;
-  --shadow:0 12px 32px rgba(18,40,48,.08);
-}
-*{box-sizing:border-box}
-body{
-  margin:0;
-  padding:18px;
-  background:
-    radial-gradient(circle at 8% 0%, rgba(26,111,118,.08) 0, rgba(26,111,118,0) 34%),
-    radial-gradient(circle at 94% 6%, rgba(45,141,143,.07) 0, rgba(45,141,143,0) 30%),
-    linear-gradient(180deg,var(--bg) 0%,var(--bg-2) 100%);
-  color:var(--ink);
-  font-family:"Plus Jakarta Sans",Inter,system-ui,sans-serif;
-  letter-spacing:-.018em;
-  font-variant-numeric:tabular-nums;
-}
-.wrap{max-width:1160px;margin:0 auto}
-.top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap}
-.pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:#fff;padding:7px 11px;color:var(--mut);font-weight:800;font-size:12px}
-.hero,.card,.cal{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);box-shadow:var(--shadow)}
-.hero{padding:22px 24px;margin-bottom:14px;display:flex;justify-content:space-between;gap:16px;position:relative;overflow:hidden}
-.hero:before{content:"";position:absolute;inset:-90px -50px auto auto;width:220px;height:220px;border-radius:999px;background:radial-gradient(circle,rgba(26,111,118,.16),rgba(26,111,118,0) 70%);pointer-events:none}
-.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--primary);font-weight:800}
-.hero h1{font-size:clamp(34px,5vw,52px);line-height:.94;letter-spacing:-.06em;margin:4px 0 9px;font-weight:800}
-.sub{color:var(--mut);max-width:680px;font-size:14px;line-height:1.45}
-.nav{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.btn{border:1px solid var(--line);border-radius:999px;padding:10px 13px;background:#fff;color:var(--ink);text-decoration:none;font-weight:700;font-size:13px}
-.btn.primary{background:var(--primary);color:#fff;border-color:transparent}
-.tabs{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0;padding:7px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.78);box-shadow:0 7px 24px rgba(18,40,48,.05)}
-.tab{border:0;background:transparent;color:var(--mut);border-radius:999px;padding:9px 15px;font-weight:800;font-size:13px;cursor:pointer}
-.tab.active{background:var(--primary);color:#fff}
-.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
-.card{padding:16px}
-.card h2,.cal h2{margin:0 0 10px;font-size:22px;letter-spacing:-.04em;font-weight:800}
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-.kpi{border:1px solid var(--line);border-radius:14px;background:#f6f9fb;padding:12px}
-.kpi span{display:block;font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.1em;font-weight:800}
-.kpi b{display:block;margin-top:5px;font-size:20px;font-weight:800;letter-spacing:-.045em}
-.income{color:var(--income)}.outflow{color:var(--outflow)}.gold{color:var(--gold)}
-.attention{display:grid;gap:9px}
-.item{display:flex;justify-content:space-between;gap:10px;border-top:1px solid rgba(18,40,48,.08);padding-top:9px;font-size:13px}
-.item:first-child{border-top:0;padding-top:0}
-.group{font-weight:800;color:var(--primary)}
-.cal{padding:16px;margin-top:14px}
-.monthHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin-bottom:12px}
-.progress{min-width:210px;text-align:right;color:var(--mut);font-size:13px}
-.bar{height:8px;background:rgba(18,40,48,.10);border-radius:999px;overflow:hidden;margin-top:7px}
-.bar i{display:block;height:100%;width:62%;background:linear-gradient(90deg,var(--primary),var(--income))}
-.week,.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
-.week div{text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:800;color:var(--mut)}
-.day{min-height:142px;border:1px solid var(--line);border-radius:14px;background:#fff;padding:8px;display:flex;flex-direction:column}
-.blank{opacity:.35}
-.topline,.endline{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--mut)}
-.events{display:grid;gap:5px;flex:1;margin:7px 0}
-.ev{display:grid;grid-template-columns:1fr auto;gap:8px;border-radius:10px;padding:6px 7px;font-size:12px;line-height:1.16;font-weight:600;border:1px solid rgba(18,40,48,.06)}
-.ev.in{background:var(--softgreen);color:var(--income)}
-.ev.out{background:var(--softred);color:var(--outflow)}
-.ev.xfer{background:var(--softgold);color:#7a5a1c}
-.palette{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:14px}
-.swatch{padding:12px;border-radius:14px;border:1px solid var(--line);background:#fff}
-.swatch i{display:block;height:42px;border-radius:10px;margin-bottom:8px;border:1px solid rgba(18,40,48,.08)}
-.swatch b{display:block;font-size:12px}.swatch span{font-size:11px;color:var(--mut)}
-.shell{display:grid;grid-template-columns:220px 1fr;gap:14px;margin-top:14px}
-.sidebar{padding:16px;border:1px solid var(--line);border-radius:var(--radius-xl);background:rgba(248,251,252,.97)}
-.brand{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-.mark{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--primary);color:#fff;font-weight:900}
-.side-nav{display:grid;gap:5px}
-.side-nav a{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:12px;color:#425057;text-decoration:none;font-size:13px;font-weight:750}
-.side-nav a:hover{background:var(--softblue)}
-.side-nav a.active{background:#cde8e9;color:#0f2b2e}
-@media(max-width:900px){body{padding:10px}.hero{display:block}.nav{margin-top:12px}.grid,.shell{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.week{display:none}.days{display:block}.day{min-height:auto;margin:8px 0}}
+  :root{
+    --paper:#faf9f5;--paper-2:#f0eee6;--surface:#fff;--inset:#f7f5ef;
+    --ink:#1f1e1d;--muted:#6b6a63;--faint:#8e8c84;--line:rgba(31,30,29,.12);
+    --clay:#c15f3c;--clay-2:#d97757;--clay-tint:#f6e7df;
+    --green:#2c6446;--green-tint:#e9f0e6;
+    --red:#9a3b2d;--red-tint:#f7e8e2;
+    --gold:#8a6420;--gold-tint:#f5eddc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',-apple-system,sans-serif;font-size:13px;letter-spacing:-.008em;-webkit-font-smoothing:antialiased}
+  .shell{display:grid;grid-template-columns:224px minmax(0,1fr);min-height:100vh}
+  .side{background:var(--paper-2);border-right:1px solid var(--line);padding:28px 14px 18px;display:flex;flex-direction:column}
+  .brand{display:flex;align-items:center;gap:11px;padding:0 10px 26px}
+  .mark{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;background:var(--clay);color:#fff;font-size:15px;font-weight:600}
+  .brand strong{display:block;font-family:'Newsreader',Georgia,serif;font-size:22px;font-weight:500;letter-spacing:-.02em}
+  .brand small{display:block;color:var(--muted);font-size:11px}
+  nav{display:grid;gap:2px}
+  nav a{display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:8px;color:var(--ink);text-decoration:none;font-size:13.5px;font-weight:500}
+  nav a:hover{background:rgba(31,30,29,.05)}
+  nav a.on{background:#fff;font-weight:600;box-shadow:0 1px 2px rgba(31,30,29,.06)}
+  nav a i{width:22px;text-align:center;color:var(--muted);font-style:normal}
+  nav a.on i{color:var(--clay)}
+  main{padding:28px 30px 48px}
+  h1{margin:0;font-family:'Newsreader',Georgia,serif;font-size:36px;font-weight:500;letter-spacing:-.025em}
+  .lede{margin:7px 0 24px;color:var(--muted)}
+  .kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:22px}
+  .kpi{padding:19px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 1px 2px rgba(31,30,29,.05)}
+  .kpi span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .kpi b{display:block;margin-top:13px;font-size:29px;font-weight:600;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+  .kpi em{display:block;margin-top:11px;font-style:normal;color:var(--muted);font-size:12px}
+  .panel{padding:20px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 1px 2px rgba(31,30,29,.05)}
+  .panel h2{margin:0 0 4px;font-family:'Newsreader',Georgia,serif;font-size:20px;font-weight:500;letter-spacing:-.015em}
+  .panel p.sub{margin:0 0 16px;color:var(--muted);font-size:12px}
+  .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+  .day{height:172px;display:flex;flex-direction:column;padding:11px;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+  .day.today{border-color:rgba(193,95,60,.55);box-shadow:0 0 0 2px rgba(193,95,60,.14)}
+  .dtop{display:flex;align-items:center;gap:7px;margin-bottom:9px}
+  .dnum{font-family:'Newsreader',Georgia,serif;font-size:20px;font-weight:500;line-height:1}
+  .dow{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .badge{margin-left:auto;padding:3px 8px;border-radius:6px;font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .badge.today{background:var(--clay);color:#fff}
+  .badge.pay{background:var(--green-tint);color:var(--green)}
+  .events{flex:0 0 76px;height:76px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;padding-right:6px}
+  .ev{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;align-items:center;height:31px;padding:2px 7px 2px 8px;border:1px solid rgba(31,30,29,.10);border-radius:8px;background:var(--inset);font-size:11.5px}
+  .ev .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--ink)}
+  .ev .amt{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .ev.out{background:var(--red-tint);border-color:rgba(154,59,45,.24);box-shadow:inset 3px 0 0 var(--red)}
+  .ev.out .amt{color:var(--red)}
+  .ev.in{background:var(--green-tint);border-color:rgba(44,100,70,.24);box-shadow:inset 3px 0 0 var(--green)}
+  .ev.in .amt{color:var(--green)}
+  .ev.xfer{background:var(--gold-tint);border-color:rgba(138,100,32,.26);box-shadow:inset 3px 0 0 var(--gold)}
+  .ev.xfer .amt{color:#6f4f18}
+  .eod{display:flex;justify-content:space-between;align-items:baseline;margin-top:auto;padding-top:8px;border-top:1px solid rgba(31,30,29,.07)}
+  .eod span{font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+  .eod b{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums}
+  .row{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+  .btn{padding:9px 15px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+  .btn:hover{background:var(--paper-2);border-color:rgba(31,30,29,.18)}
+  .btn.primary{background:var(--clay);border-color:transparent;color:#fff}
+  .btn.primary:hover{background:var(--clay-2)}
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:20px}
+  .sw{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .sw i{display:block;height:44px}
+  .sw span{display:block;padding:8px 10px;font-size:11px;color:var(--muted)}
+  .sw b{display:block;color:var(--ink);font-size:12px}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="top">
-    <span class="pill">Fresh design preview</span>
-    <span class="pill">Cool slate + teal</span>
-    <span class="pill">Plus Jakarta Sans</span>
-  </div>
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><div class="mark">B</div><div><strong>BillsOS</strong><small>Cash flow, calmly</small></div></div>
+    <nav>
+      <a class="on" href="#"><i>◉</i><span>Home</span></a>
+      <a href="#"><i>▤</i><span>Calendar</span></a>
+      <a href="#"><i>$</i><span>Everyday Spending</span></a>
+      <a href="#"><i>≡</i><span>Bills</span></a>
+      <a href="#"><i>↻</i><span>Income</span></a>
+    </nav>
+  </aside>
+  <main>
+    <h1>Good evening, Ryan</h1>
+    <p class="lede">Everything due this week is funded. Nothing needs attention today.</p>
 
-  <section class="hero">
-    <div>
-      <div class="eyebrow">BillsOS</div>
-      <h1>Bills Dashboard</h1>
-      <div class="sub">Calm operational cash-flow view with a cooler slate background, teal primary accent, and cleaner card surfaces.</div>
+    <div class="kpis">
+      <div class="kpi"><span>Starting</span><b>$4,182.40</b><em>Bills account, today</em></div>
+      <div class="kpi"><span>Due this week</span><b>$1,347.16</b><em>6 items, all funded</em></div>
+      <div class="kpi"><span>Ending</span><b>$2,835.24</b><em>Projected Sunday</em></div>
     </div>
-    <div class="nav">
-      <a class="btn primary" href="#">Dashboard</a>
-      <a class="btn" href="#">Control Center</a>
-    </div>
-  </section>
 
-  <div class="shell">
-    <aside class="sidebar">
-      <div class="brand"><div class="mark">B</div><div><strong>BillsOS</strong><br><small style="color:var(--mut);font-size:10px">Cash flow planner</small></div></div>
-      <nav class="side-nav">
-        <a class="active" href="#">⌂ Dashboard</a>
-        <a href="#">▦ Calendar</a>
-        <a href="#">◎ Control Center</a>
-        <a href="#">✦ Ask BillsOS</a>
-      </nav>
-    </aside>
-    <div>
-      <div class="tabs">
-        <button class="tab">Jun</button>
-        <button class="tab active">Jul</button>
-        <button class="tab">Aug</button>
-        <button class="tab">Sep</button>
-        <button class="tab">Oct</button>
+    <section class="panel">
+      <h2>Calendar</h2>
+      <p class="sub">Bill pills now use near-black names with a colored amount and a direction bar, so they stay readable at a glance.</p>
+      <div class="grid">
+        <div class="day today">
+          <div class="dtop"><span class="dnum">2</span><span class="dow">Wed</span><span class="badge today">Today</span></div>
+          <div class="events">
+            <div class="ev out"><span class="nm">Mortgage</span><span class="amt">$1,842.00</span></div>
+            <div class="ev out"><span class="nm">Duke Energy</span><span class="amt">$214.83</span></div>
+            <div class="ev xfer"><span class="nm">Sweep to savings</span><span class="amt">$300.00</span></div>
+          </div>
+          <div class="eod"><span>Ending</span><b>$2,835.24</b></div>
+        </div>
+        <div class="day">
+          <div class="dtop"><span class="dnum">3</span><span class="dow">Thu</span><span class="badge pay">Payday</span></div>
+          <div class="events">
+            <div class="ev in"><span class="nm">Paycheck</span><span class="amt">$2,410.55</span></div>
+            <div class="ev out"><span class="nm">Verizon Wireless</span><span class="amt">$186.42</span></div>
+          </div>
+          <div class="eod"><span>Ending</span><b>$5,059.37</b></div>
+        </div>
+        <div class="day">
+          <div class="dtop"><span class="dnum">4</span><span class="dow">Fri</span></div>
+          <div class="events">
+            <div class="ev out"><span class="nm">Car insurance</span><span class="amt">$142.00</span></div>
+            <div class="ev out"><span class="nm">Spotify Family</span><span class="amt">$19.99</span></div>
+            <div class="ev out"><span class="nm">Trash pickup</span><span class="amt">$41.25</span></div>
+          </div>
+          <div class="eod"><span>Ending</span><b>$4,856.13</b></div>
+        </div>
+        <div class="day">
+          <div class="dtop"><span class="dnum">5</span><span class="dow">Sat</span></div>
+          <div class="events">
+            <div class="ev out"><span class="nm">Groceries budget</span><span class="amt">$220.00</span></div>
+          </div>
+          <div class="eod"><span>Ending</span><b>$4,636.13</b></div>
+        </div>
       </div>
 
-      <section class="grid">
-        <div class="card">
-          <h2>July Summary</h2>
-          <div class="kpis">
-            <div class="kpi"><span>Starting</span><b>$3,671</b></div>
-            <div class="kpi"><span>Income</span><b class="income">$16,228</b></div>
-            <div class="kpi"><span>Outflow</span><b class="outflow">$16,392</b></div>
-            <div class="kpi"><span>Ending</span><b>$3,507</b></div>
-            <div class="kpi"><span>Open</span><b>29</b></div>
-          </div>
-        </div>
-        <div class="card">
-          <h2>Needs Attention</h2>
-          <div class="attention">
-            <div class="item"><span class="group">Pay manually</span><b>8</b></div>
-            <div class="item"><span>Discover · Jul 9</span><b>$125</b></div>
-            <div class="item"><span class="group">Confirm autopay</span><b>5</b></div>
-            <div class="item"><span>Travelers Insurance · Jul 1</span><b>$521</b></div>
-          </div>
-        </div>
-      </section>
+      <div class="row">
+        <button class="btn primary">Save changes</button>
+        <button class="btn">Open Control Center</button>
+        <button class="btn">Export month</button>
+      </div>
 
-      <section class="cal">
-        <div class="monthHead">
-          <div><div class="eyebrow">Calendar</div><h2>July 2026</h2></div>
-          <div class="progress"><b>4</b> complete of <b>34</b><div class="bar"><i></i></div></div>
-        </div>
-        <div class="week"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
-        <div class="days">
-          <div class="day blank"></div><div class="day blank"></div><div class="day blank"></div>
-          <div class="day">
-            <div class="topline"><b>1</b><span>Beginning <b>$3,671</b></span></div>
-            <div class="events">
-              <div class="ev out"><span>Chase Loan</span><b>$401</b></div>
-              <div class="ev out"><span>Travelers Insurance</span><b>$521</b></div>
-            </div>
-            <div class="endline"><span>Ending</span><b>$2,749</b></div>
-          </div>
-          <div class="day">
-            <div class="topline"><b>10</b><span>Beginning <b>$1,625</b></span></div>
-            <div class="events">
-              <div class="ev in"><span>Alissa — HUMC</span><b>$3,760</b></div>
-              <div class="ev xfer"><span>Spending funding</span><b>$1,500</b></div>
-            </div>
-            <div class="endline"><span>Ending</span><b>$3,885</b></div>
-          </div>
-        </div>
-      </section>
-    </div>
-  </div>
-
-  <section class="palette">
-    <div class="swatch"><i style="background:#eef1f4"></i><b>Background</b><span>#eef1f4</span></div>
-    <div class="swatch"><i style="background:#ffffff"></i><b>Surface</b><span>#ffffff</span></div>
-    <div class="swatch"><i style="background:#121a1e"></i><b>Ink</b><span>#121a1e</span></div>
-    <div class="swatch"><i style="background:#1a6f76"></i><b>Primary</b><span>#1a6f76</span></div>
-    <div class="swatch"><i style="background:#1f7a56"></i><b>Income</b><span>#1f7a56</span></div>
-    <div class="swatch"><i style="background:#b54b42"></i><b>Outflow</b><span>#b54b42</span></div>
-    <div class="swatch"><i style="background:#9a7230"></i><b>Gold</b><span>#9a7230</span></div>
-    <div class="swatch"><i style="background:#5ec4c8"></i><b>Dark accent</b><span>#5ec4c8</span></div>
-  </section>
+      <div class="swatches">
+        <div class="sw"><i style="background:#faf9f5"></i><span><b>Paper</b>#faf9f5</span></div>
+        <div class="sw"><i style="background:#f0eee6"></i><span><b>Paper 2</b>#f0eee6</span></div>
+        <div class="sw"><i style="background:#1f1e1d"></i><span><b>Ink</b>#1f1e1d</span></div>
+        <div class="sw"><i style="background:#c15f3c"></i><span><b>Clay</b>#c15f3c</span></div>
+        <div class="sw"><i style="background:#2c6446"></i><span><b>Income</b>#2c6446</span></div>
+        <div class="sw"><i style="background:#9a3b2d"></i><span><b>Outflow</b>#9a3b2d</span></div>
+        <div class="sw"><i style="background:#8a6420"></i><span><b>Transfer</b>#8a6420</span></div>
+      </div>
+    </section>
+  </main>
 </div>
 </body>
 </html>

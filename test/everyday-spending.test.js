@@ -20,7 +20,7 @@ test('Everyday Spending native section contains the current snapshot', () => {
 
 test('dashboard preload injects Everyday Spending navigation and cache version', () => {
   const preload = fs.readFileSync(path.join(__dirname, '..', 'cache-coherence-preload.js'), 'utf8');
-  assert.match(preload, /20260903freshdesign1/);
+  assert.match(preload, /20260903claude1/);
   assert.match(preload, /a\.href='\/spending\/'/);
   assert.match(preload, /nav\.querySelector\('a\[href="\/spending\/"\]'\)/);
   assert.match(preload, /ensureSpendingSidebar/);
@@ -28,7 +28,7 @@ test('dashboard preload injects Everyday Spending navigation and cache version',
 
 test('Everyday Spending shell clears the fixed sidebar on desktop and returns full width on mobile', () => {
   const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
-  assert.match(route, /body\.bo-app\.bo-spending\{padding-left:220px!important\}/);
+  assert.match(route, /body\.bo-app\.bo-spending\{padding-left:224px!important\}/);
   assert.match(route, /body\.bo-app\.bo-spending>\.app\{width:100%;min-width:0;margin-left:auto!important;margin-right:auto!important\}/);
   assert.match(route, /@media\(max-width:760px\)\{body\.bo-app\.bo-spending\{padding-left:0!important\}\}/);
   assert.match(route, /html = spendingLayoutPatch\(html\)/);
