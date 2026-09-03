@@ -29,8 +29,17 @@ test('dashboard preload injects Everyday Spending navigation and cache version',
 test('Everyday Spending shell clears the fixed sidebar on desktop and returns full width on mobile', () => {
   const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
   assert.match(route, /body\.bo-app\.bo-spending\{padding-left:224px!important\}/);
-  assert.match(route, /body\.bo-app\.bo-spending>\.app\{width:100%;min-width:0;margin-left:auto!important;margin-right:auto!important\}/);
+  assert.match(route, /body\.bo-app\.bo-spending>\.app,body\.bo-app\.bo-spending \.shell>\.app\{width:100%;min-width:0;margin-left:auto!important;margin-right:auto!important\}/);
+  assert.match(route, /body\.bo-app\.bo-spending \.shell>\.side,body\.bo-app\.bo-spending aside\.side\{display:none!important\}/);
   assert.match(route, /@media\(max-width:760px\)\{body\.bo-app\.bo-spending\{padding-left:0!important\}\}/);
   assert.match(route, /html = spendingLayoutPatch\(html\)/);
   assert.match(route, /class="bo-spending"/);
+});
+
+test('Everyday Spending keeps the shared app sidebar and drops the page-owned nav', () => {
+  const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
+  assert.match(route, /html = String\(html \|\| ''\)\.replace\(/);
+  assert.match(route, /aside class="side"/);
+  assert.match(route, /body\.bo-app\.bo-spending \.shell\{display:block!important\}/);
+  assert.match(route, /aside\.side\{display:none!important\}/);
 });

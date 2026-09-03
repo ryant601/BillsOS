@@ -12,7 +12,7 @@ function spendingThemePatch(html) {
   if (html.includes('id="billsosSpendingThemePatch"')) return html;
   const patch = `<style id="billsosSpendingThemePatch">
 html[data-billsos-theme="dark"]{--bg:#1f1e1d!important;--paper:#30302e!important;--paper2:#3a3a37!important;--paper3:#45453f!important;--ink:#f5f4ef!important;--muted:#b3b0a8!important;--line:#3d3d3a!important;--green:#7fbf9a!important;--purple:#d97757!important;--p:#30302e!important;--p2:#3a3a37!important;--i:#f5f4ef!important;--m:#b3b0a8!important;--l:#3d3d3a!important;--g:#7fbf9a!important;--pu:#d97757!important;color-scheme:dark}
-body.bo-app.bo-spending{padding-left:224px!important}body.bo-app.bo-spending>.app{width:100%;min-width:0;margin-left:auto!important;margin-right:auto!important}@media(max-width:760px){body.bo-app.bo-spending{padding-left:0!important}}
+body.bo-app.bo-spending{padding-left:224px!important}body.bo-app.bo-spending>.app,body.bo-app.bo-spending .shell>.app{width:100%;min-width:0;margin-left:auto!important;margin-right:auto!important}body.bo-app.bo-spending .shell{display:block!important}body.bo-app.bo-spending .shell>.side,body.bo-app.bo-spending aside.side{display:none!important}@media(max-width:760px){body.bo-app.bo-spending{padding-left:0!important}}
 html[data-billsos-theme="dark"] body{background:#1f1e1d!important;color:#f5f4ef!important}html[data-billsos-theme="dark"] .app{color:#f5f4ef!important}
 html[data-billsos-theme="dark"] .metric,html[data-billsos-theme="dark"] .runway,html[data-billsos-theme="dark"] .cat,html[data-billsos-theme="dark"] .vendor,html[data-billsos-theme="dark"] .tx{background:#30302e!important;border-color:#3d3d3a!important;color:#f5f4ef!important}
 html[data-billsos-theme="dark"] .sub,html[data-billsos-theme="dark"] .subcategory{background:#3a3a37!important;border-color:#3d3d3a!important;color:#f5f4ef!important}
@@ -27,6 +27,7 @@ html[data-billsos-theme="dark"] .status{color:#b3b0a8!important}html[data-billso
 }
 
 function spendingLayoutPatch(html) {
+  html = String(html || '').replace(/<aside class="side">[\s\S]*?<\/aside>/i, '');
   return html.replace(/<body\b([^>]*)>/i, function(match, attrs) {
     const classMatch = attrs.match(/\bclass=(['"])(.*?)\1/i);
     if (classMatch) {
