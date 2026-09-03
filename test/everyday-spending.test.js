@@ -67,6 +67,13 @@ test('Spending and home amount rows keep the dollar value fully visible', () => 
   assert.match(home, /\.bo-outlook-values\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
 });
 
+test('subcategory transaction counts sit apart from the type name', () => {
+  const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
+  const assistant = fs.readFileSync(path.join(__dirname, '..', 'spending-assistant.js'), 'utf8');
+  assert.match(assistant, /esc\(subcategory\)\+'<\/b> <small>'/);
+  assert.match(route, /\.sub>summary b\+small\{margin-left:8px/);
+});
+
 test('Everyday Spending keeps the shared app sidebar and drops the page-owned nav', () => {
   const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
   assert.match(route, /html = String\(html \|\| ''\)\.replace\(/);
