@@ -81,12 +81,21 @@ test('runway days stop the morning the paycheck lands', () => {
   assert.equal(runway.runwayDays('2026-09-03', '2026-09-04'), 1);
   assert.equal(runway.runwayDays('2026-09-04', '2026-09-04'), 0);
   assert.equal(runway.runwayDays('2026-09-05', '2026-09-04'), 0);
-  const adjusted = runway.applyRunway({
+  const evening = new Date('2026-09-03T02:00:00Z');
+  const morning = new Date('2026-09-02T14:00:00Z');
+  const late = runway.applyRunway({
     cycle: { nextTransfer: '2026-09-04', daysLeft: 3 },
     metrics: { remainingAvailable: 241.08, availablePerDay: 80.36 }
-  }, '2026-09-02');
-  assert.equal(adjusted.cycle.daysLeft, 2);
-  assert.equal(adjusted.metrics.availablePerDay, 120.54);
+  }, '2026-09-02', evening);
+  assert.equal(late.cycle.daysLeft, 2);
+  assert.equal(late.metrics.availablePerDay, 241.08);
+  assert.equal(late.metrics.availablePaceLabel, 'for tomorrow');
+  const early = runway.applyRunway({
+    cycle: { nextTransfer: '2026-09-04', daysLeft: 3 },
+    metrics: { remainingAvailable: 241.08, availablePerDay: 80.36 }
+  }, '2026-09-02', morning);
+  assert.equal(early.metrics.availablePerDay, 133.93);
+  assert.equal(early.metrics.availablePaceLabel, 'available per day');
   assert.match(route, /spending-runway\.js\?v='\s*\+\s*SPENDING_BUILD/);
   assert.match(route, /html = spendingRunwayPatch\(html\)/);
 });
