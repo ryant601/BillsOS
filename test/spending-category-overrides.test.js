@@ -118,8 +118,8 @@ test('client assistant requires confirmation, preserves totals, and uses the ver
   assert.match(source, /Only this matched transaction will move\. Spending totals and balances will not change/);
   assert.match(source, /\/api\/spending\/category-overrides/);
   assert.match(source, /session\.role!==\'owner\'/);
-  assert.match(source, /\(!hasOverrides&&!categoriesPatched\)/);
-  assert.match(source, /categoriesPatched=hasOverrides/);
+  assert.doesNotMatch(source, /\(!hasOverrides&&!categoriesPatched\)/);
+  assert.match(source, /categoriesPatched=true/);
   assert.match(route, /spending-assistant\.js\?v='\+SPENDING_BUILD/);
   assert.match(route, /spending-transaction-recategorize\.js\?v='\+SPENDING_BUILD/);
 });
@@ -136,7 +136,7 @@ test('transaction rows can open an owner-only recategorization picker without ch
   assert.match(source, /occurrence:t\.occurrence/);
   assert.match(source, /dataset\.txOccurrence/);
   assert.match(source, /fetch\('current\.json'/);
-  assert.match(route, /20260901txdatasource1/);
+  assert.match(route, /20260903where1/);
   assert.match(fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8'), /"spending", "current\.json"/);
 });
 
