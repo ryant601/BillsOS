@@ -59,8 +59,10 @@
   function availablePerDay(remaining, days, now) {
     var amount = Number(remaining || 0);
     if (!isFinite(amount)) amount = 0;
-    var units = coverUnits(days, now);
-    return Math.round((amount / units) * 100) / 100;
+    var units = Math.max(1, coverUnits(days, now));
+    var pace = Math.round((amount / units) * 100) / 100;
+    if (amount >= 0) return Math.min(amount, pace);
+    return Math.max(amount, pace);
   }
 
   function paceLabel(days, now) {

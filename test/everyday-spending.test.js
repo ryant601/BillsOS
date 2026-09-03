@@ -10,7 +10,7 @@ test('Everyday Spending native section contains the current snapshot', () => {
   const snapshot = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'spending', 'current.json'), 'utf8'));
   assert.match(html, /Everyday Spending/);
   assert.match(html, /Spending since transfer/);
-  assert.match(html, /fetch\('\/spending\/current\.json\?v=20260903-013101'/);
+  assert.match(html, /fetch\('\/spending\/current\.json\?v=20260903-123055'/);
   assert.equal(snapshot.metrics.transferredIn, 2250);
   assert.equal(snapshot.metrics.totalSpent, 2412.19);
   assert.equal(snapshot.metrics.remainingAvailable, 241.08);
@@ -54,7 +54,7 @@ test('Where it went vendors and transactions sort high to low by amount', () => 
   assert.match(assistant, /Object\.keys\(vendors\)\.sort\(function\(a,b\)\{return sum\(vendors\[b\]\)-sum\(vendors\[a\]\)\}\)/);
   assert.match(assistant, /tx\.slice\(\)\.sort\(function\(a,b\)\{return Number\(b\.amount\|\|0\)-Number\(a\.amount\|\|0\)/);
   assert.doesNotMatch(assistant, /tx\.sort\(function\(a,b\)\{return a\.date\.localeCompare/);
-  assert.match(html, /const rows=\[\.\.\.r\]\.sort\(\(a,b\)=>Number\(b\.a\|\|0\)-Number\(a\.a\|\|0\)\)/);
+  assert.match(html, /\[\.\.\.r\]\.sort\(\(a,b\)=>Number\(b\.a\)-Number\(a\.a\)\)/);
   assert.match(html, /Object\.entries\(vs\)\.sort\(\(a,b\)=>total\(b\[1\]\)-total\(a\[1\]\)\)/);
 });
 
@@ -96,6 +96,20 @@ test('runway days stop the morning the paycheck lands', () => {
   }, '2026-09-02', morning);
   assert.equal(early.metrics.availablePerDay, 133.93);
   assert.equal(early.metrics.availablePaceLabel, 'available per day');
+  const lastMorning = runway.applyRunway({
+    cycle: { nextTransfer: '2026-09-04', daysLeft: 3 },
+    metrics: { remainingAvailable: 241.08, availablePerDay: 80.36 }
+  }, '2026-09-03', morning);
+  assert.equal(lastMorning.cycle.daysLeft, 1);
+  assert.equal(lastMorning.metrics.availablePerDay, 241.08);
+  assert.ok(lastMorning.metrics.availablePerDay <= lastMorning.metrics.remainingAvailable);
+  const payday = runway.applyRunway({
+    cycle: { nextTransfer: '2026-09-04', daysLeft: 3 },
+    metrics: { remainingAvailable: 241.08, availablePerDay: 80.36 }
+  }, '2026-09-04', morning);
+  assert.equal(payday.cycle.daysLeft, 0);
+  assert.equal(payday.metrics.availablePerDay, 241.08);
+  assert.ok(payday.metrics.availablePerDay <= payday.metrics.remainingAvailable);
   assert.match(route, /spending-runway\.js\?v='\s*\+\s*SPENDING_BUILD/);
   assert.match(route, /html = spendingRunwayPatch\(html\)/);
 });

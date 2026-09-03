@@ -25,7 +25,7 @@ test('static balance stamp uses the exact TD Bill Payments identity and availabl
   assert.equal(stamp.version, 1);
   assert.equal(stamp.balance.available, 411.43);
   assert.equal(stamp.balance.currency, 'USD');
-  assert.equal(stamp.bankingAsOf, '2026-09-03T01:31:01.615529Z');
+  assert.equal(stamp.bankingAsOf, '2026-09-03T12:30:55.094427Z');
   assert.equal(stamp.source, 'Finances');
   assert.equal(stamp.sourceField, 'balances.available');
 });
@@ -98,7 +98,7 @@ test('Everyday Spending tile uses only the published available balance and banki
   const normalized = bridge.normalizeEverydaySpendingBalance(spendingSnapshot);
   assert.deepEqual(normalized, {
     available: 241.08,
-    bankingAsOf: '2026-09-03T01:31:01.615529Z'
+    bankingAsOf: '2026-09-03T11:29:25.876307Z'
   });
   assert.equal(bridge.normalizeEverydaySpendingBalance(null), null);
   assert.equal(bridge.normalizeEverydaySpendingBalance({ ...spendingSnapshot, metrics: { remainingAvailable: null } }), null);
