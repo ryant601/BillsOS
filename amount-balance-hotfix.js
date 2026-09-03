@@ -19,13 +19,23 @@
   function keyIdentity(key) {
     const parts = String(key || '').split('|');
     if (parts.length < 3) return '';
-    return parts.slice(1).join('|');
+    const amount = Number(parts[parts.length - 1]);
+    return parts.slice(1, -1).join('|') + '|' + (Number.isFinite(amount) ? amount : parts[parts.length - 1]);
+  }
+  function occurrenceMonth(key, edit) {
+    const original = edit && edit.originalDate ? String(edit.originalDate) : '';
+    const fromKey = String(key || '');
+    const month = (original || fromKey).slice(0, 7);
+    return /^\d{4}-\d{2}$/.test(month) ? month : '';
   }
   function matchingOverride(map, key) {
     if (map && map[key]) return map[key];
     const identity = keyIdentity(key);
-    if (!identity) return null;
-    const matches = Object.keys(map || {}).filter(function (candidate) { return keyIdentity(candidate) === identity; });
+    const month = occurrenceMonth(key);
+    if (!identity || !month) return null;
+    const matches = Object.keys(map || {}).filter(function (candidate) {
+      return keyIdentity(candidate) === identity && occurrenceMonth(candidate, map[candidate]) === month;
+    });
     if (!matches.length) return null;
     matches.sort(function (a, b) {
       const at = Date.parse((map[a] && map[a].updatedAt) || '') || 0;
