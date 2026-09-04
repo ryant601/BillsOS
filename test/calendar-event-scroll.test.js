@@ -40,11 +40,17 @@ test('custom calendar scrollbar is mandatory in the dashboard preload path', () 
   assert.match(preload, /CRITICAL_ASSETS[\s\S]*billsos-card-editor\.js/);
 });
 
-test('calendar single-line helper styles pills without installing a second date editor', () => {
+test('calendar pill helper keeps complete names and amounts without installing a second date editor', () => {
   const source = read('calendar-single-line-bills.js');
   assert.match(source, /billsosSingleLineBillStyles/);
   assert.match(source, /container-type:inline-size/);
-  assert.match(source, /@container \(min-width: 148px\)/);
+  assert.match(source, /height:auto!important/);
+  assert.match(source, /max-height:none!important/);
+  assert.match(source, /white-space:normal!important/);
+  assert.match(source, /overflow-wrap:anywhere!important/);
+  assert.match(source, /-webkit-line-clamp:unset!important/);
+  assert.match(source, /white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important/);
+  assert.doesNotMatch(source, /text-overflow:ellipsis/);
   assert.doesNotMatch(source, /billsosStableEdit|openStableEditor|DATE_KEY|billsos-pay-adjust/);
 });
 

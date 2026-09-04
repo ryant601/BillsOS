@@ -18,7 +18,7 @@ test('calendar row controls remain available for current and future rows without
 
 test('dashboard preload injects row controls fix while preserving required calendar scrollbar asset',()=>{
   const preload=read('cache-coherence-preload.js');
-  assert.match(preload,/const BUILD = '20260903calnav1'/);
+  assert.match(preload,/const BUILD = '20260904calendarrefresh1'/);
   assert.match(preload,/CRITICAL_ASSETS[\s\S]*calendar-event-scroll-fix\.js/);
   assert.match(preload,/CRITICAL_ASSETS[\s\S]*calendar-row-controls-fix\.js/);
   assert.match(preload,/billsosCalendarEventScrollFixScript/);
