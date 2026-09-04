@@ -8,10 +8,10 @@
     "mask": "2468"
   },
   "balance": {
-    "available": 1500,
+    "available": 2500.0,
     "currency": "USD"
   },
-  "bankingAsOf": "2026-09-02T20:33:19.846990Z",
+  "bankingAsOf": "2026-09-04T20:19:10.622015Z",
   "source": "Finances",
   "sourceField": "balances.available"
 }
