@@ -43,6 +43,34 @@
     return Math.max(0, Math.round((end - start) / 86400000));
   }
 
+  function addDays(day, amount) {
+    var value = Date.parse(isoDay(day) + 'T12:00:00Z');
+    if (!isFinite(value)) return '';
+    return new Date(value + Number(amount || 0) * 86400000).toISOString().slice(0, 10);
+  }
+
+  function cycleLength(cycle) {
+    var start = Date.parse(isoDay(cycle && cycle.start) + 'T12:00:00Z');
+    var next = Date.parse(isoDay(cycle && cycle.nextTransfer) + 'T12:00:00Z');
+    var days = Math.round((next - start) / 86400000);
+    return isFinite(days) && days > 0 ? days : 14;
+  }
+
+  function normalizeCycle(cycle, today) {
+    if (!cycle) return cycle;
+    var day = isoDay(today);
+    var next = isoDay(cycle.nextTransfer);
+    if (!day || !next) return cycle;
+    var interval = cycleLength(cycle);
+    while (day >= next) {
+      cycle.start = next;
+      next = addDays(next, interval);
+    }
+    cycle.nextTransfer = next;
+    cycle.end = addDays(next, -1);
+    return cycle;
+  }
+
   function todayShare(now) {
     var parts = newYorkParts(now);
     var hour = parts.hour + parts.minute / 60;
@@ -74,6 +102,7 @@
     if (!snapshot || !snapshot.cycle) return snapshot;
     var when = now instanceof Date ? now : new Date();
     var day = today || todayInNewYork(when);
+    normalizeCycle(snapshot.cycle, day);
     var days = runwayDays(day, snapshot.cycle.nextTransfer || snapshot.cycle.end);
     snapshot.cycle.daysLeft = days;
     if (snapshot.metrics) {
@@ -116,6 +145,9 @@
     isoDay: isoDay,
     todayInNewYork: todayInNewYork,
     runwayDays: runwayDays,
+    addDays: addDays,
+    cycleLength: cycleLength,
+    normalizeCycle: normalizeCycle,
     todayShare: todayShare,
     coverUnits: coverUnits,
     availablePerDay: availablePerDay,

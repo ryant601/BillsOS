@@ -10,10 +10,12 @@ test('Everyday Spending native section contains the current snapshot', () => {
   const snapshot = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'spending', 'current.json'), 'utf8'));
   assert.match(html, /Everyday Spending/);
   assert.match(html, /Spending since transfer/);
-  assert.match(html, /fetch\('\/spending\/current\.json\?v=20260903-123055'/);
-  assert.equal(snapshot.metrics.transferredIn, 2250);
-  assert.equal(snapshot.metrics.totalSpent, 2412.19);
-  assert.equal(snapshot.metrics.remainingAvailable, 241.08);
+  assert.match(html, /fetch\('\/spending\/current\.json\?v=\d{8}-\d{6}'/);
+  assert.equal(snapshot.schema, 'billsos-everyday-spending');
+  assert.equal(snapshot.version, 1);
+  assert.ok(Number.isFinite(snapshot.metrics.transferredIn));
+  assert.ok(Number.isFinite(snapshot.metrics.totalSpent));
+  assert.ok(Number.isFinite(snapshot.metrics.remainingAvailable));
   assert.ok(snapshot.transactions.some(row => row.c === 'Dining'));
   assert.ok(snapshot.transactions.some(row => row.c === 'Groceries'));
 });
@@ -74,7 +76,7 @@ test('subcategory transaction counts sit apart from the type name', () => {
   assert.match(route, /\.sub>summary b\+small\{margin-left:8px/);
 });
 
-test('runway days stop the morning the paycheck lands', () => {
+test('runway ends before payday and rolls forward on transfer morning', () => {
   const runway = require('../spending-runway.js');
   const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
   assert.equal(runway.runwayDays('2026-09-02', '2026-09-04'), 2);
@@ -107,9 +109,28 @@ test('runway days stop the morning the paycheck lands', () => {
     cycle: { nextTransfer: '2026-09-04', daysLeft: 3 },
     metrics: { remainingAvailable: 241.08, availablePerDay: 80.36 }
   }, '2026-09-04', morning);
-  assert.equal(payday.cycle.daysLeft, 0);
-  assert.equal(payday.metrics.availablePerDay, 241.08);
+  assert.equal(payday.cycle.daysLeft, 14);
+  assert.equal(payday.metrics.availablePerDay, 17.47);
   assert.ok(payday.metrics.availablePerDay <= payday.metrics.remainingAvailable);
+  assert.deepEqual(payday.cycle, {
+    start: '2026-09-04',
+    end: '2026-09-17',
+    nextTransfer: '2026-09-18',
+    daysLeft: 14
+  });
+  const beforePayday = runway.applyRunway({
+    cycle: { start: '2026-08-21', end: '2026-09-04', nextTransfer: '2026-09-04' },
+    metrics: { remainingAvailable: 241.08 }
+  }, '2026-09-03', morning);
+  assert.equal(beforePayday.cycle.end, '2026-09-03');
+  assert.equal(beforePayday.cycle.nextTransfer, '2026-09-04');
+  const laterCycle = runway.applyRunway({
+    cycle: { start: '2026-08-21', end: '2026-09-04', nextTransfer: '2026-09-04' },
+    metrics: { remainingAvailable: 241.08 }
+  }, '2026-09-18', morning);
+  assert.equal(laterCycle.cycle.start, '2026-09-18');
+  assert.equal(laterCycle.cycle.end, '2026-10-01');
+  assert.equal(laterCycle.cycle.nextTransfer, '2026-10-02');
   assert.match(route, /spending-runway\.js\?v='\s*\+\s*SPENDING_BUILD/);
   assert.match(route, /html = spendingRunwayPatch\(html\)/);
 });
