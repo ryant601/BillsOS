@@ -1,0 +1,19 @@
+{
+  "schema": "billsos-vendor-category-rules",
+  "version": 1,
+  "rules": [
+    {
+      "id": "family-p2p-talbot-gifts",
+      "enabled": true,
+      "match": {
+        "direction": "outflow",
+        "containsAny": ["venmo", "zelle"],
+        "containsAll": ["talbot"]
+      },
+      "classification": {
+        "category": "Gifts",
+        "subcategory": "Family"
+      }
+    }
+  ]
+}

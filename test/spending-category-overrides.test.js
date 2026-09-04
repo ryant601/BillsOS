@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
 const { createSpendingCategoryStore, parseSnapshotTransactions } = require('../spending-category-overrides');
+const classifications = require('../spending-classification-rules');
 
 const snapshot = '<script>const T=[' + [
   { date: '2026-08-28', m: 'QuickChek', a: 10.38, p: true, c: 'Household / Shopping', s: 'Shopping', n: '' },
@@ -122,6 +123,47 @@ test('client assistant requires confirmation, preserves totals, and uses the ver
   assert.match(source, /categoriesPatched=true/);
   assert.match(route, /spending-assistant\.js\?v='\+SPENDING_BUILD/);
   assert.match(route, /spending-transaction-recategorize\.js\?v='\+SPENDING_BUILD/);
+  assert.match(route, /spending-classification-rules\.js\?v='\+SPENDING_BUILD/);
+});
+
+test('master rule classifies outgoing Talbot Venmo and Zelle payments as family gifts', () => {
+  const config = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'spending', 'vendor-category-rules.json'), 'utf8'));
+  const rows = classifications.apply([
+    { merchant: 'TD ZELLE SENT 624700B0F32C Zelle WILLIAM TALBOT', note: '', amount: 41.46, category: 'Other', subcategory: 'Other' },
+    { merchant: 'Venmo', note: 'Payment to Jamie Talbot', amount: 20, category: 'Other', subcategory: 'Other' },
+    { merchant: 'Venmo', note: 'Payment to a friend', amount: 20, category: 'Other', subcategory: 'Other' },
+    { merchant: 'Zelle TALBOT refund', note: '', amount: -20, category: 'Other', subcategory: 'Other' }
+  ], config);
+  assert.deepEqual(rows.slice(0, 2).map(row => [row.category, row.subcategory]), [['Gifts', 'Family'], ['Gifts', 'Family']]);
+  assert.deepEqual(rows.slice(2).map(row => [row.category, row.subcategory]), [['Other', 'Other'], ['Other', 'Other']]);
+});
+
+test('invalid or missing classification data preserves published categories', () => {
+  const row = { merchant: 'Zelle TALBOT', amount: 25, category: 'Other', subcategory: 'Other' };
+  assert.equal(classifications.classify(row, null), row);
+  assert.equal(classifications.classify(row, { schema: 'wrong', version: 1, rules: [] }), row);
+});
+
+test('an exact manual override wins over the master vendor rule', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'spending-assistant.js'), 'utf8');
+  const config = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'spending', 'vendor-category-rules.json'), 'utf8'));
+  const context = {
+    window: { BillsOSSpendingClassifications: classifications },
+    document: { readyState: 'loading', addEventListener() {} },
+    setTimeout() {}, fetch() {},
+    T: [{ date: '2026-09-04', m: 'Zelle WILLIAM TALBOT', a: 41.46, p: true, c: 'Other', s: 'Other', n: '' }]
+  };
+  vm.createContext(context);
+  vm.runInContext(source.replace(/\}\)\(\);\s*$/, 'window.__classificationTest={effectiveRows:effectiveRows,setRules:function(value){classificationRules=value},setState:function(value){state=value}};})();'), context);
+  context.window.__classificationTest.setRules(config);
+  context.window.__classificationTest.setState({ overrides: [{
+    id: 'manual', match: { date: '2026-09-04', merchant: 'Zelle WILLIAM TALBOT', amount: 41.46, occurrence: 1 },
+    category: 'Personal Care', subcategory: 'Personal Care', originalCategory: 'Other', originalSubcategory: 'Other'
+  }] });
+  const row = context.window.__classificationTest.effectiveRows()[0];
+  assert.equal(row.category, 'Personal Care');
+  assert.equal(row.subcategory, 'Personal Care');
+  assert.equal(row.overrideId, 'manual');
 });
 
 test('transaction rows can open an owner-only recategorization picker without changing totals', () => {
@@ -136,7 +178,7 @@ test('transaction rows can open an owner-only recategorization picker without ch
   assert.match(source, /occurrence:t\.occurrence/);
   assert.match(source, /dataset\.txOccurrence/);
   assert.match(source, /fetch\('current\.json'/);
-  assert.match(route, /20260904vendorgap1/);
+  assert.match(route, /20260904familygifts1/);
   assert.match(fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8'), /"spending", "current\.json"/);
 });
 

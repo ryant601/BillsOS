@@ -6,7 +6,7 @@ const express = require('express');
 const originalStatic = express.static;
 
 const SPENDING_PATH = path.join(__dirname, 'spending', 'index.html');
-const SPENDING_BUILD = '20260904vendorgap1';
+const SPENDING_BUILD = '20260904familygifts1';
 
 function spendingRunwayPatch(html) {
   if (html.includes('/spending-runway.js')) return html;
@@ -91,6 +91,11 @@ function spendingHistoryPatch(html){
   return html.replace('</body>','<script defer src="/spending-history.js?v='+SPENDING_BUILD+'"></script>\n</body>');
 }
 
+function spendingClassificationPatch(html){
+  if(html.includes('/spending-classification-rules.js'))return html;
+  return html.replace('</body>','<script defer src="/spending-classification-rules.js?v='+SPENDING_BUILD+'"></script>\n</body>');
+}
+
 function spendingAssistantPatch(html){
   if(html.includes('/spending-assistant.js'))return html;
   return html.replace('</body>','<script defer src="/spending-assistant.js?v='+SPENDING_BUILD+'"></script>\n</body>');
@@ -105,7 +110,7 @@ function serveSpendingHtml(filePath, includeLiveStamp, res, next){
   try {
     let html = fs.readFileSync(filePath, 'utf8');
     html = spendingLayoutPatch(html);
-    html = spendingNavPatch(spendingHistoryPatch(spendingAssistantPatch(spendingTransactionRecategorizePatch(html))));
+    html = spendingNavPatch(spendingHistoryPatch(spendingAssistantPatch(spendingTransactionRecategorizePatch(spendingClassificationPatch(html)))));
     if(includeLiveStamp) html = spendingDataStampPatch(html);
     html = spendingRunwayPatch(html);
     html = spendingThemePatch(html);
