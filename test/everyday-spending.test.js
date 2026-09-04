@@ -19,10 +19,13 @@ test('Everyday Spending native section contains the current snapshot', () => {
   assert.equal(snapshot.cycle.start, '2026-09-04');
   assert.equal(snapshot.cycle.end, '2026-09-17');
   assert.equal(snapshot.cycle.nextTransfer, '2026-09-18');
-  assert.equal(snapshot.metrics.totalSpent, 0);
-  assert.equal(snapshot.metrics.pendingSpend, 0);
-  assert.equal(snapshot.metrics.postedSpend, 0);
-  assert.deepEqual(snapshot.transactions, []);
+  assert.ok(Array.isArray(snapshot.transactions));
+  const transactionTotal = snapshot.transactions.reduce((sum, transaction) => sum + Number(transaction.a || 0), 0);
+  const pendingTotal = snapshot.transactions.filter(transaction => transaction.p).reduce((sum, transaction) => sum + Number(transaction.a || 0), 0);
+  const postedTotal = snapshot.transactions.filter(transaction => !transaction.p).reduce((sum, transaction) => sum + Number(transaction.a || 0), 0);
+  assert.equal(snapshot.metrics.totalSpent, transactionTotal);
+  assert.equal(snapshot.metrics.pendingSpend, pendingTotal);
+  assert.equal(snapshot.metrics.postedSpend, postedTotal);
 });
 
 test('completed spending cycle is archived with its transactions and exact closed dates', () => {
@@ -97,6 +100,14 @@ test('subcategory transaction counts sit apart from the type name', () => {
   const assistant = fs.readFileSync(path.join(__dirname, '..', 'spending-assistant.js'), 'utf8');
   assert.match(assistant, /esc\(subcategory\)\+'<\/b> <small>'/);
   assert.match(route, /\.sub>summary b\+small\{margin-left:8px/);
+});
+
+test('vendor rows keep padded separation between long names and transaction counts', () => {
+  const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
+  assert.match(route, /\.vendor>summary\{padding:12px 14px!important\}/);
+  assert.match(route, /\.vendor>summary>div:first-child\{display:flex;align-items:baseline;column-gap:8px;row-gap:2px;flex-wrap:wrap\}/);
+  assert.match(route, /\.vendor>summary>div:first-child b\{min-width:0;overflow-wrap:anywhere\}/);
+  assert.match(route, /\.vendor>summary>div:first-child small\{font-size:11px;font-weight:500;white-space:nowrap\}/);
 });
 
 test('runway ends before payday and rolls forward on transfer morning', () => {

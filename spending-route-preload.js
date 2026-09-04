@@ -6,7 +6,7 @@ const express = require('express');
 const originalStatic = express.static;
 
 const SPENDING_PATH = path.join(__dirname, 'spending', 'index.html');
-const SPENDING_BUILD = '20260904runway5';
+const SPENDING_BUILD = '20260904vendorgap1';
 
 function spendingRunwayPatch(html) {
   if (html.includes('/spending-runway.js')) return html;
@@ -44,6 +44,10 @@ body.bo-spending .rgrid{grid-template-columns:repeat(5,minmax(0,1fr))!important}
 body.bo-spending .sub>summary,body.bo-spending .vendor>summary{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:12px!important;align-items:center!important;min-width:0!important}
 body.bo-spending .sub>summary>div:first-child,body.bo-spending .vendor>summary>div:first-child,body.bo-spending .sub>summary .name,body.bo-spending .vendor>summary .name{min-width:0;overflow:hidden}
 body.bo-spending .sub>summary b+small{margin-left:8px;font-size:11px;font-weight:500}
+body.bo-spending .vendor>summary{padding:12px 14px!important}
+body.bo-spending .vendor>summary>div:first-child{display:flex;align-items:baseline;column-gap:8px;row-gap:2px;flex-wrap:wrap}
+body.bo-spending .vendor>summary>div:first-child b{min-width:0;overflow-wrap:anywhere}
+body.bo-spending .vendor>summary>div:first-child small{font-size:11px;font-weight:500;white-space:nowrap}
 body.bo-spending .sub .right,body.bo-spending .vendor .right{display:flex;align-items:center;gap:8px;white-space:nowrap;flex:0 0 auto}
 body.bo-spending .sub .right b,body.bo-spending .vendor .right b{font-variant-numeric:tabular-nums;white-space:nowrap}
 body.bo-spending .row{display:grid!important;grid-template-columns:72px minmax(0,1fr) auto max-content!important;column-gap:8px!important;align-items:center!important;min-width:0!important}
