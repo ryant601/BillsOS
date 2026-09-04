@@ -113,7 +113,7 @@
   }
 
   function isSpendingSnapshot(href) {
-    return /(?:^|\/)current\.json(?:\?|$)/.test(String(href || ''));
+    return /(?:^|\/)spending\/current\.json(?:\?|$)/.test(String(href || ''));
   }
 
   function install() {
@@ -152,7 +152,8 @@
     coverUnits: coverUnits,
     availablePerDay: availablePerDay,
     paceLabel: paceLabel,
-    applyRunway: applyRunway
+    applyRunway: applyRunway,
+    isSpendingSnapshot: isSpendingSnapshot
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.BillsOSSpendingRunway = api;

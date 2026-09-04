@@ -1,3 +1,10 @@
 {
-  "reports": []
+  "reports": [
+    {
+      "label": "Aug 21 – Sep 3, 2026",
+      "start": "2026-08-21",
+      "end": "2026-09-03",
+      "path": "/spending/archive/2026-08-21/"
+    }
+  ]
 }

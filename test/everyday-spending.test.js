@@ -10,14 +10,37 @@ test('Everyday Spending native section contains the current snapshot', () => {
   const snapshot = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'spending', 'current.json'), 'utf8'));
   assert.match(html, /Everyday Spending/);
   assert.match(html, /Spending since transfer/);
-  assert.match(html, /fetch\('\/spending\/current\.json\?v=\d{8}-\d{6}'/);
+  assert.match(html, /fetch\('\/spending\/current\.json\?v=[a-z0-9-]+'/i);
   assert.equal(snapshot.schema, 'billsos-everyday-spending');
   assert.equal(snapshot.version, 1);
   assert.ok(Number.isFinite(snapshot.metrics.transferredIn));
   assert.ok(Number.isFinite(snapshot.metrics.totalSpent));
   assert.ok(Number.isFinite(snapshot.metrics.remainingAvailable));
-  assert.ok(snapshot.transactions.some(row => row.c === 'Dining'));
-  assert.ok(snapshot.transactions.some(row => row.c === 'Groceries'));
+  assert.equal(snapshot.cycle.start, '2026-09-04');
+  assert.equal(snapshot.cycle.end, '2026-09-17');
+  assert.equal(snapshot.cycle.nextTransfer, '2026-09-18');
+  assert.equal(snapshot.metrics.totalSpent, 0);
+  assert.equal(snapshot.metrics.pendingSpend, 0);
+  assert.equal(snapshot.metrics.postedSpend, 0);
+  assert.deepEqual(snapshot.transactions, []);
+});
+
+test('completed spending cycle is archived with its transactions and exact closed dates', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'spending', 'archive', 'manifest.json'), 'utf8'));
+  const archived = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'spending', 'archive', '2026-08-21', 'current.json'), 'utf8'));
+  const archivedHtml = fs.readFileSync(path.join(__dirname, '..', 'spending', 'archive', '2026-08-21', 'index.html'), 'utf8');
+  assert.deepEqual(manifest.reports[0], {
+    label: 'Aug 21 – Sep 3, 2026',
+    start: '2026-08-21',
+    end: '2026-09-03',
+    path: '/spending/archive/2026-08-21/'
+  });
+  assert.equal(archived.cycle.start, '2026-08-21');
+  assert.equal(archived.cycle.end, '2026-09-03');
+  assert.equal(archived.cycle.nextTransfer, '2026-09-04');
+  assert.ok(archived.transactions.some(row => row.c === 'Dining'));
+  assert.ok(archived.transactions.some(row => row.c === 'Groceries'));
+  assert.match(archivedHtml, /fetch\('\/spending\/archive\/2026-08-21\/current\.json/);
 });
 
 test('dashboard preload injects Everyday Spending navigation and cache version', () => {
@@ -131,6 +154,8 @@ test('runway ends before payday and rolls forward on transfer morning', () => {
   assert.equal(laterCycle.cycle.start, '2026-09-18');
   assert.equal(laterCycle.cycle.end, '2026-10-01');
   assert.equal(laterCycle.cycle.nextTransfer, '2026-10-02');
+  assert.equal(runway.isSpendingSnapshot('/spending/current.json?v=active'), true);
+  assert.equal(runway.isSpendingSnapshot('/spending/archive/2026-08-21/current.json'), false);
   assert.match(route, /spending-runway\.js\?v='\s*\+\s*SPENDING_BUILD/);
   assert.match(route, /html = spendingRunwayPatch\(html\)/);
 });
