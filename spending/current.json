@@ -5,7 +5,7 @@
     "start": "2026-09-04",
     "end": "2026-09-17",
     "nextTransfer": "2026-09-18",
-    "daysLeft": 14
+    "daysLeft": 13
   },
   "metrics": {
     "transferredIn": 2200,
@@ -13,13 +13,13 @@
     "remainingAvailable": 2180.23,
     "pendingSpend": 127.52,
     "postedSpend": 0,
-    "availablePerDay": 155.73,
+    "availablePerDay": 167.71,
     "percentCycleFundsUsed": 5.8
   },
   "freshness": {
-    "balanceAsOf": "2026-09-05T00:56:54.382037Z",
+    "balanceAsOf": "2026-09-05T10:56:29.018368Z",
     "transactionFreshness": "unknown",
-    "transactionsQueriedAt": "2026-09-05T00:56:57Z"
+    "transactionsQueriedAt": "2026-09-05T10:56:30Z"
   },
   "reconciliation": "Fresh TD banking snapshot verified. The $2,200 transfer into Everything Else is cycle funding and is not spending. The $50 transfer to Bill Payments is an internal account transfer and is excluded from spending. Current classified spending is $127.52, all pending. Transaction banking freshness is unknown even though coverage is complete for this query.",
   "transactions": [
