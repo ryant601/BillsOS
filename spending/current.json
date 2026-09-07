@@ -10,17 +10,17 @@
   "metrics": {
     "transferredIn": 2200,
     "totalSpent": 308.45,
-    "remainingAvailable": 1922.29,
+    "remainingAvailable": 1601.02,
     "pendingSpend": 120.0,
     "postedSpend": 188.45,
-    "availablePerDay": 160.19,
+    "availablePerDay": 133.42,
     "percentCycleFundsUsed": 14.0
   },
   "freshness": {
-    "balanceAsOf": "2026-09-06T22:32:36.166794Z",
+    "balanceAsOf": "2026-09-07T01:38:29.287591Z",
     "transactionFreshness": "unknown"
   },
-  "reconciliation": "Fresh TD banking snapshot verified. The $2,200 transfer into Everything Else is cycle funding and is not spending. The $50 transfer to Bill Payments is an internal account transfer and is excluded from spending. Current classified spending is $308.45: $188.45 posted and $120.00 pending. Transaction banking freshness is unknown even though coverage is complete for this query.",
+  "reconciliation": "Fresh TD banking snapshot verified. The $2,200 transfer into Everything Else is cycle funding and is not spending. The $50 transfer to Bill Payments is an internal account transfer and is excluded from spending. Current classified spending is $308.45: $188.45 posted and $120.00 pending. Remaining uses the bank-reported available balance of $1,601.02. Transaction banking freshness is unknown even though coverage is complete for this query.",
   "transactions": [
     {"date":"2026-09-04","m":"Chick-fil-A","a":25.85,"p":true,"c":"Dining","s":"Fast Food"},
     {"date":"2026-09-04","m":"McDonald's","a":14.56,"p":true,"c":"Dining","s":"Fast Food"},
