@@ -11,7 +11,7 @@
     "available": 2500.0,
     "currency": "USD"
   },
-  "bankingAsOf": "2026-09-08T19:46:42.140321Z",
+  "bankingAsOf": "2026-09-08T20:13:05.641033Z",
   "source": "Finances",
   "sourceField": "balances.available"
 }
