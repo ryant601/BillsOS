@@ -36,9 +36,11 @@
     if(!card)return false;
     var value=card.querySelector('.bo-kpi-value'),note=card.querySelector('.bo-kpi-note');
     var total=rows.reduce(function(sum,row){return sum+Math.abs(Number(row.amount||0))},0);
-    if(value)value.textContent=money(total);
-    if(note)note.textContent=rows.length+' paycheck'+(rows.length===1?'':'s')+' · next 14 days';
-    card.setAttribute('data-billsos-income-window','14-days');
+    var nextValue=money(total),nextNote=rows.length+' paycheck'+(rows.length===1?'':'s')+' · next 14 days';
+    if(value&&value.textContent!==nextValue)value.textContent=nextValue;
+    if(note&&note.textContent!==nextNote)note.textContent=nextNote;
+    if(card.getAttribute('data-billsos-income-window')!=='14-days')card.setAttribute('data-billsos-income-window','14-days');
+    if(card.getAttribute('data-billsos-income-source')!=='calendar')card.setAttribute('data-billsos-income-source','calendar');
     return true;
   }
 
@@ -51,7 +53,7 @@
     content.innerHTML='<div class="bo-detail-list">'+(rows.length?rows.map(function(row){
       var date=new Date(row.iso+'T00:00:00');
       var label=date.toLocaleDateString([], {month:'short',day:'numeric'});
-      return '<div class="bo-detail-row"><div class="bo-detail-date">'+label+'</div><div><div class="bo-detail-name">'+String(row.name||'Paycheck').replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})+'</div><div class="bo-detail-meta">Scheduled paycheck</div></div><div class="bo-detail-amount">'+money(Math.abs(Number(row.amount||0)))+'</div></div>';
+      return '<div class="bo-detail-row"><div class="bo-detail-date">'+label+'</div><div><div class="bo-detail-name">'+String(row.name||'Paycheck').replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})+'</div><div class="bo-detail-meta">Scheduled paycheck · calendar</div></div><div class="bo-detail-amount">'+money(Math.abs(Number(row.amount||0)))+'</div></div>';
     }).join(''):'<div class="bo-empty">No paychecks are scheduled in the next 14 days.</div>')+'</div><a class="bo-detail-action" href="/control#income">Manage income</a>';
   }
 
@@ -59,9 +61,37 @@
     if(location.pathname!=='/'||new URLSearchParams(location.search).get('view')==='calendar')return;
     fetch('/api/bills?income14='+Date.now(),{cache:'no-store'}).then(function(response){if(!response.ok)throw new Error('income unavailable');return response.json()}).then(function(data){
       var rows=scheduledIncome(data);
-      patchCard(rows);
-      setTimeout(function(){patchCard(rows)},500);
-      setTimeout(function(){patchCard(rows)},1500);
+      var applyScheduled=false;
+      function apply(){
+        applyScheduled=false;
+        patchCard(rows);
+        patchDrawer(rows);
+      }
+      function scheduleApply(){
+        if(applyScheduled)return;
+        applyScheduled=true;
+        setTimeout(apply,0);
+      }
+
+      apply();
+      setTimeout(apply,250);
+      setTimeout(apply,750);
+      setTimeout(apply,1500);
+      setTimeout(apply,3000);
+
+      var observer=new MutationObserver(function(mutations){
+        var relevant=mutations.some(function(mutation){
+          var target=mutation.target&&mutation.target.nodeType===1?mutation.target:mutation.target&&mutation.target.parentElement;
+          return target&&(
+            (target.closest&&target.closest('[data-bo-detail="income"]'))||
+            target.id==='boDetailTitle'||target.id==='boDetailSubtitle'||target.id==='boDetailContent'||
+            (target.closest&&target.closest('#boDetailContent'))
+          );
+        });
+        if(relevant)scheduleApply();
+      });
+      observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['data-bo-detail']});
+
       document.addEventListener('click',function(event){
         var card=event.target&&event.target.closest?event.target.closest('[data-bo-detail="income"]'):null;
         if(card)setTimeout(function(){patchDrawer(rows)},0);
