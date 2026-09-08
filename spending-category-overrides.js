@@ -60,8 +60,29 @@ function overrideId(identity) {
   return Buffer.from(`${identity.date}|${identity.merchant}|${cents(identity.amount)}|${identity.occurrence}`, 'utf8').toString('base64url');
 }
 
+function categoryKey(category, subcategory) {
+  return `${cleanText(category)}|${cleanText(subcategory)}`;
+}
+
+function cleanCategories(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value.map(item => ({
+    category: cleanText(item && item.category),
+    subcategory: cleanText(item && item.subcategory),
+    createdAt: cleanText(item && item.createdAt) || null,
+    createdBy: cleanText(item && item.createdBy) || null
+  })).filter(item => {
+    if (!item.category || !item.subcategory) return false;
+    const key = categoryKey(item.category, item.subcategory);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function emptyState() {
-  return { schemaVersion: SCHEMA_VERSION, overrides: [], history: [], updatedAt: null };
+  return { schemaVersion: SCHEMA_VERSION, overrides: [], categories: [], history: [], updatedAt: null };
 }
 
 function createSpendingCategoryStore(options = {}) {
@@ -73,7 +94,12 @@ function createSpendingCategoryStore(options = {}) {
     try {
       const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       if (parsed && parsed.schemaVersion === SCHEMA_VERSION && Array.isArray(parsed.overrides)) {
-        return { ...emptyState(), ...parsed, history: Array.isArray(parsed.history) ? parsed.history : [] };
+        return {
+          ...emptyState(),
+          ...parsed,
+          categories: cleanCategories(parsed.categories),
+          history: Array.isArray(parsed.history) ? parsed.history : []
+        };
       }
     } catch (_err) {}
     return emptyState();
@@ -96,6 +122,7 @@ function createSpendingCategoryStore(options = {}) {
     return {
       schemaVersion: state.schemaVersion,
       overrides: state.overrides,
+      categories: state.categories,
       history: state.history.slice(-20),
       updatedAt: state.updatedAt
     };
@@ -121,21 +148,35 @@ function createSpendingCategoryStore(options = {}) {
       const ambiguous = !hasOccurrence && exact.length > 1;
       throw Object.assign(new Error(ambiguous ? 'More than one transaction matches; no change was saved' : 'The exact transaction is no longer in the current report'), { status: 409 });
     }
+
     const category = cleanText(request.category);
     const subcategory = cleanText(request.subcategory);
-    const validPair = rows.some(row => row.category === category && row.subcategory === subcategory);
-    if (!validPair) throw Object.assign(new Error('Choose an existing BillsOS category and subcategory'), { status: 400 });
+    if (!category || !subcategory) throw Object.assign(new Error('A category and subcategory are required'), { status: 400 });
+    if (category.length > 60 || subcategory.length > 60) throw Object.assign(new Error('Category names must be 60 characters or fewer'), { status: 400 });
+
+    const state = readState();
+    const requestedKey = categoryKey(category, subcategory);
+    const builtInPair = rows.some(row => categoryKey(row.category, row.subcategory) === requestedKey);
+    const savedPair = state.categories.some(item => categoryKey(item.category, item.subcategory) === requestedKey);
+    if (!builtInPair && !savedPair && request.createCategory !== true) {
+      throw Object.assign(new Error('Choose an existing BillsOS category and subcategory, or create a new one'), { status: 400 });
+    }
+
+    const now = new Date().toISOString();
+    const by = cleanText(username) || 'owner';
+    if (!builtInPair && !savedPair && request.createCategory === true) {
+      state.categories.push({ category, subcategory, createdAt: now, createdBy: by });
+      state.history.push({ action: 'category-created', at: now, by, category, subcategory });
+    }
 
     const identity = transactionIdentity(rows, exact[0]);
     const id = overrideId(identity);
-    const state = readState();
-    const now = new Date().toISOString();
     const previous = state.overrides.find(item => item.id === id) || null;
     const saved = {
       id, match: identity, category, subcategory,
       originalCategory: previous ? previous.originalCategory : exact[0].category,
       originalSubcategory: previous ? previous.originalSubcategory : exact[0].subcategory,
-      updatedAt: now, updatedBy: cleanText(username) || 'owner'
+      updatedAt: now, updatedBy: by
     };
     state.overrides = state.overrides.filter(item => item.id !== id).concat(saved);
     state.history.push({ action: previous ? 'updated' : 'created', at: now, by: saved.updatedBy, override: saved });
