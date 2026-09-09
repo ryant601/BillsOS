@@ -1,6 +1,15 @@
 (function(){
   'use strict';
 
+  var SETTLE_CLASS='billsos-income-settling';
+  document.documentElement.classList.add(SETTLE_CLASS);
+  (function installSettleStyle(){
+    if(document.getElementById('billsosIncomeSettleStyle'))return;
+    var style=document.createElement('style');style.id='billsosIncomeSettleStyle';
+    style.textContent='html.'+SETTLE_CLASS+' [data-bo-detail="income"] .bo-kpi-value,html.'+SETTLE_CLASS+' [data-bo-detail="income"] .bo-kpi-note{visibility:hidden!important}';
+    document.head.appendChild(style);
+  })();
+
   function money(value){
     return Number(value||0).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});
   }
@@ -36,11 +45,11 @@
     if(!card)return false;
     var value=card.querySelector('.bo-kpi-value'),note=card.querySelector('.bo-kpi-note');
     var total=rows.reduce(function(sum,row){return sum+Math.abs(Number(row.amount||0))},0);
-    var nextValue=money(total),nextNote=rows.length+' paycheck'+(rows.length===1?'':'s')+' · next 14 days';
-    if(value&&value.textContent!==nextValue)value.textContent=nextValue;
-    if(note&&note.textContent!==nextNote)note.textContent=nextNote;
+    if(value)value.textContent=money(total);
+    if(note)note.textContent=rows.length+' paycheck'+(rows.length===1?'':'s')+' · next 14 days';
     card.setAttribute('data-billsos-income-window','14-days');
     card.setAttribute('data-billsos-income-source','calendar');
+    card.classList.add('billsos-income-ready');
     return true;
   }
 
@@ -57,33 +66,46 @@
     }).join(''):'<div class="bo-empty">No paychecks are scheduled in the next 14 days.</div>')+'</div><a class="bo-detail-action" href="/control#income">Manage income</a>';
   }
 
-  function install(){
-    if(location.pathname!=='/'||new URLSearchParams(location.search).get('view')==='calendar')return;
-    fetch('/api/bills?income14='+Date.now(),{cache:'no-store'}).then(function(response){if(!response.ok)throw new Error('income unavailable');return response.json()}).then(function(data){
-      var rows=scheduledIncome(data);
-      function apply(){patchCard(rows);patchDrawer(rows)}
+  function revealFallback(){document.documentElement.classList.remove(SETTLE_CLASS)}
 
-      /* The dashboard shell performs several startup renders. Apply after each
-         startup phase, then stop. A permanent MutationObserver here caused the
-         Expected Income card and the shell renderer to continually overwrite
-         one another, producing visible value flicker. */
-      apply();
-      setTimeout(apply,250);
-      setTimeout(apply,750);
-      setTimeout(apply,1500);
-      setTimeout(apply,3000);
+  function install(){
+    if(location.pathname!=='/'||new URLSearchParams(location.search).get('view')==='calendar'){revealFallback();return}
+    fetch('/api/bills?income14='+Date.now(),{cache:'no-store'}).then(function(response){if(!response.ok)throw new Error('income unavailable');return response.json()}).then(function(data){
+      var rows=scheduledIncome(data),observer=null,settleTimer=0;
+
+      function finalize(){
+        if(settleTimer){clearTimeout(settleTimer);settleTimer=0}
+        if(observer){observer.disconnect();observer=null}
+        patchCard(rows);
+        revealFallback();
+      }
+
+      function armOnce(){
+        if(settleTimer||!document.querySelector('[data-bo-detail="income"]'))return;
+        /* html-hotfix-loader owns the Home KPI markup and deliberately refreshes
+           it at 1.2s and 2.4s while calendar metrics settle. Keep the value hidden
+           through those shell renders, then write the calendar-backed 14-day value
+           once. This prevents the two renderers from ever becoming visible in turn. */
+        settleTimer=setTimeout(finalize,2600);
+        if(observer){observer.disconnect();observer=null}
+      }
+
+      if(document.querySelector('[data-bo-detail="income"]'))armOnce();
+      else{
+        observer=new MutationObserver(function(){armOnce()});
+        observer.observe(document.body,{childList:true,subtree:true});
+      }
 
       document.addEventListener('click',function(event){
         var card=event.target&&event.target.closest?event.target.closest('[data-bo-detail="income"]'):null;
-        if(card)setTimeout(function(){apply()},0);
+        if(card)setTimeout(function(){patchDrawer(rows)},0);
       },true);
       document.addEventListener('keydown',function(event){
         if(event.key!=='Enter'&&event.key!==' ')return;
         var card=event.target&&event.target.closest?event.target.closest('[data-bo-detail="income"]'):null;
-        if(card)setTimeout(function(){apply()},0);
+        if(card)setTimeout(function(){patchDrawer(rows)},0);
       },true);
-      window.addEventListener('pageshow',function(){setTimeout(apply,0)},{once:true});
-    }).catch(function(){});
+    }).catch(function(){revealFallback()});
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
