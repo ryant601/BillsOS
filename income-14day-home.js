@@ -39,8 +39,8 @@
     var nextValue=money(total),nextNote=rows.length+' paycheck'+(rows.length===1?'':'s')+' · next 14 days';
     if(value&&value.textContent!==nextValue)value.textContent=nextValue;
     if(note&&note.textContent!==nextNote)note.textContent=nextNote;
-    if(card.getAttribute('data-billsos-income-window')!=='14-days')card.setAttribute('data-billsos-income-window','14-days');
-    if(card.getAttribute('data-billsos-income-source')!=='calendar')card.setAttribute('data-billsos-income-source','calendar');
+    card.setAttribute('data-billsos-income-window','14-days');
+    card.setAttribute('data-billsos-income-source','calendar');
     return true;
   }
 
@@ -61,46 +61,28 @@
     if(location.pathname!=='/'||new URLSearchParams(location.search).get('view')==='calendar')return;
     fetch('/api/bills?income14='+Date.now(),{cache:'no-store'}).then(function(response){if(!response.ok)throw new Error('income unavailable');return response.json()}).then(function(data){
       var rows=scheduledIncome(data);
-      var applyScheduled=false;
-      function apply(){
-        applyScheduled=false;
-        patchCard(rows);
-        patchDrawer(rows);
-      }
-      function scheduleApply(){
-        if(applyScheduled)return;
-        applyScheduled=true;
-        setTimeout(apply,0);
-      }
+      function apply(){patchCard(rows);patchDrawer(rows)}
 
+      /* The dashboard shell performs several startup renders. Apply after each
+         startup phase, then stop. A permanent MutationObserver here caused the
+         Expected Income card and the shell renderer to continually overwrite
+         one another, producing visible value flicker. */
       apply();
       setTimeout(apply,250);
       setTimeout(apply,750);
       setTimeout(apply,1500);
       setTimeout(apply,3000);
 
-      var observer=new MutationObserver(function(mutations){
-        var relevant=mutations.some(function(mutation){
-          var target=mutation.target&&mutation.target.nodeType===1?mutation.target:mutation.target&&mutation.target.parentElement;
-          return target&&(
-            (target.closest&&target.closest('[data-bo-detail="income"]'))||
-            target.id==='boDetailTitle'||target.id==='boDetailSubtitle'||target.id==='boDetailContent'||
-            (target.closest&&target.closest('#boDetailContent'))
-          );
-        });
-        if(relevant)scheduleApply();
-      });
-      observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['data-bo-detail']});
-
       document.addEventListener('click',function(event){
         var card=event.target&&event.target.closest?event.target.closest('[data-bo-detail="income"]'):null;
-        if(card)setTimeout(function(){patchDrawer(rows)},0);
+        if(card)setTimeout(function(){apply()},0);
       },true);
       document.addEventListener('keydown',function(event){
         if(event.key!=='Enter'&&event.key!==' ')return;
         var card=event.target&&event.target.closest?event.target.closest('[data-bo-detail="income"]'):null;
-        if(card)setTimeout(function(){patchDrawer(rows)},0);
+        if(card)setTimeout(function(){apply()},0);
       },true);
+      window.addEventListener('pageshow',function(){setTimeout(apply,0)},{once:true});
     }).catch(function(){});
   }
 
