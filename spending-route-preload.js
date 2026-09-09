@@ -6,7 +6,7 @@ const express = require('express');
 const originalStatic = express.static;
 
 const SPENDING_PATH = path.join(__dirname, 'spending', 'index.html');
-const SPENDING_BUILD = '20260904familygifts1';
+const SPENDING_BUILD = '20260909categoryemoji1';
 
 function spendingRunwayPatch(html) {
   if (html.includes('/spending-runway.js')) return html;
@@ -106,12 +106,20 @@ function spendingTransactionRecategorizePatch(html){
   return html.replace('</body>','<script defer src="/spending-transaction-recategorize.js?v='+SPENDING_BUILD+'"></script>\n</body>');
 }
 
+function spendingCategoryEmojiPatch(html){
+  if(html.includes('id="billsosSpendingCategoryEmojiScript"'))return html;
+  return html.replace('</body>','<script id="billsosSpendingCategoryEmojiScript" defer src="/spending-category-emoji.js?v='+SPENDING_BUILD+'"></script>\n</body>');
+}
+
 function serveSpendingHtml(filePath, includeLiveStamp, res, next){
   try {
     let html = fs.readFileSync(filePath, 'utf8');
     html = spendingLayoutPatch(html);
     html = spendingNavPatch(spendingHistoryPatch(spendingAssistantPatch(spendingTransactionRecategorizePatch(spendingClassificationPatch(html)))));
-    if(includeLiveStamp) html = spendingDataStampPatch(html);
+    if(includeLiveStamp) {
+      html = spendingDataStampPatch(html);
+      html = spendingCategoryEmojiPatch(html);
+    }
     html = spendingRunwayPatch(html);
     html = spendingThemePatch(html);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
