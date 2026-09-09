@@ -15,6 +15,11 @@ function cleanText(value) {
   return String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
 }
 
+function cleanEmoji(value) {
+  const emoji = cleanText(value);
+  return emoji && [...emoji].length <= 8 ? emoji : null;
+}
+
 function parseSnapshotTransactions(html) {
   const source = String(html || '');
   let rows = null;
@@ -70,6 +75,7 @@ function cleanCategories(value) {
   return value.map(item => ({
     category: cleanText(item && item.category),
     subcategory: cleanText(item && item.subcategory),
+    emoji: cleanEmoji(item && item.emoji),
     createdAt: cleanText(item && item.createdAt) || null,
     createdBy: cleanText(item && item.createdBy) || null
   })).filter(item => {
@@ -165,8 +171,9 @@ function createSpendingCategoryStore(options = {}) {
     const now = new Date().toISOString();
     const by = cleanText(username) || 'owner';
     if (!builtInPair && !savedPair && request.createCategory === true) {
-      state.categories.push({ category, subcategory, createdAt: now, createdBy: by });
-      state.history.push({ action: 'category-created', at: now, by, category, subcategory });
+      const emoji = cleanEmoji(request.emoji);
+      state.categories.push({ category, subcategory, emoji, createdAt: now, createdBy: by });
+      state.history.push({ action: 'category-created', at: now, by, category, subcategory, emoji });
     }
 
     const identity = transactionIdentity(rows, exact[0]);
