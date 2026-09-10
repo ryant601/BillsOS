@@ -6,7 +6,7 @@ const express = require('express');
 const originalStatic = express.static;
 
 const SPENDING_PATH = path.join(__dirname, 'spending', 'index.html');
-const SPENDING_BUILD = '20260910categoryverify1';
+const SPENDING_BUILD = '20260910categoryautosave1';
 
 function spendingRunwayPatch(html) {
   if (html.includes('/spending-runway.js')) return html;
