@@ -1,6 +1,8 @@
 {
   "schema": "billsos-bill-payments-balance",
   "version": 1,
+  "source": "Finances",
+  "sourceField": "balances.available",
   "account": {
     "institution": "TD Bank",
     "name": "Bill Payments",
@@ -11,7 +13,5 @@
     "available": 673.64,
     "currency": "USD"
   },
-  "bankingAsOf": "2026-09-10T21:23:39.336575Z",
-  "source": "Finances",
-  "sourceField": "balances.available"
+  "bankingAsOf": "2026-09-10T21:23:39.336575Z"
 }
