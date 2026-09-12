@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  // Operational pull verified 2026-09-12T12:08:24Z; banking freshness remains source-reported below.
+  // Operational pull verified 2026-09-12T13:32:14Z; banking freshness remains source-reported below.
   var BALANCE_AS_OF='2026-09-12T12:04:26.475507Z';
   var TRANSACTION_FRESHNESS='unknown';
   function formatAsOf(iso){try{return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(new Date(iso));}catch(_e){return iso;}}
