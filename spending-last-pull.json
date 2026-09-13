@@ -1,7 +1,7 @@
 {
   "schema": "billsos-spending-pull",
   "version": 1,
-  "pulledAt": "2026-09-13T19:00:16.685984Z",
+  "pulledAt": "2026-09-13T19:12:48.540021Z",
   "source": "Finances",
-  "bankingAsOf": "2026-09-13T17:50:29.855799Z"
+  "bankingAsOf": "2026-09-13T18:57:35.080486Z"
 }
