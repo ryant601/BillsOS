@@ -138,6 +138,27 @@ test('master rule classifies outgoing Talbot Venmo and Zelle payments as family 
   assert.deepEqual(rows.slice(2).map(row => [row.category, row.subcategory]), [['Other', 'Other'], ['Other', 'Other']]);
 });
 
+test('server accepts a category pair supplied by the master vendor rules', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'billsos-rule-categories-'));
+  const snapshotPath = path.join(dir, 'current.json');
+  const rulesPath = path.join(dir, 'vendor-category-rules.json');
+  fs.writeFileSync(snapshotPath, JSON.stringify({ transactions: [
+    { date: '2026-09-16', m: 'Venmo', a: 25, p: false, c: 'Other', s: 'Other', n: 'Payment to Jamie Talbot' },
+    { date: '2026-09-16', m: 'Market', a: 12, p: false, c: 'Groceries', s: 'Supermarkets', n: '' }
+  ] }));
+  fs.writeFileSync(rulesPath, JSON.stringify({
+    schema: 'billsos-vendor-category-rules', version: 1,
+    rules: [{ id: 'family', enabled: true, match: { direction: 'outflow', containsAny: ['venmo'], containsAll: ['talbot'] }, classification: { category: 'Gifts', subcategory: 'Family' } }]
+  }));
+  const store = createSpendingCategoryStore({ dataDir: dir, snapshotPath, classificationRulesPath: rulesPath });
+  const saved = store.save({
+    transaction: { date: '2026-09-16', merchant: 'Market', amount: 12, pending: false, note: '', occurrence: 1 },
+    category: 'Gifts', subcategory: 'Family'
+  }, 'owner');
+  assert.equal(saved.category, 'Gifts');
+  assert.equal(saved.subcategory, 'Family');
+});
+
 test('invalid or missing classification data preserves published categories', () => {
   const row = { merchant: 'Zelle TALBOT', amount: 25, category: 'Other', subcategory: 'Other' };
   assert.equal(classifications.classify(row, null), row);
@@ -173,13 +194,17 @@ test('transaction rows can open an owner-only recategorization picker without ch
   assert.match(source, /Recategorize transaction/);
   assert.match(source, /session\.role!==\'owner\'/);
   assert.match(source, /\/api\/spending\/category-overrides/);
-  assert.match(source, /Only this transaction moves\. Spending totals and balances stay unchanged/);
+  assert.match(source, /data-action="save">Apply category/);
+  assert.match(source, /Choose a category, then select Apply category/);
+  assert.doesNotMatch(source, /data-action="save" hidden/);
+  assert.doesNotMatch(source, /Existing categories apply immediately/);
   assert.match(source, /More than one transaction matches this row, so BillsOS will not guess/);
   assert.match(source, /occurrence:t\.occurrence/);
   assert.match(source, /dataset\.txOccurrence/);
-  assert.match(source, /fetch\('current\.json'/);
-  assert.match(route, /20260904familygifts1/);
+  assert.match(source, /fetch\('\/spending\/current\.json\?txcat='/);
+  assert.match(route, /20260917categoryapply1/);
   assert.match(fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8'), /"spending", "current\.json"/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8'), /"spending", "vendor-category-rules\.json"/);
 });
 
 test('clicked duplicate row resolves to its stable occurrence', () => {

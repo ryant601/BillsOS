@@ -18,7 +18,8 @@ const CHECKMARK_FILE = path.join(DATA_DIR, "checkmarks.json");
 const BILLS_FILE = path.join(DATA_DIR, "bills.json");
 const spendingCategoryStore = createSpendingCategoryStore({
   dataDir: DATA_DIR,
-  snapshotPath: path.join(__dirname, "spending", "current.json")
+  snapshotPath: path.join(__dirname, "spending", "current.json"),
+  classificationRulesPath: path.join(__dirname, "spending", "vendor-category-rules.json")
 });
 
 app.use(express.urlencoded({ extended: false }));

@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const classifications = require('./spending-classification-rules');
 
 const SCHEMA_VERSION = 1;
 
@@ -94,6 +95,7 @@ function emptyState() {
 function createSpendingCategoryStore(options = {}) {
   const dataDir = options.dataDir;
   const snapshotPath = options.snapshotPath;
+  const classificationRulesPath = options.classificationRulesPath || null;
   const filePath = options.filePath || path.join(dataDir, 'spending-category-overrides.json');
 
   function readState() {
@@ -121,6 +123,16 @@ function createSpendingCategoryStore(options = {}) {
 
   function snapshotRows() {
     return parseSnapshotTransactions(fs.readFileSync(snapshotPath, 'utf8'));
+  }
+
+  function validCategoryPairs(rows) {
+    const pairs = new Set(rows.map(row => categoryKey(row.category, row.subcategory)));
+    if (!classificationRulesPath) return pairs;
+    try {
+      const rules = JSON.parse(fs.readFileSync(classificationRulesPath, 'utf8'));
+      classifications.apply(rows, rules).forEach(row => pairs.add(categoryKey(row.category, row.subcategory)));
+    } catch (_err) {}
+    return pairs;
   }
 
   function publicState() {
@@ -162,7 +174,7 @@ function createSpendingCategoryStore(options = {}) {
 
     const state = readState();
     const requestedKey = categoryKey(category, subcategory);
-    const builtInPair = rows.some(row => categoryKey(row.category, row.subcategory) === requestedKey);
+    const builtInPair = validCategoryPairs(rows).has(requestedKey);
     const savedPair = state.categories.some(item => categoryKey(item.category, item.subcategory) === requestedKey);
     if (!builtInPair && !savedPair && request.createCategory !== true) {
       throw Object.assign(new Error('Choose an existing BillsOS category and subcategory, or create a new one'), { status: 400 });
