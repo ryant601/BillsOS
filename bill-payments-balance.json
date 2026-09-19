@@ -5,5 +5,5 @@
   "sourceField": "balances.available",
   "account": {"institution":"TD Bank","name":"Bill Payments","officialName":"TD BEYOND CHECKING","mask":"6189"},
   "balance": {"available":1577.56,"currency":"USD"},
-  "bankingAsOf":"2026-09-18T23:57:03.093708Z"
+  "bankingAsOf":"2026-09-19T00:30:01.689024Z"
 }
