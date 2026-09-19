@@ -5,5 +5,5 @@
   "sourceField": "balances.available",
   "account": { "institution": "TD Bank", "name": "Savings Account", "officialName": "TD SIMPLE SAVINGS", "mask": "2468" },
   "balance": { "available": 0.0, "currency": "USD" },
-  "bankingAsOf": "2026-09-19T16:46:35.219235Z"
+  "bankingAsOf": "2026-09-19T17:54:11.260754Z"
 }
