@@ -16,16 +16,25 @@ test('Everyday Spending native section contains the current snapshot', () => {
   assert.ok(Number.isFinite(snapshot.metrics.transferredIn));
   assert.ok(Number.isFinite(snapshot.metrics.totalSpent));
   assert.ok(Number.isFinite(snapshot.metrics.remainingAvailable));
-  assert.equal(snapshot.cycle.start, '2026-09-04');
-  assert.equal(snapshot.cycle.end, '2026-09-17');
-  assert.equal(snapshot.cycle.nextTransfer, '2026-09-18');
+  assert.match(html, /current\.json\?v=20260924-174307/);
+  assert.equal(snapshot.cycle.start, '2026-09-18');
+  assert.equal(snapshot.cycle.end, '2026-10-01');
+  assert.equal(snapshot.cycle.nextTransfer, '2026-10-02');
+  assert.equal(snapshot.cycle.daysLeft, 8);
+  assert.equal(snapshot.metrics.transferredIn, 2207);
+  assert.equal(snapshot.metrics.totalSpent, 1101.49);
+  assert.equal(snapshot.metrics.remainingAvailable, 1182.29);
+  assert.equal(snapshot.metrics.pendingSpend, 80.72);
+  assert.equal(snapshot.metrics.postedSpend, 1020.77);
+  assert.equal(snapshot.freshness.balanceAsOf, '2026-09-24T21:42:29.041623Z');
   assert.ok(Array.isArray(snapshot.transactions));
+  assert.equal(snapshot.transactions.length, 49);
   const transactionTotal = snapshot.transactions.reduce((sum, transaction) => sum + Number(transaction.a || 0), 0);
   const pendingTotal = snapshot.transactions.filter(transaction => transaction.p).reduce((sum, transaction) => sum + Number(transaction.a || 0), 0);
   const postedTotal = snapshot.transactions.filter(transaction => !transaction.p).reduce((sum, transaction) => sum + Number(transaction.a || 0), 0);
-  assert.equal(snapshot.metrics.totalSpent, transactionTotal);
-  assert.equal(snapshot.metrics.pendingSpend, pendingTotal);
-  assert.equal(snapshot.metrics.postedSpend, postedTotal);
+  assert.equal(snapshot.metrics.totalSpent, Number(transactionTotal.toFixed(2)));
+  assert.equal(snapshot.metrics.pendingSpend, Number(pendingTotal.toFixed(2)));
+  assert.equal(snapshot.metrics.postedSpend, Number(postedTotal.toFixed(2)));
 });
 
 test('completed spending cycle is archived with its transactions and exact closed dates', () => {
