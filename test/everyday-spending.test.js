@@ -119,7 +119,7 @@ test('vendor rows keep padded separation between long names and transaction coun
   assert.match(route, /\.vendor>summary>div:first-child small\{font-size:11px;font-weight:500;white-space:nowrap\}/);
 });
 
-test('runway ends before payday and rolls forward on transfer morning', () => {
+test('runway ends before payday and never invents an unconfirmed transfer', () => {
   const runway = require('../spending-runway.js');
   const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
   assert.equal(runway.runwayDays('2026-09-02', '2026-09-04'), 2);
@@ -152,14 +152,13 @@ test('runway ends before payday and rolls forward on transfer morning', () => {
     cycle: { nextTransfer: '2026-09-04', daysLeft: 3 },
     metrics: { remainingAvailable: 241.08, availablePerDay: 80.36 }
   }, '2026-09-04', morning);
-  assert.equal(payday.cycle.daysLeft, 14);
-  assert.equal(payday.metrics.availablePerDay, 17.47);
+  assert.equal(payday.cycle.daysLeft, 0);
+  assert.equal(payday.metrics.availablePerDay, 0);
   assert.ok(payday.metrics.availablePerDay <= payday.metrics.remainingAvailable);
   assert.deepEqual(payday.cycle, {
-    start: '2026-09-04',
-    end: '2026-09-17',
-    nextTransfer: '2026-09-18',
-    daysLeft: 14
+    nextTransfer: '2026-09-04',
+    daysLeft: 0,
+    end: '2026-09-03'
   });
   const beforePayday = runway.applyRunway({
     cycle: { start: '2026-08-21', end: '2026-09-04', nextTransfer: '2026-09-04' },
@@ -171,9 +170,10 @@ test('runway ends before payday and rolls forward on transfer morning', () => {
     cycle: { start: '2026-08-21', end: '2026-09-04', nextTransfer: '2026-09-04' },
     metrics: { remainingAvailable: 241.08 }
   }, '2026-09-18', morning);
-  assert.equal(laterCycle.cycle.start, '2026-09-18');
-  assert.equal(laterCycle.cycle.end, '2026-10-01');
-  assert.equal(laterCycle.cycle.nextTransfer, '2026-10-02');
+  assert.equal(laterCycle.cycle.start, '2026-08-21');
+  assert.equal(laterCycle.cycle.end, '2026-09-03');
+  assert.equal(laterCycle.cycle.nextTransfer, '2026-09-04');
+  assert.equal(laterCycle.cycle.daysLeft, 0);
   assert.equal(runway.isSpendingSnapshot('/spending/current.json?v=active'), true);
   assert.equal(runway.isSpendingSnapshot('/spending/archive/2026-08-21/current.json'), false);
   assert.match(route, /spending-runway\.js\?v='\s*\+\s*SPENDING_BUILD/);

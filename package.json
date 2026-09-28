@@ -11,6 +11,7 @@
   },
   "scripts": {
     "start": "node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js -r ./spending-route-preload.js server.js",
+    "verify:spending": "node scripts/verify-spending-snapshot.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {

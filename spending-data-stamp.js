@@ -1,9 +1,28 @@
 (function(){
   'use strict';
-  var BALANCE_AS_OF='2026-09-24T21:42:29.041623Z';
-  var TRANSACTION_FRESHNESS='unknown';
-  var PUBLISH_RUN='2026-09-24T17:43:07-04:00';
-  function formatAsOf(iso){try{return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(new Date(iso));}catch(_e){return iso;}}
-  function install(){if(document.getElementById('spendingBankingStamp'))return;var anchor=document.querySelector('.muted,.subtle');if(!anchor)return;var stamp=document.createElement('div');stamp.id='spendingBankingStamp';stamp.className='spending-banking-stamp';stamp.innerHTML='<span class="spending-live-dot"></span><strong>Bank balance as of '+formatAsOf(BALANCE_AS_OF)+'</strong><span class="spending-freshness-note">'+(TRANSACTION_FRESHNESS==='unknown'?'Transaction banking freshness unknown':'Transactions freshness available')+'</span>';anchor.insertAdjacentElement('afterend',stamp);}
+  function easternDay(date){
+    var parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+    var values={};parts.forEach(function(part){values[part.type]=part.value});
+    return values.year+'-'+values.month+'-'+values.day;
+  }
+  function install(){
+    var anchor=document.getElementById('fresh');
+    if(!anchor||document.getElementById('spendingRefreshNotice'))return;
+    fetch('/spending/current.json?freshness='+Date.now(),{cache:'no-store'}).then(function(response){
+      if(!response.ok)throw new Error('snapshot unavailable');
+      return response.json();
+    }).then(function(snapshot){
+      var asOf=snapshot&&snapshot.freshness&&snapshot.freshness.balanceAsOf;
+      var next=snapshot&&snapshot.cycle&&snapshot.cycle.nextTransfer;
+      var asOfTime=Date.parse(asOf);
+      var today=easternDay(new Date());
+      var overdue=typeof next==='string'&&/^20\d{2}-\d{2}-\d{2}$/.test(next)&&today>=next;
+      var old=!Number.isFinite(asOfTime)||Date.now()-asOfTime>36*60*60*1000;
+      if(!overdue&&!old)return;
+      var notice=document.createElement('div');notice.id='spendingRefreshNotice';notice.className='spending-refresh-notice';
+      notice.textContent=overdue?'The next transfer date has passed. This is the last verified spending cycle; a new cycle has not been confirmed yet.':'Banking data is over 36 hours old. This is the last published spending report.';
+      anchor.insertAdjacentElement('afterend',notice);
+    }).catch(function(){});
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();

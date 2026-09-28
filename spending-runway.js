@@ -58,16 +58,8 @@
 
   function normalizeCycle(cycle, today) {
     if (!cycle) return cycle;
-    var day = isoDay(today);
     var next = isoDay(cycle.nextTransfer);
-    if (!day || !next) return cycle;
-    var interval = cycleLength(cycle);
-    while (day >= next) {
-      cycle.start = next;
-      next = addDays(next, interval);
-    }
-    cycle.nextTransfer = next;
-    cycle.end = addDays(next, -1);
+    if (next) cycle.end = addDays(next, -1);
     return cycle;
   }
 
@@ -106,8 +98,8 @@
     var days = runwayDays(day, snapshot.cycle.nextTransfer || snapshot.cycle.end);
     snapshot.cycle.daysLeft = days;
     if (snapshot.metrics) {
-      snapshot.metrics.availablePerDay = availablePerDay(snapshot.metrics.remainingAvailable, days, when);
-      snapshot.metrics.availablePaceLabel = paceLabel(days, when);
+      snapshot.metrics.availablePerDay = days ? availablePerDay(snapshot.metrics.remainingAvailable, days, when) : 0;
+      snapshot.metrics.availablePaceLabel = days ? paceLabel(days, when) : 'awaiting refresh';
     }
     return snapshot;
   }
