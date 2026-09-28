@@ -1,59 +1,626 @@
 {
   "schema": "billsos-everyday-spending",
   "version": 1,
-  "cycle": {"start":"2026-09-18","end":"2026-10-01","nextTransfer":"2026-10-02","daysLeft":8},
-  "metrics": {"transferredIn":2207.0,"totalSpent":1101.49,"remainingAvailable":1182.29,"pendingSpend":80.72,"postedSpend":1020.77,"availablePerDay":147.79,"percentCycleFundsUsed":49.9},
-  "freshness": {"balanceAsOf":"2026-09-24T21:42:29.041623Z","transactionFreshness":"unknown"},
-  "reconciliation": "A $2,207 transfer from Bill Payments on Sep 18 starts the current cycle; it is cycle funding and is not spending. ATM withdrawals and ATM fees are excluded under the existing rules. Remaining uses the exact bank-reported balances.available value. Transaction banking freshness is unknown even though coverage is complete for this query.",
+  "cycle": {
+    "start": "2026-09-18",
+    "end": "2026-10-01",
+    "nextTransfer": "2026-10-02",
+    "daysLeft": 4
+  },
+  "metrics": {
+    "transferredIn": 2207,
+    "totalSpent": 1912.33,
+    "remainingAvailable": 617.08,
+    "pendingSpend": 473.86,
+    "postedSpend": 1438.47,
+    "availablePerDay": 154.27,
+    "percentCycleFundsUsed": 86.6
+  },
+  "freshness": {
+    "balanceAsOf": "2026-09-28T23:55:36.040061Z",
+    "transactionFreshness": "unknown"
+  },
+  "reconciliation": "A $2,207 transfer from Bill Payments on Sep 18 starts the current cycle; it is cycle funding and is not spending. The pending $400 transfer into Everything Else and matching $400 ATM withdrawal on Sep 28 are excluded from cycle funding/spending, consistent with the existing ATM exclusion rule. ATM fees are excluded. Remaining uses the refreshed bank-reported balances.available value. Transaction coverage is complete for this query, while provider transaction freshness remains unknown.",
   "transactions": [
-    {"date":"2026-09-24","c":"Household","s":"Shopping","m":"QuickChek","a":2.97,"p":true},
-    {"date":"2026-09-24","c":"Dining","s":"Fast Food","m":"JWS","a":11.73,"p":true},
-    {"date":"2026-09-24","c":"Gas / Transportation","s":"Gas","m":"BP","a":1.0,"p":true},
-    {"date":"2026-09-24","c":"Dining","s":"Coffee","m":"Gregorys Coffee","a":12.69,"p":true},
-    {"date":"2026-09-24","c":"Household","s":"Shopping","m":"QuickChek","a":1.0,"p":true},
-    {"date":"2026-09-23","c":"Dining","s":"Fast Food","m":"Arby's","a":9.02,"p":true},
-    {"date":"2026-09-23","c":"Household","s":"Shopping","m":"QuickChek","a":8.51,"p":true},
-    {"date":"2026-09-23","c":"Dining","s":"Fast Food","m":"McDonald's","a":1.91,"p":false},
-    {"date":"2026-09-23","c":"Dining","s":"Fast Food","m":"JWS","a":11.01,"p":false},
-    {"date":"2026-09-23","c":"Financial","s":"Bank Fees","m":"MAINTENANCE FEE","a":15.0,"p":false},
-    {"date":"2026-09-23","c":"Dining","s":"Restaurants","m":"Alpine Creamery","a":14.28,"p":false},
-    {"date":"2026-09-23","c":"Household","s":"Shopping","m":"Amazon","a":17.53,"p":true},
-    {"date":"2026-09-23","c":"Dining","s":"Fast Food","m":"McDonald's","a":7.76,"p":true},
-    {"date":"2026-09-23","c":"Dining","s":"Fast Food","m":"Wendy's","a":8.51,"p":true},
-    {"date":"2026-09-22","c":"Dining","s":"Fast Food","m":"Wendy's","a":15.1,"p":false},
-    {"date":"2026-09-22","c":"Groceries","s":"Supermarkets","m":"Walmart","a":40.38,"p":false},
-    {"date":"2026-09-22","c":"Household","s":"Shopping","m":"Venmo","a":25.0,"p":false},
-    {"date":"2026-09-22","c":"Entertainment","s":"Streaming","m":"Netflix","a":28.78,"p":false},
-    {"date":"2026-09-21","c":"Gas / Transportation","s":"Gas","m":"Shell","a":63.0,"p":false},
-    {"date":"2026-09-21","c":"Groceries","s":"Supermarkets","m":"ShopRite","a":40.77,"p":false},
-    {"date":"2026-09-21","c":"Dining","s":"Fast Food","m":"Taco Bell","a":3.19,"p":false},
-    {"date":"2026-09-21","c":"Dining","s":"Fast Food","m":"Burger King","a":16.83,"p":false},
-    {"date":"2026-09-21","c":"Dining","s":"Restaurants","m":"Pizza One","a":60.28,"p":false},
-    {"date":"2026-09-21","c":"Dining","s":"Restaurants","m":"Jingles Ice Cream","a":3.25,"p":false},
-    {"date":"2026-09-21","c":"Household","s":"Shopping","m":"QuickChek","a":5.25,"p":false},
-    {"date":"2026-09-21","c":"Household","s":"Shopping","m":"Amazon","a":27.18,"p":false},
-    {"date":"2026-09-21","c":"Dining","s":"Restaurants","m":"Crystal Tavern","a":6.0,"p":false},
-    {"date":"2026-09-21","c":"Household","s":"Shopping","m":"QuickChek","a":10.38,"p":false},
-    {"date":"2026-09-21","c":"Household","s":"Shopping","m":"Amazon","a":18.12,"p":false},
-    {"date":"2026-09-21","c":"Household","s":"Shopping","m":"Chestnut Market","a":9.57,"p":false},
-    {"date":"2026-09-21","c":"Dining","s":"Restaurants","m":"Crystal Tavern","a":11.0,"p":false},
-    {"date":"2026-09-21","c":"Dining","s":"Restaurants","m":"Crystal Tavern","a":11.67,"p":false},
-    {"date":"2026-09-21","c":"Groceries","s":"Supermarkets","m":"Walmart","a":46.86,"p":false},
-    {"date":"2026-09-21","c":"Household","s":"Shopping","m":"Best Buy","a":47.97,"p":false},
-    {"date":"2026-09-21","c":"Groceries","s":"Supermarkets","m":"Stop & Shop","a":44.41,"p":false},
-    {"date":"2026-09-21","c":"Groceries","s":"Supermarkets","m":"BJ's Wholesale Club","a":73.39,"p":false},
-    {"date":"2026-09-21","c":"Dining","s":"Restaurants","m":"Crystal Tavern","a":12.37,"p":false},
-    {"date":"2026-09-21","c":"Other","s":"Other","m":"Wawa","a":2.76,"p":false},
-    {"date":"2026-09-21","c":"Gas / Transportation","s":"Gas","m":"BJ's Wholesale Club","a":50.0,"p":false},
-    {"date":"2026-09-21","c":"Gas / Transportation","s":"Gas","m":"Wawa","a":45.0,"p":false},
-    {"date":"2026-09-21","c":"Groceries","s":"Supermarkets","m":"Andersen Farms","a":17.06,"p":false},
-    {"date":"2026-09-21","c":"Personal Care","s":"Nails","m":"Vans","a":122.0,"p":false},
-    {"date":"2026-09-21","c":"Groceries","s":"Supermarkets","m":"ShopRite","a":15.99,"p":false},
-    {"date":"2026-09-21","c":"Dining","s":"Coffee","m":"Dunkin'","a":6.5,"p":false},
-    {"date":"2026-09-18","c":"Dining","s":"Fast Food","m":"JWS","a":6.02,"p":false},
-    {"date":"2026-09-18","c":"Groceries","s":"Supermarkets","m":"Walmart","a":67.45,"p":false},
-    {"date":"2026-09-18","c":"Dining","s":"Fast Food","m":"JWS","a":9.01,"p":false},
-    {"date":"2026-09-18","c":"Household","s":"Shopping","m":"QuickChek","a":11.48,"p":false},
-    {"date":"2026-09-18","c":"Household","s":"Shopping","m":"QuickChek","a":4.55,"p":false}
+    {
+      "date": "2026-09-28",
+      "c": "Gas / Transportation",
+      "s": "Gas",
+      "m": "Wawa",
+      "a": 45,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "QuickChek",
+      "a": 1,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Household",
+      "s": "Services",
+      "m": "Apple",
+      "a": 14.15,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Humc Cafeteria",
+      "a": 13.26,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Groceries",
+      "s": "Supermarkets",
+      "m": "Walmart",
+      "a": 61.91,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Financial",
+      "s": "Financial Services",
+      "m": "Free Tax USA",
+      "a": 15.99,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Applebee's",
+      "a": 76.35,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "QuickChek",
+      "a": 1,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Mytime",
+      "a": 26.1,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "Ocean State Job Lot",
+      "a": 24.7,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Groceries",
+      "s": "Supermarkets",
+      "m": "Stop & Shop",
+      "a": 64.69,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "QuickChek",
+      "a": 2.76,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "7-Eleven",
+      "a": 6.8,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Personal Care",
+      "s": "Pharmacy",
+      "m": "CVS",
+      "a": 13.55,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Dining",
+      "s": "Fast Food",
+      "m": "Taco Bell",
+      "a": 1.07,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "Wawa",
+      "a": 6.27,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Fuji",
+      "a": 34.86,
+      "p": true
+    },
+    {
+      "date": "2026-09-28",
+      "c": "Personal Care",
+      "s": "Beauty",
+      "m": "Glaminator Beauty Bar",
+      "a": 16.04,
+      "p": true
+    },
+    {
+      "date": "2026-09-25",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "QuickChek",
+      "a": 8.51,
+      "p": false
+    },
+    {
+      "date": "2026-09-25",
+      "c": "Household",
+      "s": "Services",
+      "m": "Apple",
+      "a": 9.99,
+      "p": true
+    },
+    {
+      "date": "2026-09-25",
+      "c": "Dining",
+      "s": "Coffee",
+      "m": "Gregorys Coffee",
+      "a": 12.69,
+      "p": false
+    },
+    {
+      "date": "2026-09-25",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "QuickChek",
+      "a": 6.4,
+      "p": true
+    },
+    {
+      "date": "2026-09-25",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "QuickChek",
+      "a": 2.97,
+      "p": true
+    },
+    {
+      "date": "2026-09-25",
+      "c": "Dining",
+      "s": "Fast Food",
+      "m": "McDonald's",
+      "a": 7.76,
+      "p": false
+    },
+    {
+      "date": "2026-09-25",
+      "c": "Personal Care",
+      "s": "Beauty",
+      "m": "Waxing The City",
+      "a": 180,
+      "p": false
+    },
+    {
+      "date": "2026-09-25",
+      "c": "Gas / Transportation",
+      "s": "Gas",
+      "m": "QuickChek",
+      "a": 50,
+      "p": false
+    },
+    {
+      "date": "2026-09-25",
+      "c": "Dining",
+      "s": "Fast Food",
+      "m": "Wingstop",
+      "a": 29,
+      "p": true
+    },
+    {
+      "date": "2026-09-25",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Jws",
+      "a": 11.73,
+      "p": false
+    },
+    {
+      "date": "2026-09-25",
+      "c": "Gas / Transportation",
+      "s": "Gas",
+      "m": "BP",
+      "a": 57,
+      "p": false
+    },
+    {
+      "date": "2026-09-25",
+      "c": "Financial",
+      "s": "BNPL",
+      "m": "Affirm",
+      "a": 19.14,
+      "p": false
+    },
+    {
+      "date": "2026-09-24",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "Five Below",
+      "a": 10.66,
+      "p": false
+    },
+    {
+      "date": "2026-09-24",
+      "c": "Groceries",
+      "s": "Supermarkets",
+      "m": "ShopRite",
+      "a": 22.15,
+      "p": false
+    },
+    {
+      "date": "2026-09-24",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "Amazon",
+      "a": 17.53,
+      "p": false
+    },
+    {
+      "date": "2026-09-24",
+      "c": "Dining",
+      "s": "Fast Food",
+      "m": "Wendy's",
+      "a": 8.51,
+      "p": false
+    },
+    {
+      "date": "2026-09-24",
+      "c": "Groceries",
+      "s": "Supermarkets",
+      "m": "Lackawanna Liquors",
+      "a": 3,
+      "p": false
+    },
+    {
+      "date": "2026-09-24",
+      "c": "Dining",
+      "s": "Fast Food",
+      "m": "Arby's",
+      "a": 9.02,
+      "p": false
+    },
+    {
+      "date": "2026-09-23",
+      "c": "Dining",
+      "s": "Fast Food",
+      "m": "McDonald's",
+      "a": 1.91,
+      "p": false
+    },
+    {
+      "date": "2026-09-23",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Jws",
+      "a": 11.01,
+      "p": false
+    },
+    {
+      "date": "2026-09-23",
+      "c": "Financial",
+      "s": "Bank Fees",
+      "m": "MAINTENANCE FEE",
+      "a": 15,
+      "p": false
+    },
+    {
+      "date": "2026-09-23",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Alpine Creamery",
+      "a": 14.28,
+      "p": false
+    },
+    {
+      "date": "2026-09-22",
+      "c": "Dining",
+      "s": "Fast Food",
+      "m": "Wendy's",
+      "a": 15.1,
+      "p": false
+    },
+    {
+      "date": "2026-09-22",
+      "c": "Groceries",
+      "s": "Supermarkets",
+      "m": "Walmart",
+      "a": 40.38,
+      "p": false
+    },
+    {
+      "date": "2026-09-22",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "Venmo",
+      "a": 25,
+      "p": false
+    },
+    {
+      "date": "2026-09-22",
+      "c": "Entertainment",
+      "s": "Streaming",
+      "m": "Netflix",
+      "a": 28.78,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Gas / Transportation",
+      "s": "Gas",
+      "m": "Shell",
+      "a": 63,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Groceries",
+      "s": "Supermarkets",
+      "m": "ShopRite",
+      "a": 40.77,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Dining",
+      "s": "Fast Food",
+      "m": "Taco Bell",
+      "a": 3.19,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Dining",
+      "s": "Fast Food",
+      "m": "Burger King",
+      "a": 16.83,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Pizza One",
+      "a": 60.28,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Jingles Ice Cream",
+      "a": 3.25,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "QuickChek",
+      "a": 5.25,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "Amazon",
+      "a": 27.18,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Crystal Tavern",
+      "a": 6,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "QuickChek",
+      "a": 10.38,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "Amazon",
+      "a": 18.12,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "Chestnut Market",
+      "a": 9.57,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Crystal Tavern",
+      "a": 11,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Crystal Tavern",
+      "a": 11.67,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Groceries",
+      "s": "Supermarkets",
+      "m": "Walmart",
+      "a": 46.86,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "Best Buy",
+      "a": 47.97,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Groceries",
+      "s": "Supermarkets",
+      "m": "Stop & Shop",
+      "a": 44.41,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "BJ's Wholesale Club",
+      "a": 73.39,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Crystal Tavern",
+      "a": 12.37,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "Wawa",
+      "a": 2.76,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Gas / Transportation",
+      "s": "Gas",
+      "m": "BJ's Wholesale Club",
+      "a": 50,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Gas / Transportation",
+      "s": "Gas",
+      "m": "Wawa",
+      "a": 45,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Groceries",
+      "s": "Supermarkets",
+      "m": "Andersen Farms",
+      "a": 17.06,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Personal Care",
+      "s": "Nails",
+      "m": "Vans",
+      "a": 122,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Groceries",
+      "s": "Supermarkets",
+      "m": "ShopRite",
+      "a": 15.99,
+      "p": false
+    },
+    {
+      "date": "2026-09-21",
+      "c": "Dining",
+      "s": "Coffee",
+      "m": "Dunkin'",
+      "a": 6.5,
+      "p": false
+    },
+    {
+      "date": "2026-09-18",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Jws",
+      "a": 6.02,
+      "p": false
+    },
+    {
+      "date": "2026-09-18",
+      "c": "Groceries",
+      "s": "Supermarkets",
+      "m": "Walmart",
+      "a": 67.45,
+      "p": false
+    },
+    {
+      "date": "2026-09-18",
+      "c": "Dining",
+      "s": "Restaurants",
+      "m": "Jws",
+      "a": 9.01,
+      "p": false
+    },
+    {
+      "date": "2026-09-18",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "QuickChek",
+      "a": 11.48,
+      "p": false
+    },
+    {
+      "date": "2026-09-18",
+      "c": "Household",
+      "s": "Shopping",
+      "m": "QuickChek",
+      "a": 4.55,
+      "p": false
+    }
   ]
 }
