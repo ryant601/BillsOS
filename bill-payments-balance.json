@@ -3,7 +3,15 @@
   "version": 1,
   "source": "Finances",
   "sourceField": "balances.available",
-  "account": { "institution": "TD Bank", "name": "Bill Payments", "officialName": "TD BEYOND CHECKING", "mask": "6189" },
-  "balance": { "available": 1050.75, "currency": "USD" },
-  "bankingAsOf": "2026-09-24T21:42:29.041623Z"
+  "account": {
+    "institution": "TD Bank",
+    "name": "Bill Payments",
+    "officialName": "TD BEYOND CHECKING",
+    "mask": "6189"
+  },
+  "balance": {
+    "available": 3501.35,
+    "currency": "USD"
+  },
+  "bankingAsOf": "2026-09-28T23:55:36.040061Z"
 }
