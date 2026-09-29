@@ -21,7 +21,37 @@ function pairs(){var seen={},out=[];function add(category,subcategory){category=
 function close(){if(saving)return;if(modal){modal.remove();modal=null}}
 function verifySaved(saved,category,subcategory){return loadCategoryState().then(function(data){var list=Array.isArray(data&&data.overrides)?data.overrides:[],found=list.find(function(item){return item&&item.id===saved.id});if(!found||clean(found.category)!==clean(category)||clean(found.subcategory)!==clean(subcategory))throw new Error('The category selection was not confirmed after saving.');return found})}
 function installStyle(){if(document.getElementById('billsosTxRecategorizeStyle'))return;var s=document.createElement('style');s.id='billsosTxRecategorizeStyle';s.textContent='.tx .row{cursor:pointer}.tx .row:hover{background:rgba(31,91,72,.045)}.billsos-txcat-backdrop{position:fixed;inset:0;z-index:1200;background:rgba(15,24,28,.32);display:grid;place-items:center;padding:18px}.billsos-txcat-modal{width:min(430px,100%);background:var(--p,#fffdf9);color:var(--i,#17372f);border:1px solid var(--l,#ddd5c9);border-radius:18px;padding:16px;box-shadow:0 24px 70px rgba(0,0,0,.24)}.billsos-txcat-modal h3{margin:0 0 4px;font-size:18px}.billsos-txcat-meta{font-size:12px;color:var(--m,#77736d);margin-bottom:14px}.billsos-txcat-modal label{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 5px}.billsos-txcat-modal select,.billsos-txcat-modal input{width:100%;padding:10px;border:1px solid var(--l,#ddd5c9);border-radius:10px;background:var(--p2,#f8f4ed);color:inherit;font:inherit}.billsos-txcat-new{display:none;margin-top:10px;padding:10px;border:1px dashed var(--l,#ddd5c9);border-radius:12px}.billsos-txcat-new.on{display:block}.billsos-txcat-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:15px}.billsos-txcat-actions button{border:1px solid var(--l,#ddd5c9);border-radius:999px;background:var(--p,#fffdf9);color:inherit;padding:8px 12px;font-weight:800;cursor:pointer}.billsos-txcat-actions .primary{background:var(--g,#0f513e);color:#fff;border-color:transparent}.billsos-txcat-msg{font-size:11px;color:var(--m,#77736d);margin-top:10px;min-height:16px}html[data-billsos-theme="dark"] .billsos-txcat-modal{background:#1B2025;color:#F2F4F3;border-color:#30383D}html[data-billsos-theme="dark"] .billsos-txcat-modal select,html[data-billsos-theme="dark"] .billsos-txcat-modal input,html[data-billsos-theme="dark"] .billsos-txcat-actions button{background:#22282D;color:#F2F4F3;border-color:#30383D}';document.head.appendChild(s)}
-function saveSelection(t,category,subcategory,creating,emoji,msg,pairSelect,btn){if(saving)return Promise.resolve();category=clean(category);subcategory=clean(subcategory);if(!category||!subcategory){msg.textContent='Enter both a category and subcategory.';return Promise.resolve()}if(!creating&&category===t.category&&subcategory===t.subcategory){msg.textContent='That transaction is already in this category.';return Promise.resolve()}saving=true;if(btn)btn.disabled=true;if(pairSelect)pairSelect.disabled=true;msg.textContent=creating?'Creating category…':'Applying category…';var payload={transaction:{date:t.date,merchant:t.merchant,amount:t.amount,pending:t.pending,note:t.note,occurrence:t.occurrence},category:category,subcategory:subcategory,createCategory:!!creating};if(creating&&emoji)payload.emoji=emoji;return fetch('/api/spending/category-overrides',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(function(r){return r.json().catch(function(){return {}}).then(function(data){if(!r.ok)throw new Error(data.error||'The category change could not be saved.');return data})}).then(function(saved){return verifySaved(saved,category,subcategory)}).then(function(){msg.textContent='Category applied.';document.dispatchEvent(new CustomEvent('billsos:spending-category-changed',{detail:categoryState}));setTimeout(function(){location.replace('/spending/?category='+Date.now())},350)}).catch(function(err){saving=false;if(btn)btn.disabled=false;if(pairSelect)pairSelect.disabled=false;msg.textContent=(err&&err.message)||'The category change could not be saved.';throw err})}
+function saveSelection(t,category,subcategory,creating,emoji,msg,pairSelect,btn){
+  if(saving)return Promise.resolve();
+  category=clean(category);subcategory=clean(subcategory);
+  if(!category||!subcategory){msg.textContent='Enter both a category and subcategory.';return Promise.resolve()}
+  if(!creating&&category===t.category&&subcategory===t.subcategory){msg.textContent='That transaction is already in this category.';return Promise.resolve()}
+  saving=true;if(btn){btn.disabled=true;btn.textContent='Applying…'}if(pairSelect)pairSelect.disabled=true;
+  msg.textContent=creating?'Creating category…':'Applying category…';
+  var payload={transaction:{date:t.date,merchant:t.merchant,amount:t.amount,pending:t.pending,note:t.note,occurrence:t.occurrence},category:category,subcategory:subcategory,createCategory:!!creating};
+  if(creating&&emoji)payload.emoji=emoji;
+  return fetch('/api/spending/category-overrides',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',cache:'no-store',body:JSON.stringify(payload)})
+    .then(function(r){return r.json().catch(function(){return {}}).then(function(data){if(!r.ok)throw new Error(data.error||'The category change could not be saved.');return data})})
+    .then(function(saved){return verifySaved(saved,category,subcategory)})
+    .then(function(found){
+      var key=t.stableKey;
+      if(!categoryState)categoryState={categories:[],overrides:[]};
+      categoryState.overrides=(categoryState.overrides||[]).filter(function(item){return overrideKey(item)!==key}).concat(found);
+      t.category=category;t.subcategory=subcategory;t.overrideId=found.id;
+      msg.textContent='Saved ✓';
+      if(btn){btn.textContent='Saved ✓'}
+      document.dispatchEvent(new CustomEvent('billsos:spending-category-changed',{detail:categoryState}));
+      setTimeout(function(){location.href='/spending/?category='+Date.now()},650);
+      return found;
+    })
+    .catch(function(err){
+      saving=false;
+      if(btn){btn.disabled=false;btn.textContent=creating?'Create and apply':'Apply category'}
+      if(pairSelect)pairSelect.disabled=false;
+      msg.textContent=(err&&err.message)||'The category change could not be saved.';
+      throw err;
+    })
+}
 function openFor(node){
   var found=findTransaction(node);
   if(found.error){alert(found.error);return}
