@@ -6,6 +6,7 @@
   'use strict';
 
   const STORAGE_KEY = 'billsos-list-weeks-v1';
+  const VIEW_KEY = 'billsos-calendar-view-v1';
 
   function isoDate(year, month, day) {
     return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
@@ -150,5 +151,46 @@
     });
   }
 
-  return { STORAGE_KEY: STORAGE_KEY, buildMonth: buildMonth, bind: bind, setExpanded: setExpanded };
+  function readView() {
+    try { return localStorage.getItem(VIEW_KEY) === 'calendar' ? 'calendar' : 'list'; }
+    catch (error) { return 'list'; }
+  }
+  function applyView(scope, view) {
+    const calendar = view === 'calendar';
+    document.body.classList.toggle('calendar-box-mode', calendar);
+    document.querySelectorAll('[data-calendar-view]').forEach(function (button) {
+      button.setAttribute('aria-pressed', button.dataset.calendarView === view ? 'true' : 'false');
+    });
+    if (calendar) scope.querySelectorAll('.calendar-week').forEach(function (section) {
+      setExpanded(section, true, false);
+    });
+    else bind(scope);
+  }
+  function bindView(rootNode) {
+    const scope = rootNode || document;
+    document.querySelectorAll('[data-calendar-view]').forEach(function (button) {
+      if (button.dataset.bound) return;
+      button.dataset.bound = '1';
+      button.addEventListener('click', function () {
+        const view = button.dataset.calendarView === 'calendar' ? 'calendar' : 'list';
+        try { localStorage.setItem(VIEW_KEY, view); } catch (error) {}
+        applyView(scope, view);
+      });
+    });
+    if (!scope.__billsosViewBound) {
+      scope.__billsosViewBound = true;
+      scope.addEventListener('click', function (event) {
+        const button = event.target.closest('.calendar-day-more');
+        if (!button) return;
+        const day = button.closest('.calendar-day');
+        if (!day) return;
+        const expanded = day.classList.toggle('is-open');
+        button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        button.textContent = expanded ? 'Show less' : '+' + button.dataset.more + ' more';
+      });
+    }
+    applyView(scope, readView());
+  }
+
+  return { STORAGE_KEY: STORAGE_KEY, VIEW_KEY: VIEW_KEY, buildMonth: buildMonth, bind: bind, bindView: bindView, applyView: applyView, setExpanded: setExpanded };
 });

@@ -43,11 +43,11 @@ These rules exist so future ChatGPT sessions handle this repository consistently
 
 ## Calendar list-view invariant
 
-- The primary calendar is a monthly list grouped into collapsible Sunday–Saturday weeks.
+- The calendar offers a compact monthly list and optional calendar boxes, with a persistent user view choice. The list groups days into collapsible Sunday–Saturday weeks.
 - A collapsed week must still show its transaction count, lowest projected balance and the date of that low point.
 - Weeks with negative projected days must be visually distinct and expanded by default; manually hiding one must not hide its negative-day count or lowest balance.
-- Keep all cash-flow rows in the calculation. Compact rendering may omit healthy empty days, but it must show transaction days, low/negative days, today, and month end.
-- Avoid fixed-height day cards and nested event scrolling in the active list view. Legacy grid helpers can remain available for rollback, but must not be injected into the current dashboard.
+- Keep all cash-flow rows in the calculation. The list may hide healthy empty days, but must show transaction days, low/negative days, today, and month end. The calendar boxes show every date, with an explicit way to reveal additional transactions on busy days.
+- Avoid fixed-height day cards and nested event scrolling in the list view. Preserve editing and balance behavior in both views. Legacy grid helpers can remain available for rollback, but must not be injected into the current dashboard.
 - Keep `test/calendar-list-view.test.js` passing. Treat a failure as a blocking regression.
 
 ## Tone of the app

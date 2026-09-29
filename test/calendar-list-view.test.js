@@ -42,9 +42,15 @@ test('active calendar renders a list with persistent week controls and risk line
   const editor = read('billsos-card-editor.js');
   const preload = read('cache-coherence-preload.js');
 
-  assert.match(html, /calendar-list-view\.css\?v=20260929calendarlist1/);
-  assert.match(html, /calendar-list-view\.js\?v=20260929calendarlist1/);
+  assert.match(html, /calendar-list-view\.css\?v=20260929viewtoggle1/);
+  assert.match(html, /calendar-list-view\.js\?v=20260929viewtoggle1/);
   assert.match(html, /class="calendar-list"/);
+  assert.match(html, /data-calendar-view="calendar"/);
+  assert.match(html, /week\.days\.map\(dayHtml\)/);
+  assert.match(html, /BillsOSCalendarList\.bindView\(mount\)/);
+  assert.match(css, /\.calendar-box-mode \.calendar-week-body/);
+  assert.match(css, /\.calendar-day\.is-quiet\{display:none\}/);
+  assert.equal(list.VIEW_KEY, 'billsos-calendar-view-v1');
   assert.match(html, /negative projected day/);
   assert.match(html, /Lowest/);
   assert.match(html, /data-month-ending/);
@@ -53,7 +59,7 @@ test('active calendar renders a list with persistent week controls and risk line
   assert.match(css, /\.calendar-week-body\[hidden\]/);
   assert.match(editor, /closest\('\.calendar-day,\.day'\)/);
   assert.match(editor, /Split payment/);
-  assert.match(preload, /const BUILD = '20260929calendarlist1'/);
+  assert.match(preload, /const BUILD = '20260929viewtoggle1'/);
   assert.doesNotMatch(preload, /updated = ensureCalendarEventScroll/);
   assert.doesNotMatch(preload, /updated = ensureCalendarRowControls/);
   assert.doesNotMatch(preload, /updated = ensureCalendarSingleLineBills/);
