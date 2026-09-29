@@ -32,7 +32,8 @@ function atomicWrite(name, value, type) {
 }
 
 function validFiniteAvailable(obj) {
-  return obj && Number.isFinite(obj.available) && typeof obj.bankingAsOf === 'string' && obj.bankingAsOf.length > 0;
+  const available = obj && obj.balance && obj.balance.available;
+  return obj && Number.isFinite(available) && typeof obj.bankingAsOf === 'string' && obj.bankingAsOf.length > 0;
 }
 
 function validatePayload(body) {
@@ -62,6 +63,45 @@ function readLive(name) {
   return fs.readFileSync(target, 'utf8');
 }
 
+function persistFiles(files) {
+  ensureLiveDir();
+  const staging = path.join(LIVE_DIR, '.staging-' + Date.now() + '-' + process.pid);
+  fs.mkdirSync(staging, { recursive: true });
+  try {
+    for (const [name, value] of Object.entries(files)) {
+      const spec = FILES[name];
+      const target = path.join(staging, name);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      const body = spec.type === 'json' ? JSON.stringify(value, null, 2) + '\n' : String(value);
+      fs.writeFileSync(target, body, 'utf8');
+    }
+    for (const name of Object.keys(files)) {
+      const staged = path.join(staging, name);
+      const target = livePath(name);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.renameSync(staged, target);
+    }
+  } finally {
+    fs.rmSync(staging, { recursive: true, force: true });
+  }
+}
+
+function ingestRailwayPayload() {
+  const raw = process.env.BILLS_FINANCES_PAYLOAD;
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    const files = validatePayload(parsed);
+    persistFiles(files);
+    const pull = files['spending-last-pull.json'];
+    console.log('[BillsOS] Railway Finances payload persisted' + (pull && pull.pulledAt ? ' for ' + pull.pulledAt : ''));
+  } catch (error) {
+    console.error('[BillsOS] Railway Finances payload rejected:', error && error.message ? error.message : error);
+  }
+}
+
+ingestRailwayPayload();
+
 const originalStatic = express.static;
 express.static = function billsOsLiveFinanceStatic(root, options) {
   const fallback = originalStatic.call(express, root, options);
@@ -90,26 +130,7 @@ express.application.listen = function billsOsLiveFinanceListen() {
         return res.status(403).json({ error: 'Owner authentication required' });
       }
       const files = validatePayload(req.body);
-      ensureLiveDir();
-      const staging = path.join(LIVE_DIR, '.staging-' + Date.now() + '-' + process.pid);
-      fs.mkdirSync(staging, { recursive: true });
-      try {
-        for (const [name, value] of Object.entries(files)) {
-          const spec = FILES[name];
-          const target = path.join(staging, name);
-          fs.mkdirSync(path.dirname(target), { recursive: true });
-          const body = spec.type === 'json' ? JSON.stringify(value, null, 2) + '\n' : String(value);
-          fs.writeFileSync(target, body, 'utf8');
-        }
-        for (const name of Object.keys(files)) {
-          const staged = path.join(staging, name);
-          const target = livePath(name);
-          fs.mkdirSync(path.dirname(target), { recursive: true });
-          fs.renameSync(staged, target);
-        }
-      } finally {
-        fs.rmSync(staging, { recursive: true, force: true });
-      }
+      persistFiles(files);
       return res.status(200).json({
         ok: true,
         storedAt: new Date().toISOString(),
