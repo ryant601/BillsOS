@@ -53,7 +53,7 @@ These rules exist so future ChatGPT sessions handle this repository consistently
 ## Recommendation threshold
 
 - Offer planning suggestions for projected ending balances below $300, prioritizing negative days. Keep mortgage fully paid by the 17th and Jeep by the 25th; exclude fixed Upstart and Chase payments.
-- Preview effects without changing payment rows, and avoid creating new low balance days in future split suggestions.
+- Preview effects without changing payment rows, and avoid creating new low balance days in future split suggestions. Prior month income can be earmarked for the next month's mortgage or Jeep; treat it as reserved cash applied on the original payment date.
 
 ## Tone of the app
 

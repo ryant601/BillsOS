@@ -133,7 +133,7 @@
       return b.negativeDaysResolved - a.negativeDaysResolved || b.daysResolved - a.daysResolved ||
         a.negativeDaysAfter - b.negativeDaysAfter ||
         b.lowestAfter - a.lowestAfter || a.from.localeCompare(b.from) ||
-        b.firstDate.localeCompare(a.firstDate) || a.secondDate.localeCompare(b.secondDate);
+        a.firstDate.localeCompare(b.firstDate) || a.secondDate.localeCompare(b.secondDate);
     });
     const seen = new Set();
     return results.filter(function (item) {

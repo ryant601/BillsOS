@@ -107,3 +107,19 @@ test('future mortgage split addresses low-only days while respecting the 17th', 
   assert.equal(choices[0].below300DaysAfter, 0);
   assert.ok(choices[0].secondDate <= '2026-10-17');
 });
+
+test('October income can reserve part of a November mortgage without creating a new low day', () => {
+  const octoberRows = [{ iso: '2026-10-20', amount: 600, name: 'Paycheck' }];
+  const october = list.buildMonth(octoberRows, 2026, 10, 500, {});
+  const novemberRows = [
+    { iso: '2026-11-02', amount: -1000, name: 'Mortgage' },
+    { iso: '2026-11-15', amount: 800, name: 'Paycheck' }
+  ];
+  const november = list.buildMonth(novemberRows, 2026, 11, october.ending, {});
+  const choices = recommendations.recommendAhead(octoberRows.concat(novemberRows), october.days.concat(november.days), '2026-10-01', 120);
+  const choice = choices.find(item => item.from === '2026-11-02' && item.firstDate === '2026-10-20');
+  assert.ok(choice);
+  assert.equal(choice.secondDate, '2026-11-15');
+  assert.equal(choice.negativeDaysAfter, 0);
+  assert.equal(choice.below300DaysAfter, 0);
+});
