@@ -16,9 +16,11 @@ const access = createAccessControl(process.env);
 const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, "data");
 const CHECKMARK_FILE = path.join(DATA_DIR, "checkmarks.json");
 const BILLS_FILE = path.join(DATA_DIR, "bills.json");
+const LIVE_SPENDING_SNAPSHOT = path.join(DATA_DIR, "live-finances", "spending", "current.json");
+const REPO_SPENDING_SNAPSHOT = path.join(__dirname, "spending", "current.json");
 const spendingCategoryStore = createSpendingCategoryStore({
   dataDir: DATA_DIR,
-  snapshotPath: path.join(__dirname, "spending", "current.json"),
+  snapshotPath: () => fs.existsSync(LIVE_SPENDING_SNAPSHOT) ? LIVE_SPENDING_SNAPSHOT : REPO_SPENDING_SNAPSHOT,
   classificationRulesPath: path.join(__dirname, "spending", "vendor-category-rules.json")
 });
 
