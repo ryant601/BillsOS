@@ -122,7 +122,8 @@ function createSpendingCategoryStore(options = {}) {
   }
 
   function snapshotRows() {
-    return parseSnapshotTransactions(fs.readFileSync(snapshotPath, 'utf8'));
+    const resolvedSnapshotPath = typeof snapshotPath === 'function' ? snapshotPath() : snapshotPath;
+    return parseSnapshotTransactions(fs.readFileSync(resolvedSnapshotPath, 'utf8'));
   }
 
   function validCategoryPairs(rows) {
