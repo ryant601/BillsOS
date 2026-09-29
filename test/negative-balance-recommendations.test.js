@@ -79,3 +79,31 @@ test('a deadline split can ease a due-day deficit without moving the full bill b
   assert.equal(choices[0].daysResolved, 1);
   assert.ok(choices[0].negativeDaysAfter > 0, 'remaining negative days must be reported');
 });
+
+test('monthly suggestions address low balances below $300 without needing a negative day', () => {
+  const rows = [
+    { iso: '2026-10-03', amount: -250, name: 'Flexible payment' },
+    { iso: '2026-10-06', amount: 500, name: 'Paycheck' }
+  ];
+  const summary = list.buildMonth(rows, 2026, 10, 400, {});
+  const choices = recommendations.recommend(rows, summary, '2026-10-01');
+  assert.ok(choices.length);
+  assert.equal(choices[0].negativeDaysBefore, 0);
+  assert.equal(choices[0].negativeDaysAfter, 0);
+  assert.equal(choices[0].below300DaysAfter, 0);
+  assert.equal(choices[0].daysResolved, 3);
+});
+
+test('future mortgage split addresses low-only days while respecting the 17th', () => {
+  const rows = [
+    { iso: '2026-10-02', amount: -400, name: 'Mortgage' },
+    { iso: '2026-10-15', amount: 500, name: 'Paycheck' }
+  ];
+  const summary = list.buildMonth(rows, 2026, 10, 600, {});
+  const choices = recommendations.recommendAhead(rows, summary.days, '2026-10-01', 120);
+  assert.ok(choices.length);
+  assert.equal(choices[0].negativeDaysBefore, 0);
+  assert.equal(choices[0].negativeDaysAfter, 0);
+  assert.equal(choices[0].below300DaysAfter, 0);
+  assert.ok(choices[0].secondDate <= '2026-10-17');
+});

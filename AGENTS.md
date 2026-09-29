@@ -50,6 +50,11 @@ These rules exist so future ChatGPT sessions handle this repository consistently
 - Avoid fixed-height day cards and nested event scrolling in the list view. Preserve editing and balance behavior in both views. Legacy grid helpers can remain available for rollback, but must not be injected into the current dashboard.
 - Keep `test/calendar-list-view.test.js` passing. Treat a failure as a blocking regression.
 
+## Recommendation threshold
+
+- Offer planning suggestions for projected ending balances below $300, prioritizing negative days. Keep mortgage fully paid by the 17th and Jeep by the 25th; exclude fixed Upstart and Chase payments.
+- Preview effects without changing payment rows, and avoid creating new low balance days in future split suggestions.
+
 ## Tone of the app
 
 - The dashboard should feel calm and operational.

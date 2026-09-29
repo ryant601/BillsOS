@@ -4,6 +4,7 @@
   root.BillsOSNegativeBalanceRecommendations = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
+  const LOW_BALANCE_CENTS = 30000;
 
   function cents(value) { return Math.round(Number(value || 0) * 100); }
   function dateOf(row) { return String(row.iso || row.date || ''); }
@@ -25,6 +26,7 @@
   function metrics(days, offsets) {
     const balances = days.map(function (day) { return cents(day.ending) + (offsets[day.date] || 0); });
     return { negativeDays: balances.filter(function (value) { return value < 0; }).length,
+      below300Days: balances.filter(function (value) { return value < LOW_BALANCE_CENTS; }).length,
       lowest: Math.min.apply(null, balances) / 100 };
   }
   function recommend(rows, summary, today) {
@@ -32,7 +34,7 @@
     const days = summary.days.filter(function (day) { return day.date >= today; });
     if (!days.length) return [];
     const base = metrics(days, {});
-    if (!base.negativeDays) return [];
+    if (!base.below300Days) return [];
     const byDate = {};
     days.forEach(function (day) { byDate[day.date] = day; });
     const candidates = [];
@@ -54,18 +56,19 @@
             if (day.date >= from && day.date < destination.date) offsets[day.date] = moved;
           });
           const after = metrics(days, offsets);
-          const rescued = base.negativeDays - after.negativeDays;
-          if (rescued <= 0) return;
+          const rescued = base.below300Days - after.below300Days;
+          if (rescued <= 0 || after.negativeDays > base.negativeDays) return;
           candidates.push({ kind: index ? 'split' : 'move', name: String(row.name || 'Payment'),
             from: from, to: destination.date, amount: moved / 100,
             originalAmount: amount / 100, negativeDaysBefore: base.negativeDays,
-            negativeDaysAfter: after.negativeDays, lowestBefore: base.lowest,
-            lowestAfter: after.lowest, daysResolved: rescued });
+            negativeDaysAfter: after.negativeDays, below300DaysBefore: base.below300Days,
+            below300DaysAfter: after.below300Days, negativeDaysResolved: base.negativeDays - after.negativeDays,
+            lowestBefore: base.lowest, lowestAfter: after.lowest, daysResolved: rescued });
         });
       });
     });
     candidates.sort(function (a, b) {
-      return b.daysResolved - a.daysResolved || b.lowestAfter - a.lowestAfter ||
+      return b.negativeDaysResolved - a.negativeDaysResolved || b.daysResolved - a.daysResolved || b.lowestAfter - a.lowestAfter ||
         a.amount - b.amount || a.to.localeCompare(b.to);
     });
     const seen = new Set();
@@ -82,7 +85,7 @@
       .slice(0, Number(horizonDays || 120));
     if (!days.length) return [];
     const base = metrics(days, {});
-    if (!base.negativeDays) return [];
+    if (!base.below300Days) return [];
     const positions = {};
     days.forEach(function (day, index) { positions[day.date] = index; });
     const incomeDays = days.filter(function (day) {
@@ -109,22 +112,26 @@
           if (day.date >= second) offset -= secondPart;
           return cents(day.ending) + offset;
         });
-        const negativeDaysAfter = afterBalances.filter(function (balance) { return balance < 0; }).length;
-        const newNegative = days.some(function (day, index) {
-          return cents(day.ending) >= 0 && afterBalances[index] < 0;
+        const after = metrics(days, Object.fromEntries(days.map(function (day, index) {
+          return [day.date, afterBalances[index] - cents(day.ending)];
+        })));
+        const newLow = days.some(function (day, index) {
+          return cents(day.ending) >= LOW_BALANCE_CENTS && afterBalances[index] < LOW_BALANCE_CENTS;
         });
-        const resolved = base.negativeDays - negativeDaysAfter;
-        if (resolved <= 0 || newNegative) return;
+        const resolved = base.below300Days - after.below300Days;
+        if (resolved <= 0 || newLow || after.negativeDays > base.negativeDays) return;
         results.push({ kind: kind, name: name, from: from, firstDate: firstDate, secondDate: second,
           firstAmount: firstPart / 100, secondAmount: secondPart / 100, originalAmount: total / 100,
           daysResolved: resolved, negativeDaysBefore: base.negativeDays,
-          negativeDaysAfter: negativeDaysAfter, lowestBefore: base.lowest,
-          lowestAfter: Math.min.apply(null, afterBalances) / 100 });
+          negativeDaysAfter: after.negativeDays, below300DaysBefore: base.below300Days,
+          below300DaysAfter: after.below300Days, negativeDaysResolved: base.negativeDays - after.negativeDays,
+          lowestBefore: base.lowest, lowestAfter: after.lowest });
         });
       });
     });
     results.sort(function (a, b) {
-      return b.daysResolved - a.daysResolved || a.negativeDaysAfter - b.negativeDaysAfter ||
+      return b.negativeDaysResolved - a.negativeDaysResolved || b.daysResolved - a.daysResolved ||
+        a.negativeDaysAfter - b.negativeDaysAfter ||
         b.lowestAfter - a.lowestAfter || a.from.localeCompare(b.from) ||
         b.firstDate.localeCompare(a.firstDate) || a.secondDate.localeCompare(b.secondDate);
     });
