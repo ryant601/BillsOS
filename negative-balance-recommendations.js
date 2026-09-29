@@ -29,6 +29,28 @@
       below300Days: balances.filter(function (value) { return value < LOW_BALANCE_CENTS; }).length,
       lowest: Math.min.apply(null, balances) / 100 };
   }
+  function monthImpacts(days, afterBalances) {
+    const groups = {};
+    days.forEach(function (day, index) {
+      const month = day.date.slice(0, 7);
+      if (!groups[month]) groups[month] = { month: month, before: [], after: [] };
+      groups[month].before.push(cents(day.ending));
+      groups[month].after.push(afterBalances[index]);
+    });
+    return Object.keys(groups).sort().map(function (month) {
+      const group = groups[month], before = group.before, after = group.after;
+      const count = function (values, threshold) {
+        return values.filter(function (value) { return value < threshold; }).length;
+      };
+      return { month: month, negativeBefore: count(before, 0), negativeAfter: count(after, 0),
+        below300Before: count(before, LOW_BALANCE_CENTS), below300After: count(after, LOW_BALANCE_CENTS),
+        lowestBefore: Math.min.apply(null, before) / 100, lowestAfter: Math.min.apply(null, after) / 100,
+        endingBefore: before[before.length - 1] / 100, endingAfter: after[after.length - 1] / 100 };
+    }).filter(function (item) {
+      return item.negativeBefore !== item.negativeAfter || item.below300Before !== item.below300After ||
+        item.lowestBefore !== item.lowestAfter || item.endingBefore !== item.endingAfter;
+    });
+  }
   function recommend(rows, summary, today) {
     if (!summary || !Array.isArray(summary.days) || !summary.days.length) return [];
     const days = summary.days.filter(function (day) { return day.date >= today; });
@@ -125,7 +147,8 @@
           daysResolved: resolved, negativeDaysBefore: base.negativeDays,
           negativeDaysAfter: after.negativeDays, below300DaysBefore: base.below300Days,
           below300DaysAfter: after.below300Days, negativeDaysResolved: base.negativeDays - after.negativeDays,
-          lowestBefore: base.lowest, lowestAfter: after.lowest });
+          lowestBefore: base.lowest, lowestAfter: after.lowest,
+          monthImpacts: monthImpacts(days, afterBalances) });
         });
       });
     });

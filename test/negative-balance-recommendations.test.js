@@ -122,4 +122,11 @@ test('October income can reserve part of a November mortgage without creating a 
   assert.equal(choice.secondDate, '2026-11-15');
   assert.equal(choice.negativeDaysAfter, 0);
   assert.equal(choice.below300DaysAfter, 0);
+  assert.deepEqual(choice.monthImpacts.map(item => item.month), ['2026-10', '2026-11']);
+  assert.equal(choice.monthImpacts[0].endingBefore, 1100);
+  assert.equal(choice.monthImpacts[0].endingAfter, 600);
+  assert.equal(choice.monthImpacts[1].below300Before, 13);
+  assert.equal(choice.monthImpacts[1].below300After, 0);
+  assert.equal(choice.monthImpacts[1].lowestBefore, 100);
+  assert.equal(choice.monthImpacts[1].lowestAfter, 600);
 });
