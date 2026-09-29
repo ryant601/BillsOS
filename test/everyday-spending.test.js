@@ -57,7 +57,7 @@ test('completed spending cycle is archived with its transactions and exact close
 
 test('dashboard preload injects Everyday Spending navigation and cache version', () => {
   const preload = fs.readFileSync(path.join(__dirname, '..', 'cache-coherence-preload.js'), 'utf8');
-  assert.match(preload, /20260904calendarrefresh1/);
+  assert.match(preload, /20260929mortgagesplit1/);
   assert.match(preload, /a\.href='\/spending\/'/);
   assert.match(preload, /nav\.querySelector\('a\[href="\/spending\/"\]'\)/);
   assert.match(preload, /ensureSpendingSidebar/);
