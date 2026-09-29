@@ -7,7 +7,23 @@
   var syncTimer=0,lastRemoteUpdate=null,pushing=false,deleting=false;
 
   function read(key){try{var v=JSON.parse(localStorage.getItem(key)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return {}}}
-  function write(key,value){try{localStorage.setItem(key,JSON.stringify(value||{}))}catch(e){}}
+  function write(key,value){
+    try{
+      var payload=JSON.stringify(value||{});
+      localStorage.setItem(key,payload);
+      return localStorage.getItem(key)===payload;
+    }catch(e){return false}
+  }
+  function cloneMap(value){try{return JSON.parse(JSON.stringify(value||{}))}catch(e){return {}}}
+  function wait(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
+  async function confirmCloudSave(){
+    if(typeof window.BillsOSForceThisDeviceSync!=='function')return {ok:true,confirmed:false};
+    for(var attempt=0;attempt<3;attempt++){
+      try{if(await window.BillsOSForceThisDeviceSync())return {ok:true,confirmed:true}}catch(e){}
+      if(attempt<2)await wait(300*(attempt+1));
+    }
+    return {ok:false,confirmed:false};
+  }
   function validDate(v){return /^20\d{2}-\d{2}-\d{2}$/.test(String(v||''))}
   function money(v){var n=Math.abs(Number(v||0)),whole=Math.abs(n-Math.round(n))<.005;return n.toLocaleString(undefined,{style:'currency',currency:'USD',minimumFractionDigits:whole?0:2,maximumFractionDigits:2})}
   function keyParts(key){var p=String(key||'').split('|');return{date:p[0]||'',name:p.slice(1,-1).join('|')||'Item',amount:Number(p[p.length-1]||0)}}
@@ -20,8 +36,22 @@
   function renderedDate(row,key){var day=row.closest('.day'),panel=row.closest('.month-panel'),n=Number(day&&day.dataset.day),id=String(panel&&panel.id||'').replace(/^panel-/,'').toLowerCase(),months={june:'06',jul:'07',july:'07',aug:'08',august:'08',sep:'09',september:'09',oct:'10',october:'10',nov:'11',november:'11',dec:'12',december:'12','jan-2027':'01','feb-2027':'02','mar-2027':'03','apr-2027':'04','may-2027':'05','jun-2027':'06','jul-2027':'07','aug-2027':'08','sep-2027':'09','oct-2027':'10','nov-2027':'11','dec-2027':'12'},mm=months[id],year=Number(panel&&panel.dataset.year)||Number(String(originalDate(key)).slice(0,4))||2026;return mm&&n?year+'-'+mm+'-'+String(n).padStart(2,'0'):originalDate(key)}
   function dateFor(key,row){var edit=read(DATE_KEY)[key];return edit&&validDate(edit.date)?edit.date:renderedDate(row,key)}
   function formatDate(v){return validDate(v)?new Date(v+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):''}
-  function saveAmount(key,value){var n=Math.round(Math.abs(Number(value||0))*100)/100,map=read(AMOUNT_KEY),base=Math.abs(amountFromKey(key));if(!isFinite(n))return false;if(Math.abs(n-base)<.005)delete map[key];else map[key]={amount:n,updatedAt:new Date().toISOString()};write(AMOUNT_KEY,map);return true}
-  function saveDate(key,date){var orig=originalDate(key),map=read(DATE_KEY);if(!validDate(date)||!validDate(orig))return false;if(date===orig)delete map[key];else map[key]={date:date,originalDate:orig,status:'moved',updatedAt:new Date().toISOString()};write(DATE_KEY,map);return true}
+  function saveAmount(key,value){var n=Math.round(Math.abs(Number(value||0))*100)/100,map=read(AMOUNT_KEY),base=Math.abs(amountFromKey(key));if(!isFinite(n))return false;if(Math.abs(n-base)<.005)delete map[key];else map[key]={amount:n,updatedAt:new Date().toISOString()};return write(AMOUNT_KEY,map)}
+  function saveDate(key,date){var orig=originalDate(key),map=read(DATE_KEY);if(!validDate(date)||!validDate(orig))return false;if(date===orig)delete map[key];else map[key]={date:date,originalDate:orig,status:'moved',updatedAt:new Date().toISOString()};return write(DATE_KEY,map)}
+  function saveEditAtomically(key,amountValue,dateValue){
+    var n=Math.round(Math.abs(Number(amountValue||0))*100)/100,orig=originalDate(key),base=Math.abs(amountFromKey(key));
+    if(!isFinite(n))return {ok:false,message:'Enter a valid amount.'};
+    if(!validDate(dateValue)||!validDate(orig))return {ok:false,message:'Choose a valid date.'};
+    var beforeAmount=read(AMOUNT_KEY),beforeDate=read(DATE_KEY),nextAmount=cloneMap(beforeAmount),nextDate=cloneMap(beforeDate),stamp=new Date().toISOString();
+    if(Math.abs(n-base)<.005)delete nextAmount[key];else nextAmount[key]={amount:n,updatedAt:stamp};
+    if(dateValue===orig)delete nextDate[key];else nextDate[key]={date:dateValue,originalDate:orig,status:'moved',updatedAt:stamp};
+    if(!write(AMOUNT_KEY,nextAmount))return {ok:false,message:'This browser could not save the amount locally.'};
+    if(!write(DATE_KEY,nextDate)){
+      write(AMOUNT_KEY,beforeAmount);
+      return {ok:false,message:'This browser could not save the date. No changes were applied.'};
+    }
+    return {ok:true};
+  }
   function cleanDone(map){var out={};Object.keys(map||{}).forEach(function(k){if(map[k])out[k]=1});return out}
   function currentDone(){return cleanDone(read(DONE_KEY))}
   function applyDone(map){map=cleanDone(map);write(DONE_KEY,map);document.querySelectorAll('.billsosDoneCheck').forEach(function(cb){var checked=!!map[cb.dataset.id];if(cb.checked!==checked)cb.checked=checked;var row=cb.closest('.ev');if(row)row.classList.toggle('done',checked)})}
@@ -35,16 +65,74 @@
     document.head.appendChild(style);
   }
 
-  function closeEditor(){var p=document.querySelector('.billsosCardEditPopover');if(p)p.remove()}
+  function closeEditor(force){
+    var p=document.querySelector('.billsosCardEditPopover');
+    if(!p)return true;
+    if(!force&&p.dataset.dirty==='1'&&!confirm('Discard unsaved transaction changes?'))return false;
+    p.remove();
+    return true;
+  }
+  function setEditorStatus(pop,text,state){
+    var el=pop&&pop.querySelector('.billsosCardEditError');if(!el)return;
+    el.textContent=text||'';
+    el.style.color=state==='error'?'#9a3b2d':(state==='success'?'#2c6446':'#5f6b7a');
+  }
   function openEditor(row,key,anchor){
-    closeEditor();
+    closeEditor(true);
     var base=Math.abs(amountFromKey(key)),amount=amountFor(key),date=dateFor(key,row),orig=originalDate(key),isIncome=amountFromKey(key)>0,pop=document.createElement('div'),dateMeta='';
     if(validDate(orig)&&validDate(date))dateMeta='<div class="billsosCardDateMeta">Original date: <b>'+formatDate(orig)+'</b><br>Currently scheduled: <b>'+formatDate(date)+'</b></div>';
     pop.className='billsosCardEditPopover';
-    pop.innerHTML='<label>Amount</label><input class="amountInput" inputmode="decimal" value="'+amount.toFixed(2)+'"><label>Date</label><input class="dateInput" type="date" value="'+date+'">'+dateMeta+'<div class="billsosCardEditActions"><button class="primary" data-action="save">Save</button><button data-action="cancel">Cancel</button>'+(amount!==base?'<button class="wide" data-action="reset-amount">Reset amount</button>':'')+(date!==orig?'<button class="wide" data-action="reset-date">Reset date</button>':'')+'</div><div class="billsosCardEditError" style="min-height:14px;font-size:11px;color:#9a3b2d"></div><div style="font-size:11px;color:#5f6b7a">Editing '+(isIncome?'income':'payment')+' occurrence only.</div>';
+    pop.dataset.dirty='0';
+    pop.setAttribute('role','dialog');
+    pop.setAttribute('aria-label','Edit transaction');
+    pop.innerHTML='<div style="font-size:12px;font-weight:900;color:#14202c">Editing transaction</div><div style="font-size:11px;color:#5f6b7a">Changes are not saved until you press Save.</div><label>Amount</label><input class="amountInput" inputmode="decimal" value="'+amount.toFixed(2)+'"><label>Date</label><input class="dateInput" type="date" value="'+date+'">'+dateMeta+'<div class="billsosCardEditActions"><button class="primary" data-action="save">Save</button><button data-action="cancel">Cancel</button>'+(amount!==base?'<button class="wide" data-action="reset-amount">Reset amount</button>':'')+(date!==orig?'<button class="wide" data-action="reset-date">Reset date</button>':'')+'</div><div class="billsosCardEditError" role="status" aria-live="polite" style="min-height:14px;font-size:11px;color:#5f6b7a">Editing '+(isIncome?'income':'payment')+' occurrence.</div>';
     document.body.appendChild(pop);
+    var amountInput=pop.querySelector('.amountInput'),dateInput=pop.querySelector('.dateInput'),saveBtn=pop.querySelector('[data-action="save"]');
+    function markDirty(){pop.dataset.dirty='1';setEditorStatus(pop,'Unsaved changes','info')}
+    amountInput.addEventListener('input',markDirty);dateInput.addEventListener('change',markDirty);
     var r=anchor.getBoundingClientRect();pop.style.left=Math.max(12,Math.min(r.left,innerWidth-pop.offsetWidth-12))+'px';pop.style.top=Math.max(12,Math.min(r.bottom+8,innerHeight-pop.offsetHeight-12))+'px';
-    pop.onclick=function(e){var action=e.target.dataset.action;if(!action)return;e.preventDefault();if(action==='cancel')closeEditor();if(action==='save'){var err=pop.querySelector('.billsosCardEditError'),amountOk=saveAmount(key,pop.querySelector('.amountInput').value),dateOk=saveDate(key,pop.querySelector('.dateInput').value);if(!amountOk||!dateOk){if(err)err.textContent='Could not save this change.';return}location.reload()}if(action==='reset-amount'){saveAmount(key,base);location.reload()}if(action==='reset-date'){var map=read(DATE_KEY);delete map[key];write(DATE_KEY,map);location.reload()}};
+    pop.onclick=async function(e){
+      var action=e.target.dataset.action;if(!action)return;e.preventDefault();
+      if(action==='cancel'){closeEditor(true);return}
+      if(action==='save'){
+        if(saveBtn.disabled)return;
+        saveBtn.disabled=true;saveBtn.textContent='Saving…';setEditorStatus(pop,'Saving locally…','info');
+        var saved=saveEditAtomically(key,amountInput.value,dateInput.value);
+        if(!saved.ok){setEditorStatus(pop,saved.message,'error');saveBtn.disabled=false;saveBtn.textContent='Save';return}
+        pop.dataset.dirty='0';
+        setEditorStatus(pop,'Saved locally. Confirming sync…','info');
+        var sync=await confirmCloudSave();
+        if(!sync.ok){
+          pop.dataset.dirty='0';
+          setEditorStatus(pop,'Saved on this device, but cloud sync was not confirmed. Press Save to retry sync.','error');
+          saveBtn.disabled=false;saveBtn.textContent='Retry sync';
+          return;
+        }
+        setEditorStatus(pop,sync.confirmed?'Saved and synced ✓':'Saved ✓','success');
+        saveBtn.textContent='Saved ✓';
+        await wait(450);
+        location.reload();
+        return;
+      }
+      if(action==='reset-amount'){
+        if(!saveAmount(key,base)){setEditorStatus(pop,'Could not reset the amount.','error');return}
+        pop.dataset.dirty='0';setEditorStatus(pop,'Amount reset. Confirming sync…','info');
+        var amountSync=await confirmCloudSave();
+        if(!amountSync.ok){setEditorStatus(pop,'Amount reset locally, but cloud sync was not confirmed.','error');return}
+        setEditorStatus(pop,'Amount reset and saved ✓','success');await wait(350);location.reload();return;
+      }
+      if(action==='reset-date'){
+        var map=read(DATE_KEY);delete map[key];
+        if(!write(DATE_KEY,map)){setEditorStatus(pop,'Could not reset the date.','error');return}
+        pop.dataset.dirty='0';setEditorStatus(pop,'Date reset. Confirming sync…','info');
+        var dateSync=await confirmCloudSave();
+        if(!dateSync.ok){setEditorStatus(pop,'Date reset locally, but cloud sync was not confirmed.','error');return}
+        setEditorStatus(pop,'Date reset and saved ✓','success');await wait(350);location.reload();
+      }
+    };
+    amountInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();saveBtn.click()}});
+    dateInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();saveBtn.click()}});
+    setTimeout(function(){amountInput.focus();amountInput.select()},0);
   }
 
   function eventDates(item){return [item&&item.date,item&&item.iso,item&&item.startDate,item&&item.effectiveDate].filter(validDate)}
@@ -89,7 +177,7 @@
   async function pullDone(){try{var r=await fetch('/api/checkmarks?x='+Date.now(),{cache:'no-store'}),data=await r.json();if(data&&data.completed&&data.updatedAt!==lastRemoteUpdate){lastRemoteUpdate=data.updatedAt;applyDone(data.completed)}}catch(e){}}
   async function pushDone(map){if(pushing)return;pushing=true;write(DONE_KEY,map);try{var r=await fetch('/api/checkmarks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({completed:map})}),data=await r.json();lastRemoteUpdate=data.updatedAt||lastRemoteUpdate}catch(e){}finally{pushing=false}}
 
-  document.addEventListener('click',function(e){var edit=e.target.closest&&e.target.closest('.billsosCardEditBtn');if(edit){e.preventDefault();e.stopPropagation();var row=edit.closest('.ev');openEditor(row,edit.dataset.key,edit);return}var del=e.target.closest&&e.target.closest('.billsosCardDeleteBtn');if(del){e.preventDefault();e.stopPropagation();deleteOccurrence(del.closest('.ev'),del.dataset.key);return}if(!e.target.closest('.billsosCardEditPopover'))closeEditor()},true);
+  document.addEventListener('click',function(e){var edit=e.target.closest&&e.target.closest('.billsosCardEditBtn');if(edit){e.preventDefault();e.stopPropagation();var row=edit.closest('.ev');openEditor(row,edit.dataset.key,edit);return}var del=e.target.closest&&e.target.closest('.billsosCardDeleteBtn');if(del){e.preventDefault();e.stopPropagation();deleteOccurrence(del.closest('.ev'),del.dataset.key);return}if(!e.target.closest('.billsosCardEditPopover'))closeEditor(false)},true);
   document.addEventListener('change',function(e){if(!e.target.classList.contains('billsosDoneCheck'))return;var map=currentDone();if(e.target.checked)map[e.target.dataset.id]=1;else delete map[e.target.dataset.id];applyDone(map);pushDone(map)},true);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){schedule();pullDone()});else{schedule();pullDone()}
   window.addEventListener('load',schedule);window.addEventListener('hashchange',schedule);setTimeout(schedule,400);setTimeout(schedule,1200);setInterval(pullDone,30000);
