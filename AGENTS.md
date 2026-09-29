@@ -41,13 +41,14 @@ These rules exist so future ChatGPT sessions handle this repository consistently
   - `Starting`, `Income`, `Outflow`, `Ending`, `Open`
 - Move technical explanations, generation notes, and implementation details out of the main dashboard.
 
-## Calendar card scrolling invariant
+## Calendar list-view invariant
 
-- Busy calendar day boxes must always retain the BillsOS-owned visible internal scrollbar implemented by `calendar-event-scroll-fix.js`.
-- Preserve the fixed calendar-card height and the internal `.events` scrolling viewport; do not allow busy cards to expand vertically to fit all events.
-- Do not remove or bypass `.billsos-card-scrollrail`, `.billsos-card-scrollthumb`, or the `billsos-has-scroll` behavior.
-- `calendar-event-scroll-fix.js` must remain in `CRITICAL_ASSETS` and must continue to be injected by `cache-coherence-preload.js` for the dashboard.
-- Any calendar UI/CSS refactor must keep `test/calendar-event-scroll.test.js` passing. Treat a failure of that test as a blocking regression, not an optional visual change.
+- The primary calendar is a monthly list grouped into collapsible Sunday–Saturday weeks.
+- A collapsed week must still show its transaction count, lowest projected balance and the date of that low point.
+- Weeks with negative projected days must be visually distinct and expanded by default; manually hiding one must not hide its negative-day count or lowest balance.
+- Keep all cash-flow rows in the calculation. Compact rendering may omit healthy empty days, but it must show transaction days, low/negative days, today, and month end.
+- Avoid fixed-height day cards and nested event scrolling in the active list view. Legacy grid helpers can remain available for rollback, but must not be injected into the current dashboard.
+- Keep `test/calendar-list-view.test.js` passing. Treat a failure as a blocking regression.
 
 ## Tone of the app
 

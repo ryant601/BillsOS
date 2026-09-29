@@ -1,26 +1,16 @@
 'use strict';
-
-const fs=require('fs');
-const path=require('path');
+const fs=require('node:fs');
+const path=require('node:path');
 const test=require('node:test');
 const assert=require('node:assert/strict');
+const read=name=>fs.readFileSync(path.join(__dirname,'..',name),'utf8');
 
-function read(name){return fs.readFileSync(path.join(__dirname,'..',name),'utf8')}
-
-test('calendar row controls remain available for current and future rows without widening day cells',()=>{
-  const fix=read('calendar-row-controls-fix.js');
-  assert.match(fix,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)!important/);
-  assert.match(fix,/\.day\{min-width:0!important;width:auto!important\}/);
-  assert.match(fix,/if\(!row\|\|row\.querySelector\('\.weekToggleBtn'\)\)return/);
-  assert.match(fix,/button\.textContent=hidden\?'Show row':'Hide row'/);
-  assert.match(fix,/Object\.prototype\.hasOwnProperty\.call\(state,key\)\?!!state\[key\]:false/);
-});
-
-test('dashboard preload injects row controls fix while preserving required calendar scrollbar asset',()=>{
-  const preload=read('cache-coherence-preload.js');
-  assert.match(preload,/const BUILD = '20260929mortgagesplit1'/);
-  assert.match(preload,/CRITICAL_ASSETS[\s\S]*calendar-event-scroll-fix\.js/);
-  assert.match(preload,/CRITICAL_ASSETS[\s\S]*calendar-row-controls-fix\.js/);
-  assert.match(preload,/billsosCalendarEventScrollFixScript/);
-  assert.match(preload,/billsosCalendarRowControlsFix/);
+test('list-view week controls replace the grid row-control injector',()=>{
+  const list=read('calendar-list-view.js'),preload=read('cache-coherence-preload.js');
+  assert.match(list,/calendar-week-toggle/);
+  assert.match(list,/Hide week/);
+  assert.match(list,/Show week/);
+  assert.match(list,/billsos-list-weeks-v1/);
+  assert.doesNotMatch(preload,/updated = ensureCalendarRowControls/);
+  assert.doesNotMatch(preload,/CRITICAL_ASSETS[\s\S]*calendar-row-controls-fix\.js/);
 });

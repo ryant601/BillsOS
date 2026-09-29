@@ -77,5 +77,5 @@ test('Calendar loads the split helper before the card editor and versions both a
   assert.match(editor, /@media\(max-width:420px\)\{\.billsosSplitRow\{grid-template-columns:1fr\}\}/);
   const preload = read('cache-coherence-preload.js');
   assert.match(preload, /calendar-payment-split\.js/);
-  assert.match(preload, /const BUILD = '20260929mortgagesplit1'/);
+  assert.match(preload, /const BUILD = '20260929calendarlist1'/);
 });

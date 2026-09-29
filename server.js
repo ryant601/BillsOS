@@ -197,10 +197,6 @@ function generatedDashboardHtml(session) {
     "done=JSON.parse(localStorage.getItem('billsos-generated-done-v5')||'{}')||{};adjust=JSON.parse(localStorage.getItem('billsos-pay-adjust-v1')||'{}')||{};var r=await fetch"
   );
 
-  if (!html.includes('/day-details-enhance.js')) {
-    html = html.replace('</body>', '<script defer src="/day-details-enhance.js?v=20260826fy2027a"></script></body>');
-  }
-
   return injectAccessMarkup(html, session);
 }
 

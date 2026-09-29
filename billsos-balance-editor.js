@@ -26,6 +26,7 @@
     return Object.keys(names).find(function (name) { return title.indexOf(name) >= 0; }) ? names[Object.keys(names).find(function (name) { return title.indexOf(name) >= 0; })] : '';
   }
   function dayDate(day) {
+    if (day && /^20\d{2}-\d{2}-\d{2}$/.test(String(day.dataset.date || ''))) return day.dataset.date;
     const panel = day.closest('.month-panel');
     const mm = monthNumber(panel);
     const numberNode = day.querySelector('.dnum') || day.querySelector('.topline > b') || day.querySelector('.topline b');
@@ -35,8 +36,8 @@
   }
   function balanceNodes(day) {
     return {
-      beginning: day.querySelector('.bod b') || day.querySelector('.topline span:last-child b'),
-      ending: day.querySelector('.eod b') || day.querySelector('.endline b')
+      beginning: day.querySelector('.calendar-day-beginning b') || day.querySelector('.bod b') || day.querySelector('.topline span:last-child b'),
+      ending: day.querySelector('.calendar-day-ending b') || day.querySelector('.eod b') || day.querySelector('.endline b')
     };
   }
   function eventId(date, kind) { return 'balance-' + kind + '-' + date; }
@@ -51,7 +52,7 @@
     document.head.appendChild(style);
   }
   function markTargets() {
-    document.querySelectorAll('.day:not(.blank)').forEach(function (day) {
+    document.querySelectorAll('.calendar-day,.day:not(.blank)').forEach(function (day) {
       const nodes = balanceNodes(day);
       Object.keys(nodes).forEach(function (kind) {
         const node = nodes[kind];
@@ -65,7 +66,7 @@
     });
   }
   async function openEditor(target) {
-    const day = target.closest('.day');
+    const day = target.closest('.calendar-day,.day');
     const date = dayDate(day);
     const kind = target.dataset.balanceKind;
     if (!date || !kind || document.querySelector('.bb-scrim')) return;
@@ -73,8 +74,8 @@
     const current = parseMoney(nodes[kind] && nodes[kind].textContent);
     const currentEnding = parseMoney(nodes.ending && nodes.ending.textContent);
     const panel = day.closest('.month-panel');
-    const monthEndNode = panel && (panel.querySelector('#kend') || Array.from(panel.querySelectorAll('.day:not(.blank) .eod b,.day:not(.blank) .endline b')).pop());
-    const monthEnd = parseMoney(monthEndNode && monthEndNode.textContent);
+    const monthEndNode = panel && (panel.querySelector('#kend') || Array.from(panel.querySelectorAll('.calendar-day .calendar-day-ending b,.day:not(.blank) .eod b,.day:not(.blank) .endline b')).pop());
+    const monthEnd = panel && Number.isFinite(Number(panel.dataset.monthEnding)) ? Number(panel.dataset.monthEnding) : parseMoney(monthEndNode && monthEndNode.textContent);
     let data;
     try {
       const response = await fetch('/api/bills?balanceEditor=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' });
@@ -97,7 +98,7 @@
       scrim.querySelector('[data-new]').textContent = Number.isFinite(requested) ? money(requested) : '—';
       scrim.querySelector('[data-adjustment]').textContent = signedMoney(adjustment);
       scrim.querySelector('[data-preview]').textContent = kind === 'beginning'
-        ? 'This day will start at ' + money(requested) + '. Its ending balance becomes ' + money(currentEnding + delta) + (monthEndNode ? ', and the visible month ends at ' + money(monthEnd + delta) : '') + '. Earlier dates will not change.'
+        ? 'This day will start at ' + money(requested) + '. Its ending balance becomes ' + money(currentEnding + delta) + (panel ? ', and the visible month ends at ' + money(monthEnd + delta) : '') + '. Earlier dates will not change.'
         : 'An explicit reconciliation of ' + signedMoney(adjustment) + ' will be recorded on this day. Later balances will update immediately.';
       save.disabled = !Number.isFinite(requested);
       return { requested: requested, adjustment: adjustment };

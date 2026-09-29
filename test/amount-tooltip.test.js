@@ -14,6 +14,6 @@ test('compact calendar tiles expose their full amount in a responsive tooltip', 
   assert.match(source, /role', 'tooltip/);
 });
 
-test('dashboard cache version includes the amount tooltip update', () => {
-  assert.match(server, /day-details-enhance\.js\?v=20260826fy2027a/);
+test('legacy tile tooltip helper is not injected into the list dashboard', () => {
+  assert.doesNotMatch(server, /day-details-enhance\.js\?v=/);
 });

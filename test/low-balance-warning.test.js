@@ -9,8 +9,10 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 test('calendar renderers warn only for nonnegative balances under 300', () => {
   const generated = read('generated-v5.html');
   assert.match(generated, /LOW_BALANCE_WARNING=300/);
-  assert.match(generated, /warn=run>=0&&run<LOW_BALANCE_WARNING\?' is-warn'/);
-  assert.match(generated, /negative=run<0\?' negative'/);
+  assert.match(generated, /warning:LOW_BALANCE_WARNING/);
+  assert.match(generated, /day\.isNegative\?' is-negative':day\.isLow\?' is-low'/);
+  assert.match(read('calendar-list-view.js'), /isNegative: ending < 0/);
+  assert.match(read('calendar-list-view.js'), /isLow: ending >= 0 && ending < warning/);
   assert.doesNotMatch(generated, /warn=run<1000/);
 
   ['amount-balance-hotfix.js', 'day-details-enhance.js'].forEach(file => {
@@ -29,7 +31,7 @@ test('compatibility enhancer uses the same threshold and preserves negative card
 });
 
 test('changed client assets use the current cache builds', () => {
-  assert.match(read('cache-coherence-preload.js'), /const BUILD = '20260929mortgagesplit1'/);
+  assert.match(read('cache-coherence-preload.js'), /const BUILD = '20260929calendarlist1'/);
   assert.match(read('html-hotfix-loader.js'), /amount-balance-hotfix\.js\?v=20260826fy2027a/);
   assert.match(read('control.html'), /action-log\.js\?v=20260828rowcollapse1/);
   assert.match(read('control.html'), /control-preview\.js\?v=20260826transparent1/);

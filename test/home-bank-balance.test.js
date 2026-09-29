@@ -111,12 +111,13 @@ test('Everyday Spending tile uses only the published available balance and banki
   assert.match(home, /href="\/spending\/"/);
 });
 
-test('month-end outlook comes from every remaining month final calendar card', () => {
+test('month-end outlook comes from every remaining month list summary', () => {
   assert.match(home, /\.month-panel\[data-year=/);
   assert.match(home, /\[data-month=/);
-  assert.match(home, /panel\.querySelectorAll\('\.day\[data-day\]'\)/);
+  assert.match(home, /panel\.dataset\.monthEnding/);
+  assert.match(home, /panel\.querySelectorAll\('\.calendar-day\[data-day\],\.day\[data-day\]'\)/);
   assert.match(home, /Number\(a\.dataset\.day\|\|0\)-Number\(b\.dataset\.day\|\|0\)/);
-  assert.match(home, /querySelector\('\.eod b,\.endline b'\)/);
+  assert.match(home, /querySelector\('\.calendar-day-ending b,\.eod b,\.endline b'\)/);
   assert.match(home, /function remainingMonthEnds\(\)/);
   assert.match(home, /month<=12/);
   assert.match(home, /Month-end outlook/);
@@ -143,8 +144,8 @@ test('home client fetch patches only the Bills account value and note and keeps 
 });
 
 test('cache build changes without changing the server start or preload chain', () => {
-  const expectedStart = 'node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js -r ./spending-route-preload.js server.js';
+  const expectedStart = 'node -r ./live-finances-preload.js -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js -r ./spending-route-preload.js server.js';
   assert.equal(packageJson.scripts.start, expectedStart);
-  assert.match(cache, /const BUILD = '20260929mortgagesplit1'/);
+  assert.match(cache, /const BUILD = '20260929calendarlist1'/);
   assert.doesNotMatch(packageJson.scripts.start, /bill-payments-balance|bills-account-balance/);
 });

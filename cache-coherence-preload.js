@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20260929mortgagesplit1';
+const BUILD = '20260929calendarlist1';
 const CRITICAL_ASSETS = [
   'billsos-cross-device-sync-v2.js',
   'billsos-sidebar-calculator.js',
@@ -10,14 +10,11 @@ const CRITICAL_ASSETS = [
   'billsos-balance-editor.js',
   'calendar-payment-split.js',
   'billsos-card-editor.js',
+  'calendar-list-view.js',
+  'calendar-list-view.css',
   'cashflow-engine.js',
-  'billsos-week-toggle.js',
-  'day-details-enhance.js',
   'billsos-v2-ui.js',
   'assistant-calendar-consistency.js',
-  'calendar-event-scroll-fix.js',
-  'calendar-row-controls-fix.js',
-  'calendar-single-line-bills.js',
   'income-14day-home.js'
 ];
 
@@ -34,24 +31,6 @@ function forceVersion(html) {
 function ensureAssistantConsistency(html, isDashboard) {
   if (!isDashboard || html.includes('id="billsosAssistantCalendarConsistency"')) return html;
   const tag = '<script id="billsosAssistantCalendarConsistency" defer src="/assistant-calendar-consistency.js?v=' + BUILD + '"></script>';
-  return html.replace('</body>', tag + '\n</body>');
-}
-
-function ensureCalendarEventScroll(html, isDashboard) {
-  if (!isDashboard || html.includes('id="billsosCalendarEventScrollFixScript"')) return html;
-  const tag = '<script id="billsosCalendarEventScrollFixScript" defer src="/calendar-event-scroll-fix.js?v=' + BUILD + '"></script>';
-  return html.replace('</body>', tag + '\n</body>');
-}
-
-function ensureCalendarRowControls(html, isDashboard) {
-  if (!isDashboard || html.includes('id="billsosCalendarRowControlsFix"')) return html;
-  const tag = '<script id="billsosCalendarRowControlsFix" defer src="/calendar-row-controls-fix.js?v=' + BUILD + '"></script>';
-  return html.replace('</body>', tag + '\n</body>');
-}
-
-function ensureCalendarSingleLineBills(html, isDashboard) {
-  if (!isDashboard || html.includes('id="billsosCalendarSingleLineBills"')) return html;
-  const tag = '<script id="billsosCalendarSingleLineBills" defer src="/calendar-single-line-bills.js?v=' + BUILD + '"></script>';
   return html.replace('</body>', tag + '\n</body>');
 }
 
@@ -109,9 +88,6 @@ fs.readFileSync = function coherentReadFileSync(filePath, options) {
   const html = Buffer.isBuffer(result) ? result.toString('utf8') : String(result);
   let updated = forceVersion(html);
   updated = ensureAssistantConsistency(updated, isDashboard);
-  updated = ensureCalendarEventScroll(updated, isDashboard);
-  updated = ensureCalendarRowControls(updated, isDashboard);
-  updated = ensureCalendarSingleLineBills(updated, isDashboard);
   updated = ensureIncome14Day(updated, isDashboard);
   updated = removeLegacySpendingHeaderLink(updated, isDashboard);
   updated = ensureSpendingSidebar(updated);
