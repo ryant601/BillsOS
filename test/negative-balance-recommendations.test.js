@@ -35,3 +35,37 @@ test('does not claim a fix when there is no later income date in the month', () 
   const summary = list.buildMonth(rows, 2026, 10, 100, {});
   assert.deepEqual(recommendations.recommend(rows, summary, '2026-10-01'), []);
 });
+
+test('recommends an October mortgage split in September when it prevents future negative days', () => {
+  const september = list.buildMonth([], 2026, 9, 1000, {});
+  const rows = [
+    { iso: '2026-10-02', amount: -1200, name: 'Mortgage' },
+    { iso: '2026-10-15', amount: 1000, name: 'Paycheck' }
+  ];
+  const october = list.buildMonth(rows, 2026, 10, september.ending, {});
+  const suggestions = recommendations.recommendAhead(rows, september.days.concat(october.days), '2026-09-29', 120);
+  assert.equal(suggestions[0].kind, 'mortgage');
+  assert.equal(suggestions[0].firstDate, '2026-10-02');
+  assert.equal(suggestions[0].secondDate, '2026-10-15');
+  assert.equal(suggestions[0].firstAmount + suggestions[0].secondAmount, 1200);
+  assert.equal(suggestions[0].negativeDaysAfter, 0);
+});
+
+test('mortgage and Jeep splits obey their 17th and 25th cutoffs; fixed lenders stay excluded', () => {
+  const rows = [
+    { iso: '2026-10-02', amount: -1200, name: 'Mortgage' },
+    { iso: '2026-10-18', amount: 1000, name: 'Paycheck' },
+    { iso: '2026-10-20', amount: -800, name: 'Jeep' },
+    { iso: '2026-10-26', amount: 1000, name: 'Paycheck' },
+    { iso: '2026-10-20', amount: -400, name: 'Chase' },
+    { iso: '2026-10-20', amount: -500, name: 'Upstart' }
+  ];
+  const summary = list.buildMonth(rows, 2026, 10, 800, {});
+  const choices = recommendations.recommendAhead(rows, summary.days, '2026-10-01', 120);
+  assert.ok(choices.every(choice => choice.secondDate <= choice.from.slice(0, 8) + (choice.kind === 'mortgage' ? '17' : '25')));
+  assert.ok(choices.every(choice => !/chase|upstart/i.test(choice.name)));
+  const monthly = recommendations.recommend(rows, summary, '2026-10-01');
+  assert.ok(monthly.every(choice => !/chase|upstart/i.test(choice.name)));
+  assert.ok(monthly.every(choice => !/mortgage/i.test(choice.name) || Number(choice.to.slice(-2)) <= 17));
+  assert.ok(monthly.every(choice => !/jeep/i.test(choice.name) || Number(choice.to.slice(-2)) <= 25));
+});

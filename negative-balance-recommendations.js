@@ -8,8 +8,19 @@
   function cents(value) { return Math.round(Number(value || 0) * 100); }
   function dateOf(row) { return String(row.iso || row.date || ''); }
   function excluded(row) {
-    const text = String(row.name || '') + ' ' + String(row.type || '') + ' ' + String(row.cls || '');
-    return /transfer|funding|sweep|correction|adjustment|reconciliation|balance-opening/i.test(text);
+    const name = String(row.name || '');
+    const text = name + ' ' + String(row.type || '') + ' ' + String(row.cls || '');
+    return /transfer|funding|sweep|correction|adjustment|reconciliation|balance-opening/i.test(text) ||
+      (!/mortgage|jeep/i.test(name) && /upstart|chase/i.test(name));
+  }
+  function cutoff(row) {
+    const name = String(row.name || '').toLowerCase();
+    if (name.includes('mortgage')) return 17;
+    if (name.includes('jeep')) return 25;
+    return 31;
+  }
+  function withinDeadline(row, date) {
+    return Number(date.slice(8, 10)) <= cutoff(row) && date.slice(0, 7) === dateOf(row).slice(0, 7);
   }
   function metrics(days, offsets) {
     const balances = days.map(function (day) { return cents(day.ending) + (offsets[day.date] || 0); });
@@ -35,7 +46,7 @@
       const incomeDates = later.filter(function (day) {
         return day.items.some(function (item) { return cents(item.amount) > 0; });
       });
-      incomeDates.forEach(function (destination) {
+      incomeDates.filter(function (day) { return withinDeadline(row, day.date); }).forEach(function (destination) {
         [amount, Math.floor(amount / 2)].forEach(function (moved, index) {
           if (moved <= 0 || (index && moved === amount)) return;
           const offsets = {};
@@ -66,5 +77,58 @@
     }).slice(0, 3);
   }
 
-  return { recommend: recommend };
+  function recommendAhead(rows, allDays, today, horizonDays) {
+    const first = String(today || ''), days = (allDays || []).filter(function (day) { return day.date >= first; })
+      .slice(0, Number(horizonDays || 120));
+    if (!days.length) return [];
+    const base = metrics(days, {});
+    if (!base.negativeDays) return [];
+    const positions = {};
+    days.forEach(function (day, index) { positions[day.date] = index; });
+    const incomeDays = days.filter(function (day) {
+      return (day.items || []).some(function (item) { return cents(item.amount) > 0; });
+    });
+    const results = [];
+    (rows || []).forEach(function (row) {
+      const name = String(row.name || ''), kind = /mortgage/i.test(name) ? 'mortgage' : /jeep/i.test(name) ? 'jeep' : '';
+      const from = dateOf(row), total = -cents(row.amount);
+      if (!kind || excluded(row) || !Object.prototype.hasOwnProperty.call(positions, from) || total < 200) return;
+      incomeDays.forEach(function (payday) {
+        const second = payday.date;
+        const gap = positions[second] - positions[from];
+        if (gap <= 0 || gap > 14 || !withinDeadline(row, second)) return;
+        const firstPart = Math.floor(total / 2), secondPart = total - firstPart;
+        const afterBalances = days.map(function (day) {
+          let offset = day.date >= from ? total : 0;
+          if (day.date >= from) offset -= firstPart;
+          if (day.date >= second) offset -= secondPart;
+          return cents(day.ending) + offset;
+        });
+        const negativeDaysAfter = afterBalances.filter(function (balance) { return balance < 0; }).length;
+        const newNegative = days.some(function (day, index) {
+          return cents(day.ending) >= 0 && afterBalances[index] < 0;
+        });
+        const resolved = base.negativeDays - negativeDaysAfter;
+        if (resolved <= 0 || newNegative) return;
+        results.push({ kind: kind, name: name, from: from, firstDate: from, secondDate: second,
+          firstAmount: firstPart / 100, secondAmount: secondPart / 100, originalAmount: total / 100,
+          daysResolved: resolved, negativeDaysBefore: base.negativeDays,
+          negativeDaysAfter: negativeDaysAfter, lowestBefore: base.lowest,
+          lowestAfter: Math.min.apply(null, afterBalances) / 100 });
+      });
+    });
+    results.sort(function (a, b) {
+      return b.daysResolved - a.daysResolved || a.negativeDaysAfter - b.negativeDaysAfter ||
+        a.from.localeCompare(b.from) || a.secondDate.localeCompare(b.secondDate);
+    });
+    const seen = new Set();
+    return results.filter(function (item) {
+      const key = item.kind + '|' + item.from;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 3);
+  }
+
+  return { recommend: recommend, recommendAhead: recommendAhead };
 });
