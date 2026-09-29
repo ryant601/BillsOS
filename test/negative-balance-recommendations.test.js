@@ -69,3 +69,13 @@ test('mortgage and Jeep splits obey their 17th and 25th cutoffs; fixed lenders s
   assert.ok(monthly.every(choice => !/mortgage/i.test(choice.name) || Number(choice.to.slice(-2)) <= 17));
   assert.ok(monthly.every(choice => !/jeep/i.test(choice.name) || Number(choice.to.slice(-2)) <= 25));
 });
+
+test('a deadline split can ease a due-day deficit without moving the full bill beyond its cutoff', () => {
+  const rows = [{ iso: '2026-10-16', amount: -1200, name: 'Mortgage' }];
+  const summary = list.buildMonth(rows, 2026, 10, 1000, {});
+  const choices = recommendations.recommendAhead(rows, summary.days, '2026-10-01', 120);
+  assert.equal(choices[0].firstDate, '2026-10-16');
+  assert.equal(choices[0].secondDate, '2026-10-17');
+  assert.equal(choices[0].daysResolved, 1);
+  assert.ok(choices[0].negativeDaysAfter > 0, 'remaining negative days must be reported');
+});

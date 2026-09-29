@@ -93,14 +93,19 @@
       const name = String(row.name || ''), kind = /mortgage/i.test(name) ? 'mortgage' : /jeep/i.test(name) ? 'jeep' : '';
       const from = dateOf(row), total = -cents(row.amount);
       if (!kind || excluded(row) || !Object.prototype.hasOwnProperty.call(positions, from) || total < 200) return;
-      incomeDays.forEach(function (payday) {
-        const second = payday.date;
+      const deadline = from.slice(0, 8) + String(cutoff(row)).padStart(2, '0');
+      const firstDates = [from].concat(incomeDays.filter(function (day) {
+        return day.date < from && positions[from] - positions[day.date] <= 30;
+      }).map(function (day) { return day.date; }));
+      const secondDates = Array.from(new Set(incomeDays.map(function (day) { return day.date; }).concat(deadline)));
+      secondDates.forEach(function (second) {
         const gap = positions[second] - positions[from];
-        if (gap <= 0 || gap > 14 || !withinDeadline(row, second)) return;
+        if (gap <= 0 || gap > 30 || !withinDeadline(row, second) || !Object.prototype.hasOwnProperty.call(positions, second)) return;
+        firstDates.forEach(function (firstDate) {
         const firstPart = Math.floor(total / 2), secondPart = total - firstPart;
         const afterBalances = days.map(function (day) {
           let offset = day.date >= from ? total : 0;
-          if (day.date >= from) offset -= firstPart;
+          if (day.date >= firstDate) offset -= firstPart;
           if (day.date >= second) offset -= secondPart;
           return cents(day.ending) + offset;
         });
@@ -110,16 +115,18 @@
         });
         const resolved = base.negativeDays - negativeDaysAfter;
         if (resolved <= 0 || newNegative) return;
-        results.push({ kind: kind, name: name, from: from, firstDate: from, secondDate: second,
+        results.push({ kind: kind, name: name, from: from, firstDate: firstDate, secondDate: second,
           firstAmount: firstPart / 100, secondAmount: secondPart / 100, originalAmount: total / 100,
           daysResolved: resolved, negativeDaysBefore: base.negativeDays,
           negativeDaysAfter: negativeDaysAfter, lowestBefore: base.lowest,
           lowestAfter: Math.min.apply(null, afterBalances) / 100 });
+        });
       });
     });
     results.sort(function (a, b) {
       return b.daysResolved - a.daysResolved || a.negativeDaysAfter - b.negativeDaysAfter ||
-        a.from.localeCompare(b.from) || a.secondDate.localeCompare(b.secondDate);
+        b.lowestAfter - a.lowestAfter || a.from.localeCompare(b.from) ||
+        b.firstDate.localeCompare(a.firstDate) || a.secondDate.localeCompare(b.secondDate);
     });
     const seen = new Set();
     return results.filter(function (item) {
