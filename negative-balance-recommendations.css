@@ -1,0 +1,10 @@
+.risk-recommendations{margin:12px 0 18px;padding:15px;border:1px solid rgba(182,91,69,.22);border-radius:16px;background:#fffaf5}
+.risk-recommendations h2{margin:0 0 4px;font-size:17px}
+.risk-recommendations>p{margin:0 0 12px;color:var(--mut);font-size:13px;line-height:1.45}
+.risk-options{display:grid;gap:8px}
+.risk-option{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.risk-option strong{font-size:14px}
+.risk-option p{margin:4px 0;color:var(--ink);font-size:13px}
+.risk-option span{color:var(--mut);font-size:12px}
+.risk-find-payment{flex:none;border:1px solid var(--primary);border-radius:10px;padding:8px 11px;background:var(--primary);color:white;font:800 12px system-ui;cursor:pointer}
+@media(max-width:640px){.risk-option{align-items:stretch;flex-direction:column}.risk-find-payment{align-self:flex-start}}
