@@ -55,6 +55,8 @@ These rules exist so future ChatGPT sessions handle this repository consistently
 - Offer planning suggestions for projected ending balances below $300, prioritizing negative days. Keep mortgage fully paid by the 17th and Jeep by the 25th; exclude fixed Upstart and Chase payments.
 - Preview effects without changing payment rows, and avoid creating new low balance days in future split suggestions. Prior month income can be earmarked for the next month's mortgage or Jeep; treat it as reserved cash applied on the original payment date.
 - For equal negative-day improvement, prefer the smallest effective date shift before broader low-balance improvement. Treat genuine one-time expenses as movable candidates while excluding transfers, funding rows, reconciliations, corrections, and balance-opening rows. Fund Spending Account remains in cash-flow projections but must never be proposed as a movable or splittable lever.
+- Let the owner choose a persistent recommendation floor from $0 to $500. Negative-day elimination remains the first priority even when the chosen floor is below $300.
+- A saved date adjustment may cross month boundaries. When the client edits the current calendar revision, its complete amount/date adjustment maps are authoritative so a prior cloud value cannot restore the old month after Save.
 - The dashboard payment-day planner evaluates every date through a user-selected deadline, ranks the full 120-day effect, and shows month-by-month changes before saving a one-time expense. A save must use the latest server state and retry a single version conflict without overwriting newer rows.
 
 ## Tone of the app

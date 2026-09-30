@@ -76,8 +76,15 @@ function mergeCalendarState(existing, incoming, options = {}) {
     : Math.max(remote.revision, local.revision);
 
   return {
-    dateAdjustments: mergeTimedMap(remote.dateAdjustments, local.dateAdjustments),
-    amountAdjustments: mergeTimedMap(remote.amountAdjustments, local.amountAdjustments),
+    // A device that edited the current revision owns the complete adjustment
+    // maps. Replacing them is important for date moves and resets: a merge-only
+    // strategy can silently restore an older cross-month date after Save.
+    dateAdjustments: sameRevision
+      ? (clone(local.dateAdjustments) || {})
+      : mergeTimedMap(remote.dateAdjustments, local.dateAdjustments),
+    amountAdjustments: sameRevision
+      ? (clone(local.amountAdjustments) || {})
+      : mergeTimedMap(remote.amountAdjustments, local.amountAdjustments),
     completed: mergeCompleted(remote.completed, local.completed, sameRevision),
     updatedAt: options.incrementRevision ? now : (timestamp(local) > timestamp(remote) ? local.updatedAt : remote.updatedAt),
     revision

@@ -29,6 +29,13 @@ test('calendar date matching is scoped to one occurrence month', () => {
   assert.match(hotfix, /occurrenceMonth\(candidate, map\[candidate\]\) === month/);
 });
 
+test('calendar rendering can carry a source row into a different month', () => {
+  const generated = read('generated-v5.html');
+  assert.match(generated, /function allModelRows\(model\)/);
+  assert.match(generated, /rows=applyCardEdits\(allRows,month,year\)/);
+  assert.match(generated, /String\(row\.iso\|\|row\.date\|\|''\)\.slice\(0,7\)===mv/);
+});
+
 test('a September Discover move does not relocate August or October Discover', () => {
   const { matchingOverride } = loadHotfixMatchers();
   const dateMap = {

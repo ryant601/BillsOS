@@ -103,6 +103,53 @@ test('calendar-only sync preserves one-time events, bills, income, and payment s
   assert.deepEqual(patched.paymentSplits, existing.paymentSplits);
 });
 
+test('current-revision sync makes an October-to-September move authoritative', () => {
+  const key = '2026-10-02|Auto Insurance|-169';
+  const existing = {
+    bills: [],
+    income: [],
+    oneTimeEvents: [{
+      id: '__billsos_system_rules__',
+      name: 'BillsOS system rules',
+      type: 'meta',
+      amount: 0,
+      date: null,
+      notes: JSON.stringify({
+        calendarState: {
+          dateAdjustments: {
+            [key]: {
+              date: '2026-10-01',
+              originalDate: '2026-10-02',
+              updatedAt: '2026-09-30T16:00:00.000Z'
+            }
+          },
+          amountAdjustments: {},
+          completed: {},
+          revision: 8
+        }
+      })
+    }],
+    revision: 8
+  };
+  const patched = applyCalendarStatePatch(existing, {
+    baseRevision: 8,
+    calendarState: {
+      dateAdjustments: {
+        [key]: {
+          date: '2026-09-30',
+          originalDate: '2026-10-02',
+          updatedAt: '2026-09-30T15:59:00.000Z'
+        }
+      },
+      amountAdjustments: {},
+      completed: {},
+      revision: 8
+    }
+  }, '2026-09-30T16:01:00.000Z');
+
+  assert.equal(systemState(patched).dateAdjustments[key].date, '2026-09-30');
+});
+
 test('full-document saves reject a stale source version before replacement', () => {
   const current = { updatedAt: '2026-08-22T13:10:23.154Z' };
   const stalePhone = { updatedAt: '2026-08-22T12:49:30.548Z' };

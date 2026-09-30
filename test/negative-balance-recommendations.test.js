@@ -197,3 +197,17 @@ test('never uses Fund Spending Account as a negative-balance lever', () => {
 
   assert.deepEqual(recommendations.recommend(rows, summary, '2026-12-01'), []);
 });
+
+test('a lower recommendation floor can prioritize clearing negatives below $300', () => {
+  const rows = [
+    { iso: '2026-10-03', amount: -200, name: 'Flexible payment' },
+    { iso: '2026-10-04', amount: 150, name: 'Paycheck' }
+  ];
+  const summary = list.buildMonth(rows, 2026, 10, 100, {});
+  const choices = recommendations.recommend(rows, summary, '2026-10-01', 0);
+
+  assert.ok(choices.length);
+  assert.equal(choices[0].negativeDaysAfter, 0);
+  assert.equal(choices[0].lowestAfter, 50);
+  assert.equal(choices[0].targetFloor, 0);
+});
