@@ -59,7 +59,7 @@ test('active calendar renders a list with persistent week controls and risk line
   assert.match(css, /\.calendar-week-body\[hidden\]/);
   assert.match(editor, /closest\('\.calendar-day,\.day'\)/);
   assert.match(editor, /Split payment/);
-  assert.match(preload, /const BUILD = '20260929shortshift1'/);
+  assert.match(preload, /const BUILD = '20260930datereset1'/);
   assert.match(html, /id="openPaymentPlanner"/);
   assert.match(html, />Find a payment day</);
   assert.doesNotMatch(html, /<a href="\/control">Control Center<\/a>/);
@@ -73,4 +73,15 @@ test('home outlook reads the authoritative month ending from the list panel', ()
   const source = read('html-hotfix-loader.js');
   assert.match(source, /panel\.dataset\.monthEnding/);
   assert.match(source, /\.calendar-day-ending b/);
+});
+
+test('dashboard installs one current calendar sync script and date resets use tombstones', () => {
+  const html = read('generated-v5.html');
+  const loader = read('html-hotfix-loader.js');
+  const editor = read('billsos-card-editor.js');
+  assert.equal((html.match(/billsos-cross-device-sync-v2\.js/g) || []).length, 1);
+  assert.match(loader, /upsertScript\(html, '<script id="billsosCrossDeviceSyncV2" defer src="\/billsos-cross-device-sync-v2\.js/);
+  assert.doesNotMatch(loader, /src="\/billsos-cross-device-sync\.js/);
+  assert.match(editor, /deleted:true,originalDate:orig,updatedAt:stamp/);
+  assert.match(editor, /map\[key\]=\{deleted:true,originalDate:originalDate\(key\),updatedAt:new Date\(\)\.toISOString\(\)\}/);
 });

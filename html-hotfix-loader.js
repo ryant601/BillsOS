@@ -225,7 +225,7 @@ fs.readFileSync = function patchedReadFileSync(filePath, options) {
   let html = Buffer.isBuffer(result) ? result.toString('utf8') : String(result);
   if (isDashboard) {
     html = upsertScript(html, '<script defer src="/amount-balance-hotfix.js?v=20260826fy2027a"></script>');
-    html = upsertScript(html, '<script defer src="/billsos-cross-device-sync.js?v=20260730localfirst1"></script>');
+    html = upsertScript(html, '<script id="billsosCrossDeviceSyncV2" defer src="/billsos-cross-device-sync-v2.js?v=20260930datereset1"></script>');
     html = upsertScript(html, '<script defer src="/billsos-balance-editor.js?v=20260812balanceeditor1"></script>');
   }
   html = upsertScript(html, '<script defer src="/billsos-sidebar-calculator.js?v=20260828rowcollapse1"></script>');

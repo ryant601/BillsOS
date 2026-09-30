@@ -131,6 +131,32 @@ test('October income can reserve part of a November mortgage without creating a 
   assert.equal(choice.monthImpacts[1].lowestAfter, 600);
 });
 
+test('October income can prepare for a dangerous January mortgage within 120 days', () => {
+  const octoberRows = [{ iso: '2026-10-20', amount: 1000, name: 'Paycheck' }];
+  const october = list.buildMonth(octoberRows, 2026, 10, 2000, {});
+  const november = list.buildMonth([], 2026, 11, october.ending, {});
+  const december = list.buildMonth([], 2026, 12, november.ending, {});
+  const januaryRows = [
+    { iso: '2027-01-02', amount: -4000, name: 'Mortgage' },
+    { iso: '2027-01-15', amount: 2000, name: 'Paycheck' }
+  ];
+  const january = list.buildMonth(januaryRows, 2027, 1, december.ending, {});
+  const choices = recommendations.recommendAhead(
+    octoberRows.concat(januaryRows),
+    october.days.concat(november.days, december.days, january.days),
+    '2026-10-01',
+    120,
+    300
+  );
+  const choice = choices.find(item => item.from === '2027-01-02' && item.firstDate === '2026-10-20');
+
+  assert.ok(choice);
+  assert.equal(choice.negativeDaysAfter, 0);
+  assert.equal(choice.firstAmount, 2000);
+  assert.equal(choice.secondDate, '2027-01-15');
+  assert.deepEqual(choice.monthImpacts.map(item => item.month), ['2026-10', '2026-11', '2026-12', '2027-01']);
+});
+
 test('one-time expense planner selects the earliest equally safe day after income and shows later-month effects', () => {
   const octoberRows = [{ iso: '2026-10-10', amount: 1000, name: 'Paycheck' }];
   const october = list.buildMonth(octoberRows, 2026, 10, 1000, {});

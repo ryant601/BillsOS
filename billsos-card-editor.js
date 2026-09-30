@@ -38,14 +38,14 @@
   function formatDate(v){return validDate(v)?new Date(v+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):''}
   function addDays(v,n){var d=new Date(v+'T12:00:00');d.setDate(d.getDate()+Number(n||0));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
   function saveAmount(key,value){var n=Math.round(Math.abs(Number(value||0))*100)/100,map=read(AMOUNT_KEY),base=Math.abs(amountFromKey(key));if(!isFinite(n))return false;if(Math.abs(n-base)<.005)delete map[key];else map[key]={amount:n,updatedAt:new Date().toISOString()};return write(AMOUNT_KEY,map)}
-  function saveDate(key,date){var orig=originalDate(key),map=read(DATE_KEY);if(!validDate(date)||!validDate(orig))return false;if(date===orig)delete map[key];else map[key]={date:date,originalDate:orig,status:'moved',updatedAt:new Date().toISOString()};return write(DATE_KEY,map)}
+  function saveDate(key,date){var orig=originalDate(key),map=read(DATE_KEY);if(!validDate(date)||!validDate(orig))return false;if(date===orig)map[key]={deleted:true,originalDate:orig,updatedAt:new Date().toISOString()};else map[key]={date:date,originalDate:orig,status:'moved',updatedAt:new Date().toISOString()};return write(DATE_KEY,map)}
   function saveEditAtomically(key,amountValue,dateValue){
     var n=Math.round(Math.abs(Number(amountValue||0))*100)/100,orig=originalDate(key),base=Math.abs(amountFromKey(key));
     if(!isFinite(n))return {ok:false,message:'Enter a valid amount.'};
     if(!validDate(dateValue)||!validDate(orig))return {ok:false,message:'Choose a valid date.'};
     var beforeAmount=read(AMOUNT_KEY),beforeDate=read(DATE_KEY),nextAmount=cloneMap(beforeAmount),nextDate=cloneMap(beforeDate),stamp=new Date().toISOString();
     if(Math.abs(n-base)<.005)delete nextAmount[key];else nextAmount[key]={amount:n,updatedAt:stamp};
-    if(dateValue===orig)delete nextDate[key];else nextDate[key]={date:dateValue,originalDate:orig,status:'moved',updatedAt:stamp};
+    if(dateValue===orig)nextDate[key]={deleted:true,originalDate:orig,updatedAt:stamp};else nextDate[key]={date:dateValue,originalDate:orig,status:'moved',updatedAt:stamp};
     if(!write(AMOUNT_KEY,nextAmount))return {ok:false,message:'This browser could not save the amount locally.'};
     if(!write(DATE_KEY,nextDate)){
       write(AMOUNT_KEY,beforeAmount);
@@ -128,7 +128,7 @@
         setEditorStatus(pop,'Amount reset and saved ✓','success');await wait(350);location.reload();return;
       }
       if(action==='reset-date'){
-        var map=read(DATE_KEY);delete map[key];
+        var map=read(DATE_KEY);map[key]={deleted:true,originalDate:originalDate(key),updatedAt:new Date().toISOString()};
         if(!write(DATE_KEY,map)){setEditorStatus(pop,'Could not reset the date.','error');return}
         pop.dataset.dirty='0';setEditorStatus(pop,'Date reset. Confirming sync…','info');
         var dateSync=await confirmCloudSave();

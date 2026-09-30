@@ -150,6 +150,30 @@ test('current-revision sync makes an October-to-September move authoritative', (
   assert.equal(systemState(patched).dateAdjustments[key].date, '2026-09-30');
 });
 
+test('a timestamped reset defeats an older move even from a stale revision', () => {
+  const key = '2026-09-30|Apple Card|-95';
+  const existing = {
+    bills: [], income: [], revision: 9,
+    oneTimeEvents: [{
+      id: '__billsos_system_rules__', name: 'BillsOS system rules', type: 'meta', amount: 0, date: null,
+      notes: JSON.stringify({calendarState:{
+        dateAdjustments:{[key]:{date:'2026-10-02',originalDate:'2026-09-30',updatedAt:'2026-09-30T16:00:00.000Z'}},
+        amountAdjustments:{}, completed:{}, revision:9
+      }})
+    }]
+  };
+  const patched = applyCalendarStatePatch(existing, {
+    baseRevision: 8,
+    calendarState:{
+      dateAdjustments:{[key]:{deleted:true,originalDate:'2026-09-30',updatedAt:'2026-09-30T16:01:00.000Z'}},
+      amountAdjustments:{}, completed:{}, revision:8
+    }
+  }, '2026-09-30T16:01:01.000Z');
+
+  assert.equal(systemState(patched).dateAdjustments[key].deleted, true);
+  assert.equal(systemState(patched).dateAdjustments[key].date, undefined);
+});
+
 test('full-document saves reject a stale source version before replacement', () => {
   const current = { updatedAt: '2026-08-22T13:10:23.154Z' };
   const stalePhone = { updatedAt: '2026-08-22T12:49:30.548Z' };

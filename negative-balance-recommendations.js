@@ -193,8 +193,10 @@
       const from = dateOf(row), total = -cents(row.amount);
       if (!kind || excluded(row) || !Object.prototype.hasOwnProperty.call(positions, from) || total < 200) return;
       const deadline = from.slice(0, 8) + String(cutoff(row)).padStart(2, '0');
+      const currentMonth = first.slice(0, 7), reserveLead = Math.min(120, Number(horizonDays || 120));
       const firstDates = [from].concat(incomeDays.filter(function (day) {
-        return day.date < from && positions[from] - positions[day.date] <= 30;
+        return day.date < from && day.date.slice(0, 7) === currentMonth &&
+          positions[from] - positions[day.date] <= reserveLead;
       }).map(function (day) { return day.date; }));
       const secondDates = Array.from(new Set(incomeDays.map(function (day) { return day.date; }).concat(deadline)));
       secondDates.forEach(function (second) {
