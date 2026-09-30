@@ -124,11 +124,11 @@ test('October income can reserve part of a November mortgage without creating a 
   assert.equal(choice.below300DaysAfter, 0);
   assert.deepEqual(choice.monthImpacts.map(item => item.month), ['2026-10', '2026-11']);
   assert.equal(choice.monthImpacts[0].endingBefore, 1100);
-  assert.equal(choice.monthImpacts[0].endingAfter, 600);
+  assert.equal(choice.monthImpacts[0].endingAfter, 850);
   assert.equal(choice.monthImpacts[1].below300Before, 13);
   assert.equal(choice.monthImpacts[1].below300After, 0);
   assert.equal(choice.monthImpacts[1].lowestBefore, 100);
-  assert.equal(choice.monthImpacts[1].lowestAfter, 600);
+  assert.equal(choice.monthImpacts[1].lowestAfter, 850);
 });
 
 test('October income can prepare for a dangerous January mortgage within 120 days', () => {
@@ -152,9 +152,34 @@ test('October income can prepare for a dangerous January mortgage within 120 day
 
   assert.ok(choice);
   assert.equal(choice.negativeDaysAfter, 0);
-  assert.equal(choice.firstAmount, 2000);
+  assert.equal(choice.firstAmount, 1000);
   assert.equal(choice.secondDate, '2027-01-15');
   assert.deepEqual(choice.monthImpacts.map(item => item.month), ['2026-10', '2026-11', '2026-12', '2027-01']);
+});
+
+test('a future split may trade low current days for resolved future negative days', () => {
+  const octoberRows = [{ iso: '2026-10-20', amount: 100, name: 'Paycheck' }];
+  const october = list.buildMonth(octoberRows, 2026, 10, 400, {});
+  const november = list.buildMonth([], 2026, 11, october.ending, {});
+  const december = list.buildMonth([], 2026, 12, november.ending, {});
+  const januaryRows = [
+    { iso: '2027-01-02', amount: -1000, name: 'Mortgage' },
+    { iso: '2027-01-15', amount: 800, name: 'Paycheck' }
+  ];
+  const january = list.buildMonth(januaryRows, 2027, 1, december.ending, {});
+  const choices = recommendations.recommendAhead(
+    octoberRows.concat(januaryRows),
+    october.days.concat(november.days, december.days, january.days),
+    '2026-10-01', 120, 300
+  );
+  const choice = choices.find(item => item.firstDate === '2026-10-20');
+
+  assert.ok(choice);
+  assert.equal(choice.preparesAhead, true);
+  assert.equal(choice.firstDate, '2026-10-20');
+  assert.ok(choice.negativeDaysResolved > 0);
+  assert.ok(choice.lowDaysAdded > 0);
+  assert.equal(choice.negativeDaysAfter, 0);
 });
 
 test('one-time expense planner selects the earliest equally safe day after income and shows later-month effects', () => {

@@ -203,44 +203,56 @@
         const gap = positions[second] - positions[from];
         if (gap <= 0 || gap > 30 || !withinDeadline(row, second) || !Object.prototype.hasOwnProperty.call(positions, second)) return;
         firstDates.forEach(function (firstDate) {
-        const firstPart = Math.floor(total / 2), secondPart = total - firstPart;
-        const afterBalances = days.map(function (day) {
-          let offset = day.date >= from ? total : 0;
-          if (day.date >= firstDate) offset -= firstPart;
-          if (day.date >= second) offset -= secondPart;
-          return cents(day.ending) + offset;
-        });
-        const after = metrics(days, Object.fromEntries(days.map(function (day, index) {
-          return [day.date, afterBalances[index] - cents(day.ending)];
-        })), threshold);
-        const newLow = days.some(function (day, index) {
-          return cents(day.ending) >= threshold && afterBalances[index] < threshold;
-        });
-        const resolved = base.below300Days - after.below300Days;
-        if (resolved <= 0 || newLow || after.negativeDays > base.negativeDays) return;
-        results.push({ kind: kind, name: name, from: from, firstDate: firstDate, secondDate: second,
-          firstAmount: firstPart / 100, secondAmount: secondPart / 100, originalAmount: total / 100,
-          daysResolved: resolved, negativeDaysBefore: base.negativeDays,
-          negativeDaysAfter: after.negativeDays, below300DaysBefore: base.below300Days,
-          below300DaysAfter: after.below300Days, negativeDaysResolved: base.negativeDays - after.negativeDays,
-          lowestBefore: base.lowest, lowestAfter: after.lowest,
-          monthImpacts: monthImpacts(days, afterBalances, threshold), targetFloor: threshold / 100 });
+          [0.25, 0.5, 0.75].forEach(function (share) {
+            const firstPart = Math.round(total * share), secondPart = total - firstPart;
+            const afterBalances = days.map(function (day) {
+              let offset = day.date >= from ? total : 0;
+              if (day.date >= firstDate) offset -= firstPart;
+              if (day.date >= second) offset -= secondPart;
+              return cents(day.ending) + offset;
+            });
+            const after = metrics(days, Object.fromEntries(days.map(function (day, index) {
+              return [day.date, afterBalances[index] - cents(day.ending)];
+            })), threshold);
+            const newLow = days.some(function (day, index) {
+              return cents(day.ending) >= threshold && afterBalances[index] < threshold;
+            });
+            const resolved = base.below300Days - after.below300Days;
+            const negativeResolved = base.negativeDays - after.negativeDays;
+            if ((resolved <= 0 && negativeResolved <= 0) || after.negativeDays > base.negativeDays ||
+              (newLow && negativeResolved <= 0)) return;
+            results.push({ kind: kind, name: name, from: from, firstDate: firstDate, secondDate: second,
+              firstAmount: firstPart / 100, secondAmount: secondPart / 100, originalAmount: total / 100,
+              preparesAhead: firstDate < from && firstDate.slice(0, 7) === currentMonth,
+              daysResolved: Math.max(0, resolved), lowDaysAdded: Math.max(0, -resolved),
+              negativeDaysBefore: base.negativeDays, negativeDaysAfter: after.negativeDays,
+              below300DaysBefore: base.below300Days, below300DaysAfter: after.below300Days,
+              negativeDaysResolved: negativeResolved, lowestBefore: base.lowest, lowestAfter: after.lowest,
+              monthImpacts: monthImpacts(days, afterBalances, threshold), targetFloor: threshold / 100 });
+          });
         });
       });
     });
     results.sort(function (a, b) {
-      return b.negativeDaysResolved - a.negativeDaysResolved || b.daysResolved - a.daysResolved ||
+      return b.negativeDaysResolved - a.negativeDaysResolved || a.lowDaysAdded - b.lowDaysAdded ||
+        b.daysResolved - a.daysResolved ||
         a.negativeDaysAfter - b.negativeDaysAfter ||
         b.lowestAfter - a.lowestAfter || a.from.localeCompare(b.from) ||
         a.firstDate.localeCompare(b.firstDate) || a.secondDate.localeCompare(b.secondDate);
     });
     const seen = new Set();
-    return results.filter(function (item) {
-      const key = item.kind + '|' + item.from;
+    const unique = results.filter(function (item) {
+      const key = item.kind + '|' + item.from + '|' + (item.preparesAhead ? 'prepare' : 'split');
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
-    }).slice(0, 3);
+    });
+    const selected = unique.slice(0, 3), preparation = unique.find(function (item) { return item.preparesAhead; });
+    if (preparation && !selected.includes(preparation)) {
+      if (selected.length < 3) selected.push(preparation);
+      else selected[selected.length - 1] = preparation;
+    }
+    return selected;
   }
 
   return { recommend: recommend, recommendAhead: recommendAhead, planExpense: planExpense };

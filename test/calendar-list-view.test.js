@@ -59,9 +59,12 @@ test('active calendar renders a list with persistent week controls and risk line
   assert.match(css, /\.calendar-week-body\[hidden\]/);
   assert.match(editor, /closest\('\.calendar-day,\.day'\)/);
   assert.match(editor, /Split payment/);
-  assert.match(preload, /const BUILD = '20260930datereset1'/);
+  assert.match(preload, /const BUILD = '20260930forwardsplit1'/);
   assert.match(html, /id="openPaymentPlanner"/);
   assert.match(html, />Find a payment day</);
+  assert.match(html, /Best first option · Split mortgage or Jeep/);
+  assert.match(html, /Move '\+money\(choice\.firstAmount\)\+' this month to help/);
+  assert.match(html, /forward-recommendations-slot/);
   assert.doesNotMatch(html, /<a href="\/control">Control Center<\/a>/);
   assert.doesNotMatch(html, /<a href="\/legacy">Legacy<\/a>/);
   assert.doesNotMatch(preload, /updated = ensureCalendarEventScroll/);
