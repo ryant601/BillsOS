@@ -11,7 +11,8 @@
   function excluded(row) {
     const name = String(row.name || '');
     const text = name + ' ' + String(row.category || '') + ' ' + String(row.cls || '');
-    return /transfer|funding|sweep|correction|reconciliation|balance-opening/i.test(text) ||
+    const fundsSpendingAccount = /\bfund(?:ing)?(?:\s+the)?\s+(?:everyday\s+)?spending(?:\s+account)?\b/i.test(text);
+    return fundsSpendingAccount || /transfer|funding|sweep|correction|reconciliation|balance-opening/i.test(text) ||
       (!/mortgage|jeep/i.test(name) && /upstart|chase/i.test(name));
   }
   function cutoff(row) {

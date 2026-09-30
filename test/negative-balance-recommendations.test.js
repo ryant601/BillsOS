@@ -187,3 +187,13 @@ test('continues to exclude bookkeeping adjustments from payment suggestions', ()
   const summary = list.buildMonth(rows, 2026, 12, 100, {});
   assert.deepEqual(recommendations.recommend(rows, summary, '2026-12-01'), []);
 });
+
+test('never uses Fund Spending Account as a negative-balance lever', () => {
+  const rows = [
+    { iso: '2026-12-24', amount: -2250, name: 'Fund Spending Account', type: 'adjustment' },
+    { iso: '2026-12-25', amount: 4000, name: 'Paycheck', type: 'income' }
+  ];
+  const summary = list.buildMonth(rows, 2026, 12, 2000, {});
+
+  assert.deepEqual(recommendations.recommend(rows, summary, '2026-12-01'), []);
+});
