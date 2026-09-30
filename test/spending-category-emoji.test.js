@@ -39,10 +39,11 @@ test('older saved categories without emoji remain readable', () => {
 test('emoji helper provides deterministic suggestions and is wired into spending', () => {
   const helper = fs.readFileSync(path.join(__dirname, '..', 'spending-category-emoji.js'), 'utf8');
   const route = fs.readFileSync(path.join(__dirname, '..', 'spending-route-preload.js'), 'utf8');
+  const recategorize = fs.readFileSync(path.join(__dirname, '..', 'spending-transaction-recategorize.js'), 'utf8');
   assert.match(helper, /pet\|vet\|animal\|dog\|cat/);
   assert.match(helper, /travel\|flight\|airline\|hotel\|vacation/);
   assert.match(helper, /data-role','new-emoji'/);
-  assert.match(helper, /createCategory===true/);
-  assert.match(route, /20260909categoryemoji1/);
+  assert.match(recategorize, /createCategory:!!creating/);
+  assert.match(route, /20260929financesimport2/);
   assert.match(route, /spending-category-emoji\.js/);
 });

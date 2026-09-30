@@ -65,11 +65,13 @@ test('publishes a validated batch with receipts and preserves it on stale refres
   const first = live.validatePayload(payloadAt('2026-09-29T12:52:46.000Z'));
   const receipt = live.persistFiles(first, { requireNewer: true });
   assert.equal(receipt.live, true);
+  assert.match(receipt.release, /^release-/);
   assert.equal(receipt.files.length, 4);
   assert.ok(receipt.files.every(file => /^[a-f0-9]{64}$/.test(file.sha256)));
+  assert.ok(live.livePath('spending/current.json').includes(path.join('releases', receipt.release)));
 
   const before = new Map(live.REFRESH_FILES.map(name => [
-    name, fs.readFileSync(path.join(live.LIVE_DIR, name), 'utf8')
+    name, fs.readFileSync(live.livePath(name), 'utf8')
   ]));
   const stale = live.validatePayload(payloadAt('2026-09-29T12:52:46.000Z', '2026-09-29T13:10:00.000Z'));
   assert.throws(() => live.persistFiles(stale, { requireNewer: true }), error => {
@@ -77,7 +79,31 @@ test('publishes a validated batch with receipts and preserves it on stale refres
     return /did not advance/.test(error.message);
   });
   for (const name of live.REFRESH_FILES) {
-    assert.equal(fs.readFileSync(path.join(live.LIVE_DIR, name), 'utf8'), before.get(name));
+    assert.equal(fs.readFileSync(live.livePath(name), 'utf8'), before.get(name));
+  }
+});
+
+test('activates all four files with one pointer switch and retains the prior release on failure', () => {
+  const first = live.validatePayload(payloadAt('2026-09-29T13:52:46.000Z'));
+  live.persistFiles(first, { requireNewer: true });
+  const pointerBefore = fs.readFileSync(live.CURRENT_RELEASE_FILE, 'utf8');
+  const filesBefore = new Map(live.REFRESH_FILES.map(name => [name, fs.readFileSync(live.livePath(name), 'utf8')]));
+  const next = live.validatePayload(payloadAt('2026-09-29T14:52:46.000Z'));
+  const nativeWrite = fs.writeFileSync;
+  fs.writeFileSync = function failPartway(filePath) {
+    if (String(filePath).includes('.staging-release-') && String(filePath).endsWith('savings-account-balance.json')) {
+      throw new Error('simulated storage failure');
+    }
+    return nativeWrite.apply(this, arguments);
+  };
+  try {
+    assert.throws(() => live.persistFiles(next, { requireNewer: true }), /simulated storage failure/);
+  } finally {
+    fs.writeFileSync = nativeWrite;
+  }
+  assert.equal(fs.readFileSync(live.CURRENT_RELEASE_FILE, 'utf8'), pointerBefore);
+  for (const name of live.REFRESH_FILES) {
+    assert.equal(fs.readFileSync(live.livePath(name), 'utf8'), filesBefore.get(name));
   }
 });
 
@@ -86,5 +112,6 @@ test('owner browser import route is present and does not publish data to GitHub'
   assert.match(source, /app\.get\('\/finances-refresh'/);
   assert.match(source, /Owner authentication required/);
   assert.match(source, /never written to GitHub/);
-  assert.doesNotMatch(source, /github\.com|api\.github\.com/);
+  assert.match(source, /CURRENT_RELEASE_FILE/);
+  assert.doesNotMatch(source, /github\.com|api\.github\.com|BILLS_FINANCES_PAYLOAD/);
 });

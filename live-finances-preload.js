@@ -8,6 +8,8 @@ const { verifyData } = require('./scripts/verify-spending-snapshot');
 
 const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, 'data');
 const LIVE_DIR = path.join(DATA_DIR, 'live-finances');
+const RELEASES_DIR = path.join(LIVE_DIR, 'releases');
+const CURRENT_RELEASE_FILE = path.join(LIVE_DIR, 'current-release');
 const FILES = Object.freeze({
   'spending/current.json': { type: 'json' },
   'bill-payments-balance.json': { type: 'json' },
@@ -24,9 +26,29 @@ const REFRESH_FILES = Object.freeze([
 
 function ensureLiveDir() {
   fs.mkdirSync(LIVE_DIR, { recursive: true });
+  fs.mkdirSync(RELEASES_DIR, { recursive: true });
+}
+
+function releaseName(value) {
+  const name = String(value || '').trim();
+  return /^release-[a-z0-9-]+$/.test(name) ? name : null;
+}
+
+function currentRelease() {
+  try {
+    if (!fs.existsSync(CURRENT_RELEASE_FILE)) return null;
+    const name = releaseName(fs.readFileSync(CURRENT_RELEASE_FILE, 'utf8'));
+    if (!name) return null;
+    const root = path.join(RELEASES_DIR, name);
+    return fs.existsSync(root) ? { name, root } : null;
+  } catch (_error) {
+    return null;
+  }
 }
 
 function livePath(name) {
+  const release = currentRelease();
+  if (release) return path.join(release.root, name);
   return path.join(LIVE_DIR, name);
 }
 
@@ -95,10 +117,27 @@ function assertNewer(files) {
   }
 }
 
+function pruneReleases(activeName) {
+  let releases = [];
+  try {
+    releases = fs.readdirSync(RELEASES_DIR)
+      .filter(name => releaseName(name) && name !== activeName)
+      .sort()
+      .reverse();
+  } catch (_error) { return; }
+  releases.slice(4).forEach(name => {
+    try { fs.rmSync(path.join(RELEASES_DIR, name), { recursive: true, force: true }); }
+    catch (_error) { /* Old releases are only best-effort cleanup. */ }
+  });
+}
+
 function persistFiles(files, options = {}) {
   if (options.requireNewer) assertNewer(files);
   ensureLiveDir();
-  const staging = path.join(LIVE_DIR, '.staging-' + Date.now() + '-' + process.pid);
+  const nonce = crypto.randomBytes(6).toString('hex');
+  const release = 'release-' + Date.now() + '-' + process.pid + '-' + nonce;
+  const staging = path.join(RELEASES_DIR, '.staging-' + release);
+  const targetRelease = path.join(RELEASES_DIR, release);
   fs.mkdirSync(staging, { recursive: true });
   try {
     for (const [name, value] of Object.entries(files)) {
@@ -108,13 +147,13 @@ function persistFiles(files, options = {}) {
       const body = spec.type === 'json' ? JSON.stringify(value, null, 2) + '\n' : String(value);
       fs.writeFileSync(target, body, 'utf8');
     }
-    for (const name of Object.keys(files)) {
-      const staged = path.join(staging, name);
-      const target = livePath(name);
-      fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.renameSync(staged, target);
-    }
-    return refreshStatus();
+    fs.renameSync(staging, targetRelease);
+    const pointerTmp = CURRENT_RELEASE_FILE + '.tmp-' + process.pid + '-' + nonce;
+    fs.writeFileSync(pointerTmp, release + '\n', 'utf8');
+    fs.renameSync(pointerTmp, CURRENT_RELEASE_FILE);
+    const status = refreshStatus();
+    pruneReleases(release);
+    return status;
   } finally {
     fs.rmSync(staging, { recursive: true, force: true });
   }
@@ -137,32 +176,11 @@ function refreshStatus() {
   const pull = readLiveJson('spending-last-pull.json');
   return {
     live: !!pull,
+    release: currentRelease()?.name || 'legacy',
     lastPull: pull,
     files: REFRESH_FILES.map(fileReceipt).filter(Boolean)
   };
 }
-
-function ingestRailwayPayload() {
-  const raw = process.env.BILLS_FINANCES_PAYLOAD;
-  if (!raw) return;
-  try {
-    const parsed = JSON.parse(raw);
-    const files = validatePayload(parsed);
-    const existing = readLiveJson('spending-last-pull.json');
-    if (existing && Number.isFinite(Date.parse(existing.bankingAsOf)) &&
-        bankingTime(files) <= Date.parse(existing.bankingAsOf)) {
-      console.log('[BillsOS] Railway Finances payload skipped because the volume snapshot is newer or equal');
-      return;
-    }
-    persistFiles(files);
-    const pull = files['spending-last-pull.json'];
-    console.log('[BillsOS] Railway Finances payload persisted' + (pull && pull.pulledAt ? ' for ' + pull.pulledAt : ''));
-  } catch (error) {
-    console.error('[BillsOS] Railway Finances payload rejected:', error && error.message ? error.message : error);
-  }
-}
-
-ingestRailwayPayload();
 
 const originalStatic = express.static;
 express.static = function billsOsLiveFinanceStatic(root, options) {
@@ -183,8 +201,8 @@ express.static = function billsOsLiveFinanceStatic(root, options) {
 };
 
 function refreshPage() {
-  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Refresh Finances · BillsOS</title><style>
-body{margin:0;background:#faf9f5;color:#1f1e1d;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.shell{max-width:760px;margin:0 auto;padding:28px 18px}.card{background:#fff;border:1px solid #e3dfd3;border-radius:18px;padding:20px;box-shadow:0 8px 30px rgba(31,30,29,.06)}h1{margin:0 0 6px;font-size:28px}p{color:#6b6a63}textarea{width:100%;min-height:320px;box-sizing:border-box;border:1px solid #d8d2c7;border-radius:12px;padding:12px;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}button{margin-top:12px;border:0;border-radius:10px;background:#2c6446;color:#fff;padding:12px 16px;font-weight:700;cursor:pointer}button:disabled{opacity:.55}.status{margin-top:14px;padding:12px;border-radius:10px;background:#f7f5ef;white-space:pre-wrap}.ok{color:#22543d}.bad{color:#9a3b2d}a{color:#2c6446}</style></head><body><main class="shell"><div class="card"><h1>Refresh Finances</h1><p>Owner-only import to Railway's persistent volume. The four-file snapshot is validated together and never written to GitHub.</p><textarea id="payload" aria-label="Validated Finances JSON payload" spellcheck="false" placeholder='{"files":{"spending/current.json":{},"bill-payments-balance.json":{},"savings-account-balance.json":{},"spending-last-pull.json":{}}}'></textarea><button id="publish" type="button">Validate and publish</button><div id="status" class="status" role="status" aria-live="polite">Waiting for a four-file snapshot.</div><p><a href="/spending/">Return to Everyday Spending</a></p></div></main><script>
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Import refreshed snapshot · BillsOS</title><style>
+	body{margin:0;background:#faf9f5;color:#1f1e1d;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.shell{max-width:760px;margin:0 auto;padding:28px 18px}.card{background:#fff;border:1px solid #e3dfd3;border-radius:18px;padding:20px;box-shadow:0 8px 30px rgba(31,30,29,.06)}h1{margin:0 0 6px;font-size:28px}p{color:#6b6a63}textarea{width:100%;min-height:320px;box-sizing:border-box;border:1px solid #d8d2c7;border-radius:12px;padding:12px;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}button{margin-top:12px;border:0;border-radius:10px;background:#2c6446;color:#fff;padding:12px 16px;font-weight:700;cursor:pointer}button:disabled{opacity:.55}.status{margin-top:14px;padding:12px;border-radius:10px;background:#f7f5ef;white-space:pre-wrap}.ok{color:#22543d}.bad{color:#9a3b2d}a{color:#2c6446}</style></head><body><main class="shell"><div class="card"><h1>Import refreshed snapshot</h1><p>Owner-only import to BillsOS storage. All four files are validated, written as one release, and activated together. The snapshot is never written to GitHub or Railway variables.</p><textarea id="payload" aria-label="Validated Finances JSON payload" spellcheck="false" placeholder='{"files":{"spending/current.json":{},"bill-payments-balance.json":{},"savings-account-balance.json":{},"spending-last-pull.json":{}}}'></textarea><button id="publish" type="button">Validate and publish</button><div id="status" class="status" role="status" aria-live="polite">Waiting for a four-file snapshot.</div><p><a href="/spending/">Return to Everyday Spending</a></p></div></main><script>
 const button=document.getElementById('publish'),status=document.getElementById('status'),payload=document.getElementById('payload');
 button.onclick=async()=>{button.disabled=true;status.className='status';status.textContent='Validating…';try{const parsed=JSON.parse(payload.value);const response=await fetch('/api/finances-refresh',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(parsed)});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Refresh failed');status.className='status ok';status.textContent='Published '+data.files.length+' files. Banking snapshot: '+data.bankingAsOf+'\\nReceipt: '+data.files.map(file=>file.name+' '+file.sha256.slice(0,12)).join('\\n');payload.value='';}catch(error){status.className='status bad';status.textContent=error.message||String(error)}finally{button.disabled=false}};
 fetch('/api/finances-refresh/status',{cache:'no-store'}).then(r=>r.json()).then(data=>{if(data.live)status.textContent='Current volume snapshot: '+data.lastPull.bankingAsOf+'\\n'+data.files.length+' verified files present.'}).catch(()=>{});
@@ -232,4 +250,4 @@ express.application.listen = function billsOsLiveFinanceListen() {
   return originalListen.apply(app, arguments);
 };
 
-module.exports = { FILES, REFRESH_FILES, LIVE_DIR, validatePayload, persistFiles, refreshStatus, atomicWrite };
+module.exports = { FILES, REFRESH_FILES, LIVE_DIR, RELEASES_DIR, CURRENT_RELEASE_FILE, validatePayload, persistFiles, refreshStatus, atomicWrite, livePath };

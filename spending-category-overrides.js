@@ -177,15 +177,14 @@ function createSpendingCategoryStore(options = {}) {
     const requestedKey = categoryKey(category, subcategory);
     const builtInPair = validCategoryPairs(rows).has(requestedKey);
     const savedPair = state.categories.some(item => categoryKey(item.category, item.subcategory) === requestedKey);
-    // Existing category choices come from the authenticated BillsOS UI. Live Finances
-    // snapshots can contain category pairs that are newer than the repo classification
-    // rules, so do not reject a valid non-empty pair merely because it is absent there.
     const now = new Date().toISOString();
     const by = cleanText(username) || 'owner';
     if (!builtInPair && !savedPair && request.createCategory === true) {
       const emoji = cleanEmoji(request.emoji);
       state.categories.push({ category, subcategory, emoji, createdAt: now, createdBy: by });
       state.history.push({ action: 'category-created', at: now, by, category, subcategory, emoji });
+    } else if (!builtInPair && !savedPair) {
+      throw Object.assign(new Error('Choose an existing BillsOS category or explicitly create a new one'), { status: 400 });
     }
 
     const identity = transactionIdentity(rows, exact[0]);

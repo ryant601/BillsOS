@@ -212,7 +212,7 @@ test('transaction rows can open an owner-only recategorization picker without ch
   assert.match(source, /occurrence:t\.occurrence/);
   assert.match(source, /dataset\.txOccurrence/);
   assert.match(source, /fetch\('\/spending\/current\.json\?txcat='/);
-  assert.match(route, /20260929conveniencedining1/);
+  assert.match(route, /20260929financesimport2/);
   assert.match(fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8'), /"spending", "current\.json"/);
   assert.match(fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8'), /"spending", "vendor-category-rules\.json"/);
 });

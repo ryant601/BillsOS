@@ -1,13 +1,13 @@
 {
   "name": "billsos",
-  "version": "1.0.55",
+  "version": "1.0.56",
   "private": true,
   "type": "commonjs",
   "description": "BillsOS Railway deployment",
   "billsosBuild": {
-    "version": "v2026.09.29-finances-browser-refresh.1",
+    "version": "v2026.09.29-finances-browser-refresh.2",
     "buildDate": "2026-09-29",
-    "buildNote": "Publish validated Finances snapshots through the owner-only BillsOS browser path without GitHub data writes."
+    "buildNote": "Atomically activate validated Finances snapshots through the owner-only BillsOS browser path without GitHub or Railway-variable data writes."
   },
   "scripts": {
     "start": "node -r ./live-finances-preload.js -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js -r ./spending-route-preload.js server.js",

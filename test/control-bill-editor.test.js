@@ -102,7 +102,7 @@ test('one-time save confirms calendar persistence and resets the form', () => {
   assert.match(html, /id="oneSaveButton"/);
   assert.match(html, /Saved to calendar/);
   assert.match(html, /renderAll\(\);clearOneTimeForm\(true\);if\(await persistState/);
-  assert.match(html, /restoreOneTimeForm\(payments,direction,defaultName,notes,editId\)/);
+  assert.match(html, /restoreOneTimeForm\(payments,direction,defaultName,category,notes,editId\)/);
   assert.match(html, /your entries were restored/);
   assert.match(html, /b\.id===highlightedOneTimeId\?'saved-row'/);
 });

@@ -6,7 +6,7 @@ const express = require('express');
 const originalStatic = express.static;
 
 const SPENDING_PATH = path.join(__dirname, 'spending', 'index.html');
-const SPENDING_BUILD = '20260929conveniencedining1';
+const SPENDING_BUILD = '20260929financesimport2';
 
 function spendingRunwayPatch(html) {
   if (html.includes('/spending-runway.js')) return html;
@@ -112,7 +112,13 @@ function spendingCategoryEmojiPatch(html){
   return html.replace('</body>','<script id="billsosSpendingCategoryEmojiScript" defer src="/spending-category-emoji.js?v='+SPENDING_BUILD+'"></script>\n</body>');
 }
 
-function serveSpendingHtml(filePath, includeLiveStamp, res, next){
+function spendingRefreshPatch(html, session){
+  if(!session || session.role!=='owner' || html.includes('id="billsosFinancesRefreshAction"'))return html;
+  const action='<p id="billsosFinancesRefreshAction" style="margin:12px 0 4px"><a href="/finances-refresh" style="display:inline-block;padding:10px 13px;border-radius:10px;background:#2c6446;color:#fff;text-decoration:none;font-size:12px;font-weight:750">Import refreshed snapshot</a></p>';
+  return html.replace(/(<div class="muted" id="fresh">[\s\S]*?<\/div>)/i,'$1'+action);
+}
+
+function serveSpendingHtml(filePath, includeLiveStamp, session, res, next){
   try {
     let html = fs.readFileSync(filePath, 'utf8');
     html = spendingLayoutPatch(html);
@@ -123,6 +129,7 @@ function serveSpendingHtml(filePath, includeLiveStamp, res, next){
     }
     html = spendingRunwayPatch(html);
     html = spendingThemePatch(html);
+    html = spendingRefreshPatch(html, session);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store, max-age=0');
     return res.status(200).send(html);
@@ -134,12 +141,12 @@ express.static = function billsOsStatic(root, options) {
   return function billsOsStaticWithSpendingShell(req, res, next) {
     const url = String(req.url || '').split('?')[0];
     if (url === '/spending/' || url === '/spending/index.html') {
-      return serveSpendingHtml(SPENDING_PATH, true, res, next);
+      return serveSpendingHtml(SPENDING_PATH, true, req.billsosSession, res, next);
     }
     const archiveMatch = url.match(/^\/spending\/archive\/(\d{4}-\d{2}-\d{2})\/?(?:index\.html)?$/);
     if (archiveMatch) {
       const archivePath = path.join(__dirname, 'spending', 'archive', archiveMatch[1], 'index.html');
-      return serveSpendingHtml(archivePath, false, res, next);
+      return serveSpendingHtml(archivePath, false, req.billsosSession, res, next);
     }
     return middleware(req, res, next);
   };
@@ -147,3 +154,4 @@ express.static = function billsOsStatic(root, options) {
 
 module.exports.spendingLayoutPatch = spendingLayoutPatch;
 module.exports.spendingThemePatch = spendingThemePatch;
+module.exports.spendingRefreshPatch = spendingRefreshPatch;
