@@ -51,6 +51,67 @@
         item.lowestBefore !== item.lowestAfter || item.endingBefore !== item.endingAfter;
     });
   }
+  function planExpense(allDays, amountValue, startDate, endDate, horizonDays, allowSplit) {
+    const amount = Math.abs(cents(amountValue));
+    if (!amount || !startDate || !endDate || endDate < startDate) return [];
+    const days = (allDays || []).filter(function (day) { return day.date >= startDate; })
+      .slice(0, Number(horizonDays || 120));
+    if (!days.length) return [];
+    const positions = {};
+    days.forEach(function (day, index) { positions[day.date] = index; });
+    const dates = days.filter(function (day) { return day.date <= endDate; }).map(function (day) { return day.date; });
+    const baseBalances = days.map(function (day) { return cents(day.ending); });
+    const base = metrics(days, {});
+    const options = [];
+    function add(parts) {
+      const afterBalances = baseBalances.map(function (balance, index) {
+        let spent = 0;
+        parts.forEach(function (part) {
+          if (index >= positions[part.date]) spent += part.amount;
+        });
+        return balance - spent;
+      });
+      const after = {
+        negativeDays: afterBalances.filter(function (balance) { return balance < 0; }).length,
+        below300Days: afterBalances.filter(function (balance) { return balance < LOW_BALANCE_CENTS; }).length,
+        lowest: Math.min.apply(null, afterBalances) / 100
+      };
+      options.push({
+        kind: parts.length > 1 ? 'split' : 'single',
+        parts: parts.map(function (part) { return { date: part.date, amount: part.amount / 100 }; }),
+        negativeDaysBefore: base.negativeDays, negativeDaysAfter: after.negativeDays,
+        below300DaysBefore: base.below300Days, below300DaysAfter: after.below300Days,
+        lowestBefore: base.lowest, lowestAfter: after.lowest,
+        monthImpacts: monthImpacts(days, afterBalances)
+      });
+    }
+    dates.forEach(function (date) { add([{ date: date, amount: amount }]); });
+    if (allowSplit && dates.length > 1) {
+      const firstPart = Math.floor(amount / 2), secondPart = amount - firstPart;
+      dates.forEach(function (first, firstIndex) {
+        dates.slice(firstIndex + 1).forEach(function (second) {
+          add([{ date: first, amount: firstPart }, { date: second, amount: secondPart }]);
+        });
+      });
+    }
+    options.sort(function (a, b) {
+      return a.negativeDaysAfter - b.negativeDaysAfter ||
+        a.below300DaysAfter - b.below300DaysAfter ||
+        b.lowestAfter - a.lowestAfter ||
+        a.kind.localeCompare(b.kind) ||
+        a.parts[a.parts.length - 1].date.localeCompare(b.parts[b.parts.length - 1].date);
+    });
+    const seen = new Set();
+    return options.filter(function (option) {
+      const key = option.parts.map(function (part) { return part.date + ':' + part.amount; }).join('|');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 3).map(function (option, index) {
+      option.recommended = index === 0;
+      return option;
+    });
+  }
   function recommend(rows, summary, today) {
     if (!summary || !Array.isArray(summary.days) || !summary.days.length) return [];
     const days = summary.days.filter(function (day) { return day.date >= today; });
@@ -167,5 +228,5 @@
     }).slice(0, 3);
   }
 
-  return { recommend: recommend, recommendAhead: recommendAhead };
+  return { recommend: recommend, recommendAhead: recommendAhead, planExpense: planExpense };
 });

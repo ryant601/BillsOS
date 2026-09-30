@@ -54,6 +54,7 @@ These rules exist so future ChatGPT sessions handle this repository consistently
 
 - Offer planning suggestions for projected ending balances below $300, prioritizing negative days. Keep mortgage fully paid by the 17th and Jeep by the 25th; exclude fixed Upstart and Chase payments.
 - Preview effects without changing payment rows, and avoid creating new low balance days in future split suggestions. Prior month income can be earmarked for the next month's mortgage or Jeep; treat it as reserved cash applied on the original payment date.
+- The dashboard payment-day planner evaluates every date through a user-selected deadline, ranks the full 120-day effect, and shows month-by-month changes before saving a one-time expense. A save must use the latest server state and retry a single version conflict without overwriting newer rows.
 
 ## Tone of the app
 
