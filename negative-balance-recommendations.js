@@ -10,8 +10,8 @@
   function dateOf(row) { return String(row.iso || row.date || ''); }
   function excluded(row) {
     const name = String(row.name || '');
-    const text = name + ' ' + String(row.type || '') + ' ' + String(row.cls || '');
-    return /transfer|funding|sweep|correction|adjustment|reconciliation|balance-opening/i.test(text) ||
+    const text = name + ' ' + String(row.category || '') + ' ' + String(row.cls || '');
+    return /transfer|funding|sweep|correction|reconciliation|balance-opening/i.test(text) ||
       (!/mortgage|jeep/i.test(name) && /upstart|chase/i.test(name));
   }
   function cutoff(row) {
@@ -140,18 +140,21 @@
           });
           const after = metrics(days, offsets);
           const rescued = base.below300Days - after.below300Days;
-          if (rescued <= 0 || after.negativeDays > base.negativeDays) return;
+          const negativeResolved = base.negativeDays - after.negativeDays;
+          if ((rescued <= 0 && negativeResolved <= 0) || after.negativeDays > base.negativeDays) return;
           candidates.push({ kind: index ? 'split' : 'move', name: String(row.name || 'Payment'),
             from: from, to: destination.date, amount: moved / 100,
             originalAmount: amount / 100, negativeDaysBefore: base.negativeDays,
             negativeDaysAfter: after.negativeDays, below300DaysBefore: base.below300Days,
-            below300DaysAfter: after.below300Days, negativeDaysResolved: base.negativeDays - after.negativeDays,
-            lowestBefore: base.lowest, lowestAfter: after.lowest, daysResolved: rescued });
+            below300DaysAfter: after.below300Days, negativeDaysResolved: negativeResolved,
+            lowestBefore: base.lowest, lowestAfter: after.lowest, daysResolved: rescued,
+            delayDays: Math.round((Date.parse(destination.date + 'T12:00:00Z') - Date.parse(from + 'T12:00:00Z')) / 86400000) });
         });
       });
     });
     candidates.sort(function (a, b) {
-      return b.negativeDaysResolved - a.negativeDaysResolved || b.daysResolved - a.daysResolved || b.lowestAfter - a.lowestAfter ||
+      return b.negativeDaysResolved - a.negativeDaysResolved || a.delayDays - b.delayDays ||
+        b.daysResolved - a.daysResolved || b.lowestAfter - a.lowestAfter ||
         a.amount - b.amount || a.to.localeCompare(b.to);
     });
     const seen = new Set();

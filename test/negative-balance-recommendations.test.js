@@ -161,3 +161,29 @@ test('one-time expense planner reports the least disruptive date when every opti
   assert.ok(options[0].below300DaysAfter > 0);
   assert.equal(options[0].lowestAfter, 150);
 });
+
+test('prefers a one-day shift of a real one-time expense over moving a credit card nearly two weeks', () => {
+  const rows = [
+    { iso: '2026-12-14', amount: -125, name: 'Discover', type: 'bill' },
+    { iso: '2026-12-24', amount: -41.82, name: 'Citi Custom Cash', type: 'bill' },
+    { iso: '2026-12-24', amount: -148, name: 'Deck Installment', type: 'adjustment', category: 'One-time expense' },
+    { iso: '2026-12-25', amount: 1000, name: 'Paycheck', type: 'income' }
+  ];
+  const summary = list.buildMonth(rows, 2026, 12, 264.79, {});
+  const choices = recommendations.recommend(rows, summary, '2026-12-01');
+  assert.equal(choices[0].name, 'Deck Installment');
+  assert.equal(choices[0].from, '2026-12-24');
+  assert.equal(choices[0].to, '2026-12-25');
+  assert.equal(choices[0].delayDays, 1);
+  assert.equal(choices[0].negativeDaysResolved, 1);
+  assert.ok(choices.some(choice => choice.name === 'Discover' && choice.delayDays === 11));
+});
+
+test('continues to exclude bookkeeping adjustments from payment suggestions', () => {
+  const rows = [
+    { iso: '2026-12-24', amount: -148, name: 'Ending balance reconciliation', type: 'adjustment' },
+    { iso: '2026-12-25', amount: 1000, name: 'Paycheck', type: 'income' }
+  ];
+  const summary = list.buildMonth(rows, 2026, 12, 100, {});
+  assert.deepEqual(recommendations.recommend(rows, summary, '2026-12-01'), []);
+});
