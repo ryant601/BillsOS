@@ -107,9 +107,18 @@ function bankingTime(files) {
   return Date.parse(files['spending-last-pull.json'].bankingAsOf);
 }
 
+function sameAsLegacySnapshot(files) {
+  if (currentRelease()) return false;
+  return REFRESH_FILES.every(name => {
+    const existing = readLiveJson(name);
+    return existing && JSON.stringify(existing) === JSON.stringify(files[name]);
+  });
+}
+
 function assertNewer(files) {
   const existing = readLiveJson('spending-last-pull.json');
   if (!existing || !Number.isFinite(Date.parse(existing.bankingAsOf))) return;
+  if (bankingTime(files) === Date.parse(existing.bankingAsOf) && sameAsLegacySnapshot(files)) return;
   if (bankingTime(files) <= Date.parse(existing.bankingAsOf)) {
     const error = new Error('Finances banking snapshot did not advance; live files were preserved');
     error.status = 409;
@@ -250,4 +259,4 @@ express.application.listen = function billsOsLiveFinanceListen() {
   return originalListen.apply(app, arguments);
 };
 
-module.exports = { FILES, REFRESH_FILES, LIVE_DIR, RELEASES_DIR, CURRENT_RELEASE_FILE, validatePayload, persistFiles, refreshStatus, atomicWrite, livePath };
+module.exports = { FILES, REFRESH_FILES, LIVE_DIR, RELEASES_DIR, CURRENT_RELEASE_FILE, validatePayload, persistFiles, refreshStatus, atomicWrite, livePath, sameAsLegacySnapshot };

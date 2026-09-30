@@ -83,6 +83,26 @@ test('publishes a validated batch with receipts and preserves it on stale refres
   }
 });
 
+test('an exact legacy snapshot can be migrated once without weakening stale protection', () => {
+  const migrationDir = fs.mkdtempSync(path.join(os.tmpdir(), 'billsos-live-finances-migration-'));
+  const child = `
+    const fs=require('node:fs'),path=require('node:path');
+    process.env.BILLS_DATA_DIR=${JSON.stringify(migrationDir)};
+    const live=require(${JSON.stringify(path.join(root, 'live-finances-preload.js'))});
+    const root=${JSON.stringify(root)}, read=name=>JSON.parse(fs.readFileSync(path.join(root,name),'utf8'));
+    const payload={files:Object.fromEntries(live.REFRESH_FILES.map(name=>[name,read(name)]))};
+    fs.mkdirSync(path.join(live.LIVE_DIR,'spending'),{recursive:true});
+    for(const [name,value] of Object.entries(payload.files)){const target=path.join(live.LIVE_DIR,name);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,JSON.stringify(value,null,2)+'\\n')}
+    if(!live.sameAsLegacySnapshot(payload.files))process.exit(2);
+    live.persistFiles(live.validatePayload(payload),{requireNewer:true});
+    if(!live.refreshStatus().release.startsWith('release-'))process.exit(3);
+    try{live.persistFiles(live.validatePayload(payload),{requireNewer:true});process.exit(4)}catch(error){if(error.status!==409)process.exit(5)}
+  `;
+  const result = require('node:child_process').spawnSync(process.execPath, ['-e', child], { encoding: 'utf8' });
+  fs.rmSync(migrationDir, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
 test('activates all four files with one pointer switch and retains the prior release on failure', () => {
   const first = live.validatePayload(payloadAt('2026-09-29T13:52:46.000Z'));
   live.persistFiles(first, { requireNewer: true });
