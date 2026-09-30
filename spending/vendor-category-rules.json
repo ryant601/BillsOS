@@ -3,6 +3,30 @@
   "version": 1,
   "rules": [
     {
+      "id": "convenience-under-dining",
+      "enabled": true,
+      "match": {
+        "direction": "outflow",
+        "categoryAny": ["Convenience"]
+      },
+      "classification": {
+        "category": "Dining",
+        "subcategory": "Convenience"
+      }
+    },
+    {
+      "id": "convenience-subcategory-under-dining",
+      "enabled": true,
+      "match": {
+        "direction": "outflow",
+        "subcategoryAny": ["Convenience"]
+      },
+      "classification": {
+        "category": "Dining",
+        "subcategory": "Convenience"
+      }
+    },
+    {
       "id": "family-p2p-talbot-gifts",
       "enabled": true,
       "match": {

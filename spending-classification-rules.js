@@ -12,10 +12,14 @@ function terms(values){return Array.isArray(values)?values.map(function(value){r
 function matches(row,rule){
   if(!rule||rule.enabled===false||!rule.match||!rule.classification)return false;
   var text=(clean(row.merchant||row.m)+' '+clean(row.note||row.n)).toLowerCase();
-  var any=terms(rule.match.containsAny),all=terms(rule.match.containsAll),amount=Number(row.amount!=null?row.amount:row.a);
+  var any=terms(rule.match.containsAny),all=terms(rule.match.containsAll),categories=terms(rule.match.categoryAny),subcategories=terms(rule.match.subcategoryAny),amount=Number(row.amount!=null?row.amount:row.a);
+  var category=clean(row.category||row.c).toLowerCase(),subcategory=clean(row.subcategory||row.s).toLowerCase();
   if(rule.match.direction==='outflow'&&!(amount>0))return false;
   if(rule.match.direction==='inflow'&&!(amount<0))return false;
-  return (!any.length||any.some(function(term){return text.indexOf(term)>=0}))&&all.every(function(term){return text.indexOf(term)>=0});
+  return (!any.length||any.some(function(term){return text.indexOf(term)>=0}))&&
+    all.every(function(term){return text.indexOf(term)>=0})&&
+    (!categories.length||categories.indexOf(category)>=0)&&
+    (!subcategories.length||subcategories.indexOf(subcategory)>=0);
 }
 function classify(row,config){
   if(!valid(config))return row;

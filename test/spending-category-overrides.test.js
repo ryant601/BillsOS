@@ -138,6 +138,16 @@ test('master rule classifies outgoing Talbot Venmo and Zelle payments as family 
   assert.deepEqual(rows.slice(2).map(row => [row.category, row.subcategory]), [['Other', 'Other'], ['Other', 'Other']]);
 });
 
+test('master rule places Convenience spending under Dining', () => {
+  const config = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'spending', 'vendor-category-rules.json'), 'utf8'));
+  const rows = classifications.apply([
+    { merchant: 'QuickChek', note: '', amount: 12.50, category: 'Convenience', subcategory: 'Convenience' },
+    { merchant: 'Local Market', note: '', amount: 20, category: 'Groceries', subcategory: 'Convenience' }
+  ], config);
+  assert.deepEqual([rows[0].category, rows[0].subcategory], ['Dining', 'Convenience']);
+  assert.deepEqual([rows[1].category, rows[1].subcategory], ['Dining', 'Convenience']);
+});
+
 test('server accepts a category pair supplied by the master vendor rules', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'billsos-rule-categories-'));
   const snapshotPath = path.join(dir, 'current.json');
@@ -202,7 +212,7 @@ test('transaction rows can open an owner-only recategorization picker without ch
   assert.match(source, /occurrence:t\.occurrence/);
   assert.match(source, /dataset\.txOccurrence/);
   assert.match(source, /fetch\('\/spending\/current\.json\?txcat='/);
-  assert.match(route, /20260928refreshguard1/);
+  assert.match(route, /20260929conveniencedining1/);
   assert.match(fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8'), /"spending", "current\.json"/);
   assert.match(fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8'), /"spending", "vendor-category-rules\.json"/);
 });
