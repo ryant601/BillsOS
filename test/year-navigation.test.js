@@ -31,7 +31,7 @@ test('both year groups remain on one horizontal line with each year at the left'
 
 test('year controls are visually distinct from month pills', () => {
   assert.match(html, /\.year-pill\{order:1;.*?background:var\(--primary\);border:2px solid var\(--primary\);color:#fff;font-size:14px/);
-  assert.match(html, /box-shadow:0 8px 20px rgba\(31,58,61,\.22\)/);
+  assert.match(html, /box-shadow:0 8px 20px rgba\(36,64,107,\.22\)/);
 });
 
 test('horizontal year navigation remains touch-friendly on mobile', () => {
