@@ -81,3 +81,4 @@ These rules exist so future ChatGPT sessions handle this repository consistently
 ## Important reminder
 
 If a future ChatGPT session starts work on this repo, read this file first and follow it before making changes.
+For architecture, data flow, fragile areas and open work, also read `docs/HANDOFF.md`.
