@@ -1,8 +1,8 @@
 html[data-billsos-theme="dark"]{
-  --billsos-ink:#f5f4ef;
-  --billsos-muted:#b3b0a8;
-  --billsos-line:rgba(245,244,239,.13);
-  --billsos-focus:rgba(217,119,87,.28);
+  --billsos-ink:#f1f3f6;
+  --billsos-muted:#a9b1bf;
+  --billsos-line:rgba(241,243,246,.13);
+  --billsos-focus:rgba(125,159,210,.28);
 }
 
 html[data-billsos-theme="dark"] body,
@@ -19,7 +19,7 @@ html[data-billsos-theme="dark"] .billsosActionEmpty{
 }
 
 html[data-billsos-theme="dark"] .tabs{
-  background:#262624!important;
+  background:#1f283a!important;
   border-radius:12px!important;
   padding:5px!important;
   border:1px solid var(--billsos-line)!important;
@@ -34,20 +34,20 @@ html[data-billsos-theme="dark"] .tab{
 }
 html[data-billsos-theme="dark"] .tabs button.active,
 html[data-billsos-theme="dark"] .tab.active{
-  background:#d97757!important;
-  color:#241a15!important;
+  background:#7d9fd2!important;
+  color:#1b2436!important;
   border-color:transparent!important;
   box-shadow:none!important;
 }
 html[data-billsos-theme="dark"] .tabs button:hover,
 html[data-billsos-theme="dark"] .tab:hover{
-  background:#3a3a37!important;
+  background:#2e384c!important;
   color:var(--billsos-ink)!important;
 }
 html[data-billsos-theme="dark"] .tabs button.active:hover,
 html[data-billsos-theme="dark"] .tab.active:hover{
-  background:#e08e70!important;
-  color:#241a15!important;
+  background:#a3bde3!important;
+  color:#1b2436!important;
 }
 
 html[data-billsos-theme="dark"] .hero,
@@ -59,7 +59,7 @@ html[data-billsos-theme="dark"] .kpi{
 }
 
 html[data-billsos-theme="dark"] .eyebrow{
-  color:#d97757!important;
+  color:#7d9fd2!important;
 }
 html[data-billsos-theme="dark"] .progress b,
 html[data-billsos-theme="dark"] .topline b,
@@ -70,24 +70,24 @@ html[data-billsos-theme="dark"] .billsosActionRow b{
 }
 
 html[data-billsos-theme="dark"] .ev{
-  background:#3a3a37!important;
+  background:#2e384c!important;
   border-color:var(--billsos-line)!important;
   color:var(--billsos-ink)!important;
 }
 html[data-billsos-theme="dark"] .ev.in{
-  background:#22332a!important;
-  border-color:rgba(127,191,154,.30)!important;
-  box-shadow:inset 3px 0 0 #7fbf9a!important;
+  background:#1f3329!important;
+  border-color:rgba(140,196,163,.30)!important;
+  box-shadow:inset 3px 0 0 #8cc4a3!important;
 }
 html[data-billsos-theme="dark"] .ev.out{
-  background:#3a2724!important;
-  border-color:rgba(232,144,124,.30)!important;
-  box-shadow:inset 3px 0 0 #e8907c!important;
+  background:#3a2a2c!important;
+  border-color:rgba(227,154,142,.30)!important;
+  box-shadow:inset 3px 0 0 #e39a8e!important;
 }
 html[data-billsos-theme="dark"] .ev.system{
   background:#37301f!important;
-  border-color:rgba(217,180,120,.30)!important;
-  box-shadow:inset 3px 0 0 #d9b478!important;
+  border-color:rgba(212,183,126,.30)!important;
+  box-shadow:inset 3px 0 0 #d4b77e!important;
 }
 /* Keep pill names near-white; the amount carries the semantic color. */
 html[data-billsos-theme="dark"] .ev .nm,
@@ -98,16 +98,16 @@ html[data-billsos-theme="dark"] .ev .billsosCardName{
 html[data-billsos-theme="dark"] .ev .amt,
 html[data-billsos-theme="dark"] .ev b,
 html[data-billsos-theme="dark"] .ev .billsosCardAmount{
-  color:#e8907c!important;
+  color:#e39a8e!important;
 }
 html[data-billsos-theme="dark"] .ev.in .amt,
 html[data-billsos-theme="dark"] .ev.in b,
 html[data-billsos-theme="dark"] .ev.in .billsosCardAmount{
-  color:#7fbf9a!important;
+  color:#8cc4a3!important;
 }
 html[data-billsos-theme="dark"] .ev.system .amt,
 html[data-billsos-theme="dark"] .ev.system b{
-  color:#d9b478!important;
+  color:#d4b77e!important;
 }
 html[data-billsos-theme="dark"] .ev.done{
   opacity:.55!important;
@@ -128,14 +128,14 @@ html[data-billsos-theme="dark"] button{
   color:var(--billsos-ink)!important;
 }
 html[data-billsos-theme="dark"] input[type="checkbox"]{
-  accent-color:#d97757;
+  accent-color:#7d9fd2;
 }
 html[data-billsos-theme="dark"] input:focus,
 html[data-billsos-theme="dark"] select:focus,
 html[data-billsos-theme="dark"] textarea:focus,
 html[data-billsos-theme="dark"] button:focus-visible,
 html[data-billsos-theme="dark"] a:focus-visible{
-  outline:2px solid #d97757!important;
+  outline:2px solid #7d9fd2!important;
   outline-offset:2px!important;
   box-shadow:0 0 0 3px var(--billsos-focus)!important;
 }
@@ -145,7 +145,7 @@ html[data-billsos-theme="dark"] .weekToggleBtn,
 html[data-billsos-theme="dark"] .billsosActionClear,
 html[data-billsos-theme="dark"] .sheetGrid button,
 html[data-billsos-theme="dark"] .sheetGrid input{
-  background:#3a3a37!important;
+  background:#2e384c!important;
   border-color:var(--billsos-line)!important;
   color:var(--billsos-ink)!important;
 }
@@ -153,24 +153,24 @@ html[data-billsos-theme="dark"] .moveBtn:hover,
 html[data-billsos-theme="dark"] .weekToggleBtn:hover,
 html[data-billsos-theme="dark"] .billsosActionClear:hover,
 html[data-billsos-theme="dark"] .sheetGrid button:hover{
-  background:#45453f!important;
+  background:#3a4559!important;
 }
 html[data-billsos-theme="dark"] .sheetGrid button.primary{
-  background:#d97757!important;
-  color:#241a15!important;
+  background:#7d9fd2!important;
+  color:#1b2436!important;
 }
 html[data-billsos-theme="dark"] .sheetGrid button.warn{
-  color:#e8907c!important;
-  border-color:rgba(232,144,124,.32)!important;
+  color:#e39a8e!important;
+  border-color:rgba(227,154,142,.32)!important;
 }
 html[data-billsos-theme="dark"] .sheetGrid button.undo{
-  background:#45453f!important;
+  background:#3a4559!important;
 }
 html[data-billsos-theme="dark"] .sheet{
   background:rgba(17,17,16,.68)!important;
 }
 html[data-billsos-theme="dark"] .sheetCard{
-  background:#30302e!important;
+  background:#252f42!important;
   border-color:var(--billsos-line)!important;
 }
 html[data-billsos-theme="dark"] .sheetCard p{
@@ -178,21 +178,21 @@ html[data-billsos-theme="dark"] .sheetCard p{
 }
 
 html[data-billsos-theme="dark"] .bar{
-  background:rgba(245,244,239,.12)!important;
+  background:rgba(241,243,246,.12)!important;
 }
 html[data-billsos-theme="dark"] .bar i{
-  background:#7fbf9a!important;
+  background:#8cc4a3!important;
 }
 html[data-billsos-theme="dark"] .pill,
 html[data-billsos-theme="dark"] .banner{
-  background:#3a3a37!important;
+  background:#2e384c!important;
   border-color:var(--billsos-line)!important;
   color:var(--billsos-muted)!important;
 }
 html[data-billsos-theme="dark"] .day.today .topline span:first-child:after{
-  background:#3a2a23!important;
-  border-color:rgba(217,119,87,.26)!important;
-  color:#d97757!important;
+  background:#26344d!important;
+  border-color:rgba(125,159,210,.26)!important;
+  color:#7d9fd2!important;
 }
 html[data-billsos-theme="dark"] .weekToggleRow span{
   color:var(--billsos-muted)!important;
@@ -205,7 +205,7 @@ html[data-billsos-theme="dark"] td{
   border-color:var(--billsos-line)!important;
 }
 html[data-billsos-theme="dark"] th{
-  background:#3a3a37!important;
+  background:#2e384c!important;
   color:var(--billsos-muted)!important;
 }
 html[data-billsos-theme="dark"] td{
@@ -213,6 +213,6 @@ html[data-billsos-theme="dark"] td{
 }
 
 html[data-billsos-theme="dark"] ::selection{
-  background:rgba(217,119,87,.35);
-  color:#f5f4ef;
+  background:rgba(125,159,210,.35);
+  color:#f1f3f6;
 }
