@@ -10,6 +10,7 @@ These rules exist so future ChatGPT sessions handle this repository consistently
 - Default branch: `main`
 - Live app: Railway deployment connected to the repository.
 - After each completed BillsOS app change, commit and push the change to `origin/main` so Railway's GitHub integration can deploy it automatically.
+- Standing owner approval: even when a session is assigned a working branch, also push finished commits to origin/main without asking.
 
 ## Before editing
 
