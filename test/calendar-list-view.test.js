@@ -65,6 +65,8 @@ test('active calendar renders a list with persistent week controls and risk line
   assert.match(html, /id="openMonthItems"/);
   assert.match(html, />Month items</);
   assert.match(html, /function openMonthItems\(model\)/);
+  assert.match(html, /\(data\.bills\|\|\[\]\)\.some\(sameName\)/);
+  assert.match(html, /\(data\.oneTimeEvents\|\|\[\]\)\.some/);
   assert.match(css, /\.month-items-dialog/);
   assert.match(css, /background:transparent!important/);
   assert.match(html, /Best first option · Split mortgage or Jeep/);
