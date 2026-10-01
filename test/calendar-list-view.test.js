@@ -42,8 +42,8 @@ test('active calendar renders a list with persistent week controls and risk line
   const editor = read('billsos-card-editor.js');
   const preload = read('cache-coherence-preload.js');
 
-  assert.match(html, /calendar-list-view\.css\?v=20260929shortshift1/);
-  assert.match(html, /calendar-list-view\.js\?v=20260929shortshift1/);
+  assert.match(html, /calendar-list-view\.css\?v=20261001monthitems1/);
+  assert.match(html, /calendar-list-view\.js\?v=20261001monthitems1/);
   assert.match(html, /class="calendar-list"/);
   assert.match(html, /data-calendar-view="calendar"/);
   assert.match(html, /week\.days\.map\(dayHtml\)/);
@@ -59,9 +59,14 @@ test('active calendar renders a list with persistent week controls and risk line
   assert.match(css, /\.calendar-week-body\[hidden\]/);
   assert.match(editor, /closest\('\.calendar-day,\.day'\)/);
   assert.match(editor, /Split payment/);
-  assert.match(preload, /const BUILD = '20260930forwardsplit1'/);
+  assert.match(preload, /const BUILD = '20261001monthitems1'/);
   assert.match(html, /id="openPaymentPlanner"/);
   assert.match(html, />Find a payment day</);
+  assert.match(html, /id="openMonthItems"/);
+  assert.match(html, />Month items</);
+  assert.match(html, /function openMonthItems\(model\)/);
+  assert.match(css, /\.month-items-dialog/);
+  assert.match(css, /background:transparent!important/);
   assert.match(html, /Best first option · Split mortgage or Jeep/);
   assert.match(html, /Move '\+money\(choice\.firstAmount\)\+' this month to help/);
   assert.match(html, /forward-recommendations-slot/);
