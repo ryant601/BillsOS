@@ -72,3 +72,6 @@ html[data-billsos-theme="dark"] body.bo-app .year-months button.active,
 html[data-billsos-theme="dark"] body.bo-app .year-pill[aria-expanded="true"]{
   background:#41639a!important;border-color:#6885b7!important;color:#fff!important;
 }
+
+html[data-billsos-theme="dark"] body.bo-app .risk-floor-bar output,
+html[data-billsos-theme="dark"] body.bo-app .past-months-toggle{color:#a3bde3!important}
