@@ -34,3 +34,19 @@ test('retired bank balance URLs and spending reports are unavailable', () => {
   assert.doesNotMatch(server, /readStoredBalance/);
   assert.doesNotMatch(packageJson.scripts.start, /spending-route-preload|live-finances-preload/);
 });
+
+test('Home focus uses the rendered calendar days and opens the selected day', () => {
+  const dark = fs.readFileSync(path.join(root, 'dark-calendar-contrast.css'), 'utf8');
+  assert.match(home, /#mount \.calendar-day\[data-date\]/);
+  assert.match(home, /\.calendar-day-ending b/);
+  assert.match(home, /boFocus/);
+  assert.match(home, /boWeek/);
+  assert.match(home, /Next 7 days/);
+  assert.match(home, /boAttention/);
+  assert.match(home, /focusCalendarDate\(\)/);
+  assert.match(home, /risk-recommendations/);
+  assert.match(home, /dark-calendar-contrast\.css/);
+  assert.match(dark, /calendar-day\.is-low/);
+  assert.match(dark, /calendar-day\.is-negative/);
+  assert.match(dark, /bo-focus/);
+});

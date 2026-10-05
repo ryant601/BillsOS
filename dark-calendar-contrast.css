@@ -1,0 +1,74 @@
+/* The calendar's compact list and planner use light-only fills in their base CSS.
+   Match those surfaces to the active BillsOS dark theme. */
+html[data-billsos-theme="dark"] body.bo-app{
+  --ink:#f1f3f6;--mut:#a9b1bf;--line:#323c50;--card:#252f42;
+  --bg:#1a2233;--primary:#41639a;--green:#8cc4a3;--out:#e39a8e;
+}
+html[data-billsos-theme="dark"] body.bo-app .risk-floor-bar,
+html[data-billsos-theme="dark"] body.bo-app .calendar-week,
+html[data-billsos-theme="dark"] body.bo-app .calendar-view-switch,
+html[data-billsos-theme="dark"] body.bo-app .risk-recommendations,
+html[data-billsos-theme="dark"] body.bo-app .risk-option,
+html[data-billsos-theme="dark"] body.bo-app .planner-option,
+html[data-billsos-theme="dark"] body.bo-app .month-items-summary span{
+  background:#252f42!important;border-color:#3a4559!important;color:#f1f3f6!important;
+}
+html[data-billsos-theme="dark"] body.bo-app .calendar-week-body,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day,
+html[data-billsos-theme="dark"] body.bo-app .month-item-row{border-color:#3a4559!important}
+html[data-billsos-theme="dark"] body.bo-app .calendar-day,
+html[data-billsos-theme="dark"] body.bo-app .calendar-box-mode .calendar-day,
+html[data-billsos-theme="dark"] body.bo-app.calendar-box-mode .calendar-day{
+  background:#252f42!important;color:#f1f3f6!important;
+}
+html[data-billsos-theme="dark"] body.bo-app .calendar-day.is-today{background:#293a55!important}
+html[data-billsos-theme="dark"] body.bo-app .calendar-day.is-low:not(.is-negative),
+html[data-billsos-theme="dark"] body.bo-app .calendar-box-mode .calendar-day.is-low:not(.is-negative),
+html[data-billsos-theme="dark"] body.bo-app.calendar-box-mode .calendar-day.is-low:not(.is-negative){background:#37301f!important;border-color:#705d34!important}
+html[data-billsos-theme="dark"] body.bo-app .calendar-day.is-negative,
+html[data-billsos-theme="dark"] body.bo-app .calendar-box-mode .calendar-day.is-negative,
+html[data-billsos-theme="dark"] body.bo-app.calendar-box-mode .calendar-day.is-negative{background:#3a2a2c!important;border-color:#81504d!important}
+html[data-billsos-theme="dark"] body.bo-app .month-risk{background:#20352b!important;color:#a7d8b7!important;border-color:#3b694e!important}
+html[data-billsos-theme="dark"] body.bo-app .month-risk.is-low{background:#37301f!important;color:#e1c788!important;border-color:#705d34!important}
+html[data-billsos-theme="dark"] body.bo-app .month-risk.is-negative{background:#3a2a2c!important;color:#edaaa1!important;border-color:#81504d!important}
+html[data-billsos-theme="dark"] body.bo-app .month-risk-jump,
+html[data-billsos-theme="dark"] body.bo-app .planner-close{background:#2e384c!important;color:inherit!important;border-color:#3a4559!important}
+html[data-billsos-theme="dark"] body.bo-app .calendar-week-toggle,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day-heading strong,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day-balance b,
+html[data-billsos-theme="dark"] body.bo-app .risk-option p,
+html[data-billsos-theme="dark"] body.bo-app .risk-months b,
+html[data-billsos-theme="dark"] body.bo-app .month-item-row strong,
+html[data-billsos-theme="dark"] body.bo-app .month-item-row b{color:#f1f3f6!important}
+html[data-billsos-theme="dark"] body.bo-app .calendar-week-summary .risk-low,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day-ending.low b{color:#e1c788!important}
+html[data-billsos-theme="dark"] body.bo-app .calendar-week-summary .risk-negative,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day-ending.negative b{color:#edaaa1!important}
+html[data-billsos-theme="dark"] body.bo-app .calendar-week-action,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day-more{color:#a3bde3!important}
+html[data-billsos-theme="dark"] body.bo-app .calendar-view-switch button[aria-pressed="true"],
+html[data-billsos-theme="dark"] body.bo-app .risk-find-payment,
+html[data-billsos-theme="dark"] body.bo-app .planner-calculate,
+html[data-billsos-theme="dark"] body.bo-app .planner-add{background:#41639a!important;border-color:#6885b7!important;color:#fff!important}
+html[data-billsos-theme="dark"] body.bo-app .planner-option.is-best{background:#20352b!important;border-color:#3b694e!important}
+html[data-billsos-theme="dark"] body.bo-app .bo-focus,
+html[data-billsos-theme="dark"] body.bo-app .bo-week-day,
+html[data-billsos-theme="dark"] body.bo-app .bo-attention-link{background:#252f42!important;border-color:#323c50!important;color:#f1f3f6!important}
+html[data-billsos-theme="dark"] body.bo-app .bo-focus.is-low,
+html[data-billsos-theme="dark"] body.bo-app .bo-week-day.is-low{background:#37301f!important;border-color:#705d34!important}
+html[data-billsos-theme="dark"] body.bo-app .bo-focus.is-negative,
+html[data-billsos-theme="dark"] body.bo-app .bo-week-day.is-negative{background:#3a2a2c!important;border-color:#81504d!important}
+html[data-billsos-theme="dark"] body.bo-app .bo-focus a{background:#7d9fd2!important;color:#1b2436!important}
+html[data-billsos-theme="dark"] body.bo-app .bo-week-day.is-low span{color:#e1c788!important}
+html[data-billsos-theme="dark"] body.bo-app .bo-week-day.is-negative span{color:#edaaa1!important}
+html[data-billsos-theme="dark"] body.bo-app .pill,
+html[data-billsos-theme="dark"] body.bo-app .empty,
+html[data-billsos-theme="dark"] body.bo-app .chip,
+html[data-billsos-theme="dark"] body.bo-app .year-pill,
+html[data-billsos-theme="dark"] body.bo-app .past-months-toggle[aria-pressed="true"]{
+  background:#252f42!important;border-color:#3a4559!important;color:#f1f3f6!important;
+}
+html[data-billsos-theme="dark"] body.bo-app .year-months button.active,
+html[data-billsos-theme="dark"] body.bo-app .year-pill[aria-expanded="true"]{
+  background:#41639a!important;border-color:#6885b7!important;color:#fff!important;
+}

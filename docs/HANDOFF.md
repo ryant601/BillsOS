@@ -1,5 +1,9 @@
 # BillsOS developer handoff
 
+## October 5, 2026: Home cash-flow focus and dark calendar contrast
+
+The current Home keeps upcoming bills, income, month-end outlook, quick actions and the existing detail drawers. Its focus card and seven-day strip read the already rendered calendar day endings and rows from `#mount`; the focus uses the saved recommendation floor and scans up to 120 future days. Home links use `?view=calendar&focus=YYYY-MM-DD` to open the relevant month/day or current-month forward suggestions. `dark-calendar-contrast.css` fills the gaps left by light-only list, box, risk and planner styles. If calendar data is unavailable, Home shows a loading state rather than inventing amounts.
+
 ## October 5, 2026: Everyday Spending retired
 
 The owner retired the dedicated Everyday Spending pipeline. The hourly ChatGPT refresh task is paused. The production `npm start` no longer loads `live-finances-preload.js` or `spending-route-preload.js`; the home spending tile and navigation are gone, and the server returns 410 for the spending pages, import page, spending APIs, and their assets. Archived snapshots remain stored for recovery, but no import or category edits are active. The home page no longer displays bank account balances and the old balance snapshot URLs are disabled. Calendar projected balances remain part of cash-flow planning. The cash-flow calendar still includes Fund Spending Account transfers and excludes them from recommendation levers. The older spending descriptions below document the retired implementation, not current routes.
