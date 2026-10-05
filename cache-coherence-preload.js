@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20261001navydash1';
+const BUILD = '20261005spendingretired1';
 const CRITICAL_ASSETS = [
   'billsos-cross-device-sync-v2.js',
   'billsos-sidebar-calculator.js',
@@ -47,38 +47,6 @@ function removeLegacySpendingHeaderLink(html, isDashboard) {
   return html.replace(/<a href="\/spending\/">Everyday Spending<\/a>/g, '');
 }
 
-function ensureSpendingSidebar(html) {
-  if (html.includes('id="billsosSpendingSidebarLink"')) return html;
-  const script = `<script id="billsosSpendingSidebarLink">
-(function(){
-  function install(){
-    var nav=document.querySelector('.bo-nav');
-    if(!nav)return false;
-    var existing=nav.querySelector('a[href="/spending/"]');
-    if(!existing){
-      var calendar=nav.querySelector('a[href="/?view=calendar"]');
-      var bills=nav.querySelector('a[href="/control#bills"]');
-      var a=document.createElement('a');
-      a.href='/spending/';
-      a.target='_self';
-      a.innerHTML='<span class="bo-icon">$</span><span>Everyday Spending</span>';
-      if(bills)nav.insertBefore(a,bills);else if(calendar&&calendar.nextSibling)nav.insertBefore(a,calendar.nextSibling);else nav.appendChild(a);
-      existing=a;
-    }
-    var onSpending=location.pathname.indexOf('/spending')===0;
-    if(onSpending){
-      nav.querySelectorAll('a').forEach(function(link){link.classList.remove('is-active')});
-      existing.classList.add('is-active');
-    }
-    return true;
-  }
-  function boot(){if(install())return;var tries=0,t=setInterval(function(){tries++;if(install()||tries>40)clearInterval(t)},50)}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-})();
-</script>`;
-  return html.replace('</body>', script + '\n</body>');
-}
-
 fs.readFileSync = function coherentReadFileSync(filePath, options) {
   const result = originalReadFileSync.apply(this, arguments);
   const name = String(filePath || '');
@@ -92,6 +60,5 @@ fs.readFileSync = function coherentReadFileSync(filePath, options) {
   updated = ensureAssistantConsistency(updated, isDashboard);
   updated = ensureIncome14Day(updated, isDashboard);
   updated = removeLegacySpendingHeaderLink(updated, isDashboard);
-  updated = ensureSpendingSidebar(updated);
   return Buffer.isBuffer(result) ? Buffer.from(updated, 'utf8') : updated;
 };

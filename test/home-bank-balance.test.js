@@ -12,7 +12,6 @@ const home = fs.readFileSync(path.join(root, 'html-hotfix-loader.js'), 'utf8');
 const cache = fs.readFileSync(path.join(root, 'cache-coherence-preload.js'), 'utf8');
 const stamp = JSON.parse(fs.readFileSync(path.join(root, 'bill-payments-balance.json'), 'utf8'));
 const savingsStamp = JSON.parse(fs.readFileSync(path.join(root, 'savings-account-balance.json'), 'utf8'));
-const spendingSnapshot = JSON.parse(fs.readFileSync(path.join(root, 'spending/current.json'), 'utf8'));
 
 test('static balance stamp uses the exact TD Bill Payments identity and available field', () => {
   assert.deepEqual(stamp.account, {
@@ -80,35 +79,24 @@ test('missing or invalid balance data preserves the existing card fallback', () 
   assert.match(home, /if\(stamp\)applySavingsBalance\(stamp\)/);
 });
 
-test('home renders three responsive, display-only account tiles without changing sidebar navigation', () => {
+test('home renders account balances without the retired spending tile', () => {
   assert.match(home, /fetch\('\/savings-account-balance\.json\?home='/);
   assert.match(home, /querySelector\('\[data-bo-detail="savings"\]'\)/);
   assert.match(home, /\['savings','Savings account','—','Mortgage funding','◇'\]/);
   assert.match(home, /TD Bank · Savings Account ••••2468/);
   assert.match(home, /bankMoney\(savings\.balance\.available\)/);
   assert.match(home, /\['cash','Bills account'/);
-  assert.match(home, /\['spending-account','Everyday spending','—','Available balance','◉'\]/);
+  assert.doesNotMatch(home, /\['spending-account','Everyday spending'/);
   assert.match(home, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(home, /@media\(max-width:760px\).*\.bo-kpis\{grid-template-columns:1fr\}/);
   assert.equal((home.match(/function installSidebar\(\)/g) || []).length, 1);
   assert.doesNotMatch(home, /cashflow-engine/);
 });
 
-test('Everyday Spending tile uses only the published available balance and banking timestamp', () => {
-  const normalized = bridge.normalizeEverydaySpendingBalance(spendingSnapshot);
-  assert.deepEqual(normalized, {
-    available: spendingSnapshot.metrics.remainingAvailable,
-    bankingAsOf: spendingSnapshot.freshness.balanceAsOf
-  });
-  assert.equal(bridge.normalizeEverydaySpendingBalance(null), null);
-  assert.equal(bridge.normalizeEverydaySpendingBalance({ ...spendingSnapshot, metrics: { remainingAvailable: null } }), null);
-  assert.equal(bridge.normalizeEverydaySpendingBalance({ ...spendingSnapshot, freshness: { balanceAsOf: null } }), null);
-  assert.match(home, /fetch\('\/spending\/current\.json\?home='/);
-  assert.match(home, /querySelector\('\[data-bo-detail="spending-account"\]'\)/);
-  assert.match(home, /if\(stamp\)applySpendingBalance\(stamp\)/);
-  assert.match(home, /bankMoney\(spending\.available\)/);
-  assert.match(home, /TD Bank · Everything Else/);
-  assert.match(home, /href="\/spending\/"/);
+test('home does not request the retired spending report', () => {
+  assert.doesNotMatch(home, /fetch\('\/spending\/current\.json/);
+  assert.doesNotMatch(home, /normalizeEverydaySpendingBalance/);
+  assert.doesNotMatch(home, /href="\/spending\/"/);
 });
 
 test('month-end outlook comes from every remaining month list summary', () => {
@@ -143,9 +131,10 @@ test('home client fetch patches only the Bills account value and note and keeps 
   assert.doesNotMatch(home, /cashflow-engine/);
 });
 
-test('cache build changes without changing the server start or preload chain', () => {
-  const expectedStart = 'node -r ./live-finances-preload.js -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js -r ./spending-route-preload.js server.js';
+test('cache build and production start omit the spending pipeline', () => {
+  const expectedStart = 'node -r ./q1-2027-calendar-seed-preload.js -r ./rest-2027-calendar-seed-preload.js -r ./att-deck-calendar-fix-preload.js -r ./payment-splits-preserve-preload.js -r ./readonly-calendar-preload.js -r ./html-hotfix-loader.js -r ./cache-coherence-preload.js server.js';
   assert.equal(packageJson.scripts.start, expectedStart);
+  assert.doesNotMatch(packageJson.scripts.start, /spending-route-preload|live-finances-preload/);
   assert.match(cache, /const BUILD = '20\d{6}[a-z0-9]+'/);
   assert.doesNotMatch(packageJson.scripts.start, /bill-payments-balance|bills-account-balance/);
 });

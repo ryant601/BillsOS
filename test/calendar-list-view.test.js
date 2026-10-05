@@ -59,7 +59,7 @@ test('active calendar renders a list with persistent week controls and risk line
   assert.match(css, /\.calendar-week-body\[hidden\]/);
   assert.match(editor, /closest\('\.calendar-day,\.day'\)/);
   assert.match(editor, /Split payment/);
-  assert.match(preload, /const BUILD = '20261001navydash1'/);
+  assert.match(preload, /const BUILD = '20\d{6}[a-z0-9]+'/);
   assert.match(html, /id="openPaymentPlanner"/);
   assert.match(html, />Find a payment day</);
   assert.match(html, /id="openMonthItems"/);

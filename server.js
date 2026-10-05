@@ -3,8 +3,6 @@ const path = require("path");
 const fs = require("fs");
 const registerAssistantApi = require("./assistant-api");
 const { createAccessControl } = require("./access-control");
-const { createSpendingCategoryStore } = require("./spending-category-overrides");
-const { livePath: liveFinancesPath } = require("./live-finances-preload");
 const { calendarRevision, writeReadonlySnapshot } = require("./readonly-calendar-preload");
 const {
   applyCalendarStatePatch,
@@ -17,15 +15,7 @@ const access = createAccessControl(process.env);
 const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, "data");
 const CHECKMARK_FILE = path.join(DATA_DIR, "checkmarks.json");
 const BILLS_FILE = path.join(DATA_DIR, "bills.json");
-const REPO_SPENDING_SNAPSHOT = path.join(__dirname, "spending", "current.json");
-const spendingCategoryStore = createSpendingCategoryStore({
-  dataDir: DATA_DIR,
-  snapshotPath: () => {
-    const liveSnapshot = liveFinancesPath("spending/current.json");
-    return fs.existsSync(liveSnapshot) ? liveSnapshot : REPO_SPENDING_SNAPSHOT;
-  },
-  classificationRulesPath: path.join(__dirname, "spending", "vendor-category-rules.json")
-});
+const LIVE_FINANCES_DIR = path.join(DATA_DIR, "live-finances");
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: "2mb" }));
@@ -49,6 +39,17 @@ function readJsonFile(filePath, fallback) {
   } catch (_err) {
     return fallback;
   }
+}
+
+function readStoredBalance(name) {
+  const pointer = path.join(LIVE_FINANCES_DIR, "current-release");
+  let release = "";
+  try { release = fs.readFileSync(pointer, "utf8").trim(); } catch (_error) { /* Legacy snapshot. */ }
+  const live = /^release-[a-z0-9-]+$/.test(release)
+    ? path.join(LIVE_FINANCES_DIR, "releases", release, name)
+    : path.join(LIVE_FINANCES_DIR, name);
+  const stored = readJsonFile(live, null);
+  return stored || readJsonFile(path.join(__dirname, name), null);
 }
 
 function writeJsonFile(filePath, payload) {
@@ -296,6 +297,26 @@ app.use((req, res, next) => {
   res.status(decision.status).json({ error: decision.error, role: req.billsosSession && req.billsosSession.role, viewOnly: true });
 });
 
+for (const name of ["bill-payments-balance.json", "savings-account-balance.json"]) {
+  app.get("/" + name, (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    const balance = readStoredBalance(name);
+    return balance ? res.json(balance) : res.status(404).json({ error: "Balance unavailable" });
+  });
+}
+
+// Keep archived snapshots on disk, but do not serve the retired spending pipeline.
+app.use((req, res, next) => {
+  if (/^\/spending(?:\/|$)/.test(req.path) ||
+      /^\/finances-refresh(?:\/|$)/.test(req.path) ||
+      /^\/api\/(?:spending|finances-refresh)(?:\/|$)/.test(req.path) ||
+      /^\/(?:live-finances-preload|spending-(?:route-preload|assistant|runway|history|data-stamp|classification-rules|category-emoji|category-overrides|transaction-recategorize))\.js$/.test(req.path)) {
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(410).json({ error: "Everyday Spending is no longer part of BillsOS" });
+  }
+  next();
+});
+
 app.get("/api/checkmarks", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.json(readCheckmarks());
@@ -344,27 +365,6 @@ app.patch("/api/bills/calendar-state", (req, res) => {
     res.json({ ...saved, revision: exported.revision, readonlyGeneratedAt: exported.generatedAt });
   } catch (_err) {
     res.status(500).json({ error: "Could not save calendar state" });
-  }
-});
-
-app.get("/api/spending/category-overrides", (_req, res) => {
-  res.setHeader("Cache-Control", "no-store");
-  res.json(spendingCategoryStore.publicState());
-});
-
-app.post("/api/spending/category-overrides", (req, res) => {
-  try {
-    res.status(201).json(spendingCategoryStore.save(req.body, req.billsosSession.username));
-  } catch (error) {
-    res.status(error.status || 500).json({ error: error.status ? error.message : "Could not save the category change" });
-  }
-});
-
-app.delete("/api/spending/category-overrides/:id", (req, res) => {
-  try {
-    res.json({ removed: spendingCategoryStore.remove(req.params.id, req.billsosSession.username) });
-  } catch (error) {
-    res.status(error.status || 500).json({ error: error.status ? error.message : "Could not undo the category change" });
   }
 });
 

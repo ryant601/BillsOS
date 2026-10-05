@@ -50,12 +50,11 @@ test('completed spending cycle is archived with its transactions and exact close
   assert.match(archivedHtml, /fetch\('\/spending\/archive\/2026-08-21\/current\.json/);
 });
 
-test('dashboard preload injects Everyday Spending navigation and cache version', () => {
+test('dashboard preload omits retired spending navigation and versions assets', () => {
   const preload = fs.readFileSync(path.join(__dirname, '..', 'cache-coherence-preload.js'), 'utf8');
   assert.match(preload, /const BUILD = '20\d{6}[a-z0-9]+'/);
-  assert.match(preload, /a\.href='\/spending\/'/);
-  assert.match(preload, /nav\.querySelector\('a\[href="\/spending\/"\]'\)/);
-  assert.match(preload, /ensureSpendingSidebar/);
+  assert.doesNotMatch(preload, /ensureSpendingSidebar/);
+  assert.doesNotMatch(preload, /a\.href='\/spending\/'/);
 });
 
 test('Everyday Spending shell clears the fixed sidebar on desktop and returns full width on mobile', () => {
