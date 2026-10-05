@@ -28,6 +28,7 @@ test('one-time income saves as a positive synced calendar event', () => {
 test('one-time income can be edited and removed from the income tab', () => {
   assert.match(html, /function editOneTimeIncome\(id\)/);
   assert.match(html, /item\.type==='income'/);
+  assert.match(html, /balance \(adjustment\|correction\|reconciliation\)/);
   assert.match(html, /onclick="editOneTimeIncome\(/);
   assert.match(html, /onclick="deleteOne\(/);
   assert.match(html, /document\.getElementById\('oneIncomeId'\)\.value/);
