@@ -15,7 +15,6 @@ const access = createAccessControl(process.env);
 const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, "data");
 const CHECKMARK_FILE = path.join(DATA_DIR, "checkmarks.json");
 const BILLS_FILE = path.join(DATA_DIR, "bills.json");
-const LIVE_FINANCES_DIR = path.join(DATA_DIR, "live-finances");
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: "2mb" }));
@@ -39,17 +38,6 @@ function readJsonFile(filePath, fallback) {
   } catch (_err) {
     return fallback;
   }
-}
-
-function readStoredBalance(name) {
-  const pointer = path.join(LIVE_FINANCES_DIR, "current-release");
-  let release = "";
-  try { release = fs.readFileSync(pointer, "utf8").trim(); } catch (_error) { /* Legacy snapshot. */ }
-  const live = /^release-[a-z0-9-]+$/.test(release)
-    ? path.join(LIVE_FINANCES_DIR, "releases", release, name)
-    : path.join(LIVE_FINANCES_DIR, name);
-  const stored = readJsonFile(live, null);
-  return stored || readJsonFile(path.join(__dirname, name), null);
 }
 
 function writeJsonFile(filePath, payload) {
@@ -297,22 +285,15 @@ app.use((req, res, next) => {
   res.status(decision.status).json({ error: decision.error, role: req.billsosSession && req.billsosSession.role, viewOnly: true });
 });
 
-for (const name of ["bill-payments-balance.json", "savings-account-balance.json"]) {
-  app.get("/" + name, (_req, res) => {
-    res.setHeader("Cache-Control", "no-store");
-    const balance = readStoredBalance(name);
-    return balance ? res.json(balance) : res.status(404).json({ error: "Balance unavailable" });
-  });
-}
-
 // Keep archived snapshots on disk, but do not serve the retired spending pipeline.
 app.use((req, res, next) => {
-  if (/^\/spending(?:\/|$)/.test(req.path) ||
+  if (/^\/(?:bill-payments-balance|savings-account-balance)\.(?:json|js)$/.test(req.path) ||
+      /^\/spending(?:\/|$)/.test(req.path) ||
       /^\/finances-refresh(?:\/|$)/.test(req.path) ||
       /^\/api\/(?:spending|finances-refresh)(?:\/|$)/.test(req.path) ||
       /^\/(?:live-finances-preload|spending-(?:route-preload|assistant|runway|history|data-stamp|classification-rules|category-emoji|category-overrides|transaction-recategorize))\.js$/.test(req.path)) {
     res.setHeader("Cache-Control", "no-store");
-    return res.status(410).json({ error: "Everyday Spending is no longer part of BillsOS" });
+    return res.status(410).json({ error: "This feature is no longer available" });
   }
   next();
 });
