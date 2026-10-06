@@ -23,7 +23,7 @@ test('Home keeps completed upcoming rows visible with an explicit status', () =>
 });
 
 test('Home uses the shared cash-flow rows and calendar row key', () => {
-  assert.match(source, /engine\.rowsForMonth\(data,value\[1\],0\)/);
+  assert.match(source, /engine\.rowsForMonth\(data,value\[1\],0,value\[0\]\)/);
   assert.match(source, /function rowKey\(row\)\{return String\(row\.iso\|\|row\.date\|\|''\)\+'\|'\+row\.name\+'\|'\+row\.amount\}/);
   assert.match(source, /row&&row\.amount<0&&billsById\[row\.sourceId\]/);
 });
