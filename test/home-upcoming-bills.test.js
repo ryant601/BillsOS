@@ -27,7 +27,7 @@ function runUpcoming(today, byMonth, data) {
     stateMap: () => ({}), data
   };
   vm.createContext(context);
-  vm.runInContext(functionSource + '\\nthis.result = upcomingBills(this.data);', context);
+  vm.runInContext(functionSource + '\nthis.result = upcomingBills(this.data);', context);
   return { calls, result: context.result };
 }
 
