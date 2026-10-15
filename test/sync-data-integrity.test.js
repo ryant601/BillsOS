@@ -103,6 +103,15 @@ test('calendar-only sync preserves one-time events, bills, income, and payment s
   assert.deepEqual(patched.paymentSplits, existing.paymentSplits);
 });
 
+test('calendar note override survives a stale update and an older client patch', () => {
+  const key = '2026-10-17|Mortgage|-5866.5';
+  const existing = { bills: [], income: [], oneTimeEvents: [{ id: '__billsos_system_rules__', notes: JSON.stringify({ calendarState: { revision: 4, notesAdjustments: { [key]: { notes: 'Call lender', updatedAt: '2026-10-15T12:00:00Z' } } } }) }] };
+  const stale = applyCalendarStatePatch(existing, { baseRevision: 2, calendarState: { notesAdjustments: { [key]: { notes: 'Old note', updatedAt: '2026-10-15T11:00:00Z' } } } }, '2026-10-15T13:00:00Z');
+  assert.equal(systemState(stale).notesAdjustments[key].notes, 'Call lender');
+  const olderClient = applyCalendarStatePatch(stale, { baseRevision: 5, calendarState: { dateAdjustments: {}, amountAdjustments: {}, completed: {} } }, '2026-10-15T14:00:00Z');
+  assert.equal(systemState(olderClient).notesAdjustments[key].notes, 'Call lender');
+});
+
 test('current-revision sync makes an October-to-September move authoritative', () => {
   const key = '2026-10-02|Auto Insurance|-169';
   const existing = {

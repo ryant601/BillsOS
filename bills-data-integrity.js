@@ -28,6 +28,7 @@ function cleanCalendarState(value) {
   return {
     dateAdjustments: object(state.dateAdjustments),
     amountAdjustments: object(state.amountAdjustments),
+    notesAdjustments: object(state.notesAdjustments),
     completed: object(state.completed),
     updatedAt: state.updatedAt || null,
     revision: Number(state.revision || 0)
@@ -85,6 +86,9 @@ function mergeCalendarState(existing, incoming, options = {}) {
     amountAdjustments: sameRevision
       ? (clone(local.amountAdjustments) || {})
       : mergeTimedMap(remote.amountAdjustments, local.amountAdjustments),
+    notesAdjustments: sameRevision
+      ? (clone(local.notesAdjustments) || {})
+      : mergeTimedMap(remote.notesAdjustments, local.notesAdjustments),
     completed: mergeCompleted(remote.completed, local.completed, sameRevision),
     updatedAt: options.incrementRevision ? now : (timestamp(local) > timestamp(remote) ? local.updatedAt : remote.updatedAt),
     revision
@@ -102,6 +106,7 @@ function mergeSystemRow(existingRow, incomingRow, options = {}) {
   const currentState = currentRules.calendarState || {
     dateAdjustments: currentRules.dateAdjustments,
     amountAdjustments: currentRules.amountAdjustments,
+    notesAdjustments: currentRules.notesAdjustments,
     completed: currentRules.completed,
     updatedAt: existingRow && existingRow.updatedAt,
     revision: 0
@@ -109,6 +114,7 @@ function mergeSystemRow(existingRow, incomingRow, options = {}) {
   const incomingState = options.calendarState || incomingRules.calendarState || {
     dateAdjustments: incomingRules.dateAdjustments,
     amountAdjustments: incomingRules.amountAdjustments,
+    notesAdjustments: incomingRules.notesAdjustments,
     completed: incomingRules.completed,
     updatedAt: incomingRow && incomingRow.updatedAt,
     revision: 0
@@ -118,6 +124,7 @@ function mergeSystemRow(existingRow, incomingRow, options = {}) {
   rules.calendarState = mergedState;
   rules.dateAdjustments = mergedState.dateAdjustments;
   rules.amountAdjustments = mergedState.amountAdjustments;
+  rules.notesAdjustments = mergedState.notesAdjustments;
   rules.completed = mergedState.completed;
 
   return {
@@ -162,8 +169,10 @@ function applyCalendarStatePatch(existing, request, now) {
   prepared.income = Array.isArray(prepared.income) ? prepared.income : [];
   const index = prepared.oneTimeEvents.findIndex(row => row && row.id === RULE_ID);
   const current = index >= 0 ? prepared.oneTimeEvents[index] : null;
+  const previousNotes = cleanCalendarState(readRules(current).calendarState).notesAdjustments;
+  const requestedState = object(request && request.calendarState);
   const merged = mergeSystemRow(current, null, {
-    calendarState: request && request.calendarState,
+    calendarState: { ...requestedState, notesAdjustments: Object.prototype.hasOwnProperty.call(requestedState, 'notesAdjustments') ? requestedState.notesAdjustments : previousNotes },
     baseRevision: request && request.baseRevision,
     incrementRevision: true,
     now

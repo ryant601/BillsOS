@@ -2,6 +2,7 @@
   'use strict';
   var DATE_KEY='billsos-pay-adjust-v1';
   var AMOUNT_KEY='billsos-amount-adjust-v1';
+  var NOTES_KEY='billsos-notes-adjust-v1';
   var DONE_KEY='billsos-generated-done-v5';
   var RULE_ID='__billsos_system_rules__';
   var PENDING_KEY='billsos-calendar-sync-pending-v1';
@@ -10,16 +11,16 @@
 
   function readJson(key){try{var v=JSON.parse(localStorage.getItem(key)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return {}}}
   function writeJson(key,value){suppress=true;try{localStorage.setItem(key,JSON.stringify(value||{}))}catch(e){}suppress=false}
-  function localState(){return {dateAdjustments:readJson(DATE_KEY),amountAdjustments:readJson(AMOUNT_KEY),completed:readJson(DONE_KEY)}}
+  function localState(){return {dateAdjustments:readJson(DATE_KEY),amountAdjustments:readJson(AMOUNT_KEY),notesAdjustments:readJson(NOTES_KEY),completed:readJson(DONE_KEY)}}
   function readRules(row){try{return JSON.parse(row&&row.notes||'{}')||{}}catch(e){return {}}}
-  function clean(s){s=s&&typeof s==='object'?s:{};return {dateAdjustments:s.dateAdjustments&&typeof s.dateAdjustments==='object'?s.dateAdjustments:{},amountAdjustments:s.amountAdjustments&&typeof s.amountAdjustments==='object'?s.amountAdjustments:{},completed:s.completed&&typeof s.completed==='object'?s.completed:{},updatedAt:s.updatedAt||null,revision:Number(s.revision||0)}}
-  function cloudState(data){var rows=Array.isArray(data&&data.oneTimeEvents)?data.oneTimeEvents:[],sys=rows.find(function(x){return x&&x.id===RULE_ID}),rules=readRules(sys);return clean(rules.calendarState||{dateAdjustments:rules.dateAdjustments||{},amountAdjustments:rules.amountAdjustments||{},completed:rules.completed||{},revision:Number(data&&data.revision||0)})}
+  function clean(s){s=s&&typeof s==='object'?s:{};return {dateAdjustments:s.dateAdjustments&&typeof s.dateAdjustments==='object'?s.dateAdjustments:{},amountAdjustments:s.amountAdjustments&&typeof s.amountAdjustments==='object'?s.amountAdjustments:{},notesAdjustments:s.notesAdjustments&&typeof s.notesAdjustments==='object'?s.notesAdjustments:{},completed:s.completed&&typeof s.completed==='object'?s.completed:{},updatedAt:s.updatedAt||null,revision:Number(s.revision||0)}}
+  function cloudState(data){var rows=Array.isArray(data&&data.oneTimeEvents)?data.oneTimeEvents:[],sys=rows.find(function(x){return x&&x.id===RULE_ID}),rules=readRules(sys);return clean(rules.calendarState||{dateAdjustments:rules.dateAdjustments||{},amountAdjustments:rules.amountAdjustments||{},notesAdjustments:rules.notesAdjustments||{},completed:rules.completed||{},revision:Number(data&&data.revision||0)})}
   function same(a,b){try{return JSON.stringify(a||{})===JSON.stringify(b||{})}catch(e){return false}}
   function setStatus(text){var el=document.getElementById('billsosSyncStatus');if(el)el.textContent=text}
   function rememberPending(){try{sessionStorage.setItem(PENDING_KEY,'1')}catch(e){}}
   function clearPending(){try{sessionStorage.removeItem(PENDING_KEY)}catch(e){}}
   function restorePending(){try{if(sessionStorage.getItem(PENDING_KEY)==='1'){dirty=true;changeVersion=Math.max(changeVersion,1)}}catch(e){}}
-  function applyCloud(next,reload){var before=localState();writeJson(DATE_KEY,next.dateAdjustments);writeJson(AMOUNT_KEY,next.amountAdjustments);writeJson(DONE_KEY,next.completed);var changed=!same(before,localState());if(changed&&reload&&document.querySelector('.month-panel,.cal'))setTimeout(function(){location.reload()},80);return changed}
+  function applyCloud(next,reload){var before=localState();writeJson(DATE_KEY,next.dateAdjustments);writeJson(AMOUNT_KEY,next.amountAdjustments);writeJson(NOTES_KEY,next.notesAdjustments);writeJson(DONE_KEY,next.completed);var changed=!same(before,localState());if(changed&&reload&&document.querySelector('.month-panel,.cal'))setTimeout(function(){location.reload()},80);return changed}
   async function fetchBills(tag){var r=await fetch('/api/bills?syncv2='+encodeURIComponent(tag||'pull')+'&t='+Date.now(),{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
   async function postState(next,keepalive){
     if(pushing){dirty=true;return false}
@@ -59,7 +60,7 @@
       if(changed&&initial&&document.querySelector('.month-panel,.cal'))setTimeout(function(){location.reload()},80)
     }catch(e){initialized=true;setStatus('Offline')}
   }
-  function installStorageGuard(){if(window.__billsosSyncV2Guard)return;window.__billsosSyncV2Guard=true;var original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){var result=original.apply(this,arguments);if(this===localStorage&&!suppress&&(key===DATE_KEY||key===AMOUNT_KEY||key===DONE_KEY)){rememberPending();schedulePush()}return result}}
+  function installStorageGuard(){if(window.__billsosSyncV2Guard)return;window.__billsosSyncV2Guard=true;var original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){var result=original.apply(this,arguments);if(this===localStorage&&!suppress&&(key===DATE_KEY||key===AMOUNT_KEY||key===NOTES_KEY||key===DONE_KEY)){rememberPending();schedulePush()}return result}}
   function start(){installStorageGuard();restorePending();reconcile(true);clearInterval(pullTimer);pullTimer=setInterval(function(){if(!document.hidden)reconcile(false)},5000)}
   window.BillsOSForceThisDeviceSync=function(){if(!initialized)return Promise.resolve(false);dirty=true;return postState(localState(),false)};
   window.addEventListener('focus',function(){setTimeout(function(){reconcile(false)},80)});

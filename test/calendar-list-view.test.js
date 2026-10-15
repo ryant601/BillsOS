@@ -85,6 +85,16 @@ test('home outlook reads the authoritative month ending from the list panel', ()
   assert.match(source, /\.calendar-day-ending b/);
 });
 
+test('calendar list carries Control Center notes and edits one occurrence', () => {
+  const engine = require('../cashflow-engine.js');
+  const rows = engine.rowsForMonth({ bills: [{ id: 'mortgage', name: 'Mortgage', amount: 500, dueDay: 17, notes: 'Call lender' }] }, 10, 0, 2026);
+  assert.equal(rows.find(row => row.name === 'Mortgage').notes, 'Call lender');
+  assert.match(read('generated-v5.html'), /data-note-default/);
+  assert.match(read('billsos-card-editor.js'), /noteFor\(row,key\)/);
+  assert.match(read('billsos-card-editor.js'), /confirmCloudSave\(\)/);
+  assert.match(read('calendar-list-view.css'), /billsosCardNote/);
+});
+
 test('dashboard installs one current calendar sync script and date resets use tombstones', () => {
   const html = read('generated-v5.html');
   const loader = read('html-hotfix-loader.js');

@@ -4,6 +4,7 @@
   var AMOUNT_KEY='billsos-amount-adjust-v1';
   var DATE_KEY='billsos-pay-adjust-v1';
   var DONE_KEY='billsos-generated-done-v5';
+  var NOTES_KEY='billsos-notes-adjust-v1';
   var syncTimer=0,lastRemoteUpdate=null,pushing=false,deleting=false;
 
   function read(key){try{var v=JSON.parse(localStorage.getItem(key)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return {}}}
@@ -55,6 +56,8 @@
   }
   function cleanDone(map){var out={};Object.keys(map||{}).forEach(function(k){if(map[k])out[k]=1});return out}
   function currentDone(){return cleanDone(read(DONE_KEY))}
+  function noteFor(row,key){var edit=read(NOTES_KEY)[key];return edit&&!edit.deleted&&typeof edit.notes==='string'?edit.notes:String(row.dataset.noteDefault||'')}
+  function saveNote(key,value,restoreDefault){var map=read(NOTES_KEY);map[key]=restoreDefault?{deleted:true,updatedAt:new Date().toISOString()}:{notes:String(value).trim(),updatedAt:new Date().toISOString()};return write(NOTES_KEY,map)}
   function applyDone(map){map=cleanDone(map);write(DONE_KEY,map);document.querySelectorAll('.billsosDoneCheck').forEach(function(cb){var checked=!!map[cb.dataset.id];if(cb.checked!==checked)cb.checked=checked;var row=cb.closest('.ev');if(row)row.classList.toggle('done',checked)})}
 
   function installCss(){
@@ -203,17 +206,19 @@
     var body=document.createElement('div');body.className='billsosCardBody';
     var nameEl=document.createElement('span');nameEl.className='billsosCardName';nameEl.textContent=name;
     var amountEl=document.createElement('span');amountEl.className='billsosCardAmount';amountEl.textContent=(signed<0?'−':'+')+money(Math.abs(signed));body.appendChild(nameEl);body.appendChild(amountEl);
+    var note=document.createElement('button');note.type='button';note.className='billsosCardNote';note.dataset.key=key;note.textContent=noteFor(row,key)||'+ Note';note.title=noteFor(row,key)||'Add note';note.setAttribute('aria-label','Edit note for '+name);body.appendChild(note);
     var edit=document.createElement('button');edit.type='button';edit.className='billsosCardEditBtn';edit.dataset.key=key;edit.textContent='✎';edit.title='Edit amount or date';edit.setAttribute('aria-label','Edit amount and date for '+name);
     var del=document.createElement('button');del.type='button';del.className='billsosCardDeleteBtn';del.dataset.key=key;del.textContent='×';del.title='Remove this occurrence';del.setAttribute('aria-label','Remove '+name+' from this date');
     row.appendChild(cb);row.appendChild(body);row.appendChild(edit);row.appendChild(del);
   }
 
   function sync(){installCss();var done=currentDone();document.querySelectorAll('.events .ev').forEach(function(row){normalizeCard(row,done)})}
+  function editNote(button){var row=button.closest('.ev'),key=button.dataset.key,body=button.closest('.billsosCardBody');if(!row||!key||!body)return;var original=noteFor(row,key),form=document.createElement('form');form.className='billsosInlineNotes';form.innerHTML='<textarea aria-label="Note for '+nameFromKey(key).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})+'" rows="1" maxlength="1000"></textarea><button type="submit">Save</button><button type="button" data-note-action="cancel">Cancel</button><button type="button" data-note-action="default">Default</button><span role="status" aria-live="polite"></span>';var input=form.querySelector('textarea'),status=form.querySelector('[role="status"]');input.value=original;button.hidden=true;body.appendChild(form);input.focus();input.select();form.addEventListener('click',function(e){var action=e.target.dataset.noteAction;if(action==='cancel'){form.remove();button.hidden=false;button.focus()}if(action==='default')commit(true)});form.addEventListener('submit',function(e){e.preventDefault();commit(false)});async function commit(restoreDefault){var value=input.value;if(!restoreDefault&&value===original){form.remove();button.hidden=false;return}form.querySelectorAll('button').forEach(function(b){b.disabled=true});status.textContent='Saving…';if(!saveNote(key,value,restoreDefault)){status.textContent='Could not save this note on this device.';form.querySelectorAll('button').forEach(function(b){b.disabled=false});return}var sync=await confirmCloudSave();if(!sync.ok){status.textContent='Saved here; cloud sync could not be confirmed. Retry Save.';form.querySelectorAll('button').forEach(function(b){b.disabled=false});return}location.reload()}}
   function schedule(){clearTimeout(syncTimer);syncTimer=setTimeout(sync,80)}
   async function pullDone(){try{var r=await fetch('/api/checkmarks?x='+Date.now(),{cache:'no-store'}),data=await r.json();if(data&&data.completed&&data.updatedAt!==lastRemoteUpdate){lastRemoteUpdate=data.updatedAt;applyDone(data.completed)}}catch(e){}}
   async function pushDone(map){if(pushing)return;pushing=true;write(DONE_KEY,map);try{var r=await fetch('/api/checkmarks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({completed:map})}),data=await r.json();lastRemoteUpdate=data.updatedAt||lastRemoteUpdate}catch(e){}finally{pushing=false}}
 
-  document.addEventListener('click',function(e){var edit=e.target.closest&&e.target.closest('.billsosCardEditBtn');if(edit){e.preventDefault();e.stopPropagation();var row=edit.closest('.ev');openEditor(row,edit.dataset.key,edit);return}var del=e.target.closest&&e.target.closest('.billsosCardDeleteBtn');if(del){e.preventDefault();e.stopPropagation();deleteOccurrence(del.closest('.ev'),del.dataset.key);return}if(!e.target.closest('.billsosCardEditPopover'))closeEditor(false)},true);
+  document.addEventListener('click',function(e){var note=e.target.closest&&e.target.closest('.billsosCardNote');if(note){e.preventDefault();e.stopPropagation();editNote(note);return}var edit=e.target.closest&&e.target.closest('.billsosCardEditBtn');if(edit){e.preventDefault();e.stopPropagation();var row=edit.closest('.ev');openEditor(row,edit.dataset.key,edit);return}var del=e.target.closest&&e.target.closest('.billsosCardDeleteBtn');if(del){e.preventDefault();e.stopPropagation();deleteOccurrence(del.closest('.ev'),del.dataset.key);return}if(!e.target.closest('.billsosCardEditPopover'))closeEditor(false)},true);
   document.addEventListener('change',function(e){if(!e.target.classList.contains('billsosDoneCheck'))return;var map=currentDone();if(e.target.checked)map[e.target.dataset.id]=1;else delete map[e.target.dataset.id];applyDone(map);pushDone(map)},true);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){schedule();pullDone()});else{schedule();pullDone()}
   window.addEventListener('load',schedule);window.addEventListener('hashchange',schedule);setTimeout(schedule,400);setTimeout(schedule,1200);setInterval(pullDone,30000);
