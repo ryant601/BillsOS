@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 const list = require('../calendar-list-view.js');
 
 function read(file) { return fs.readFileSync(path.join(__dirname, '..', file), 'utf8'); }
@@ -93,6 +94,23 @@ test('calendar list carries Control Center notes and edits one occurrence', () =
   assert.match(read('billsos-card-editor.js'), /noteFor\(row,key\)/);
   assert.match(read('billsos-card-editor.js'), /confirmCloudSave\(\)/);
   assert.match(read('calendar-list-view.css'), /billsosCardNote/);
+});
+
+test('calendar notes describe the current date move without baking it into the editable note', () => {
+  const values = new Map();
+  const localStorage = { getItem: key => values.get(key) || null, setItem: (key, value) => values.set(key, value) };
+  const source = read('billsos-card-editor.js').replace(/\}\)\(\);\s*$/, 'window.testNotes={noteFor,noteBodyFor,moveNoteFor};})();');
+  const window = { addEventListener() {} };
+  vm.runInNewContext(source, { window, localStorage, document: { readyState: 'loading', addEventListener() {} }, setTimeout() {}, setInterval() {} });
+  const key = '2026-09-30|Insurance|-200', row = { dataset: { noteDefault: 'Control Center reminder' } };
+  assert.equal(window.testNotes.noteFor(row, key), 'Control Center reminder');
+  values.set('billsos-pay-adjust-v1', JSON.stringify({ [key]: { date: '2026-10-02', originalDate: '2026-09-30' } }));
+  assert.equal(window.testNotes.noteFor(row, key), 'Moved Sep 30 → Oct 2 · Control Center reminder');
+  values.set('billsos-notes-adjust-v1', JSON.stringify({ [key]: { notes: 'Call vendor' } }));
+  assert.equal(window.testNotes.noteFor(row, key), 'Moved Sep 30 → Oct 2 · Call vendor');
+  assert.equal(window.testNotes.noteBodyFor(row, key), 'Call vendor');
+  values.set('billsos-pay-adjust-v1', JSON.stringify({ [key]: { deleted: true, originalDate: '2026-09-30' } }));
+  assert.equal(window.testNotes.noteFor(row, key), 'Call vendor');
 });
 
 test('dashboard installs one current calendar sync script and date resets use tombstones', () => {
