@@ -1,5 +1,9 @@
 # BillsOS developer handoff
 
+## October 20, 2026: Compact calendar month navigation
+
+The live calendar uses previous/next arrows, a month/year button that opens a native dialog, and Today. The dialog has a year selector and a 12-month grid; months outside the available projection range are disabled. Past months are always available. The last selected month still uses `bills-last-view-live`; retired year-expansion and past-month flags are ignored. Keep the `btn-<month id>` buttons in the dialog even for a hidden year: Home's focus links click those IDs to select the correct panel. `showMonth()` updates the panel, navigator label, picker selection, and saved month together. Weekly expansion remains independent.
+
 ## October 5, 2026: Home cash-flow focus and dark calendar contrast
 
 The current Home keeps upcoming bills, income, month-end outlook, quick actions and the existing detail drawers. Its focus card and seven-day strip read the already rendered calendar day endings and rows from `#mount`; the focus uses the saved recommendation floor and scans up to 120 future days. Home links use `?view=calendar&focus=YYYY-MM-DD` to open the relevant month/day or current-month forward suggestions. `dark-calendar-contrast.css` fills the gaps left by light-only list, box, risk and planner styles. If calendar data is unavailable, Home shows a loading state rather than inventing amounts.
