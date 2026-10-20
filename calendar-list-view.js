@@ -109,6 +109,27 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(value || {})); } catch (error) {}
   }
 
+  function updateAllWeeksButton(panel) {
+    if (!panel) return;
+    const button = panel.querySelector('.calendar-all-weeks');
+    if (!button) return;
+    const sections = Array.from(panel.querySelectorAll('.calendar-week'));
+    button.textContent = sections.length && sections.every(function (section) {
+      const toggle = section.querySelector('.calendar-week-toggle');
+      return toggle && toggle.getAttribute('aria-expanded') === 'true';
+    }) ? 'Hide all weeks' : 'Show all weeks';
+  }
+
+  function setAllWeeks(panel, expanded) {
+    const state = readState();
+    panel.querySelectorAll('.calendar-week').forEach(function (section) {
+      setExpanded(section, expanded, false);
+      state[section.id] = expanded;
+    });
+    writeState(state);
+    updateAllWeeksButton(panel);
+  }
+
   function setExpanded(section, expanded, persist) {
     const button = section.querySelector('.calendar-week-toggle');
     const body = section.querySelector('.calendar-week-body');
@@ -123,6 +144,7 @@
       state[section.id] = !!expanded;
       writeState(state);
     }
+    updateAllWeeksButton(section.closest('.month-panel'));
   }
 
   function bind(rootNode) {
@@ -136,6 +158,14 @@
         button.dataset.bound = '1';
         button.addEventListener('click', function () { setExpanded(section, button.getAttribute('aria-expanded') !== 'true', true); });
       }
+    });
+    scope.querySelectorAll('.calendar-all-weeks').forEach(function (button) {
+      const panel = button.closest('.month-panel');
+      if (!panel) return;
+      updateAllWeeksButton(panel);
+      if (button.dataset.bound) return;
+      button.dataset.bound = '1';
+      button.addEventListener('click', function () { setAllWeeks(panel, button.textContent === 'Show all weeks'); });
     });
     scope.querySelectorAll('.month-risk-jump').forEach(function (button) {
       if (button.dataset.bound) return;

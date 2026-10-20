@@ -37,6 +37,42 @@ test('negative and current weeks expand by default while healthy weeks stay comp
   assert.equal(list.STORAGE_KEY, 'billsos-list-weeks-v1');
 });
 
+test('show and hide all weeks persists the active month and follows individual toggles', () => {
+  const previousStorage = global.localStorage;
+  const saved = new Map();
+  global.localStorage = { getItem: key => saved.get(key) || null, setItem: (key, value) => saved.set(key, value) };
+  try {
+    const panel = { querySelector: selector => selector === '.calendar-all-weeks' ? bulk : null,
+      querySelectorAll: selector => selector === '.calendar-week' ? weeks : [] };
+    const bulk = { textContent: 'Show all weeks', dataset: {}, closest: () => panel,
+      addEventListener: (_type, handler) => { bulk.click = handler; } };
+    function week(id, fallback) {
+      const toggle = { dataset: {}, attributes: {}, setAttribute(name, value) { this.attributes[name] = value; },
+        getAttribute(name) { return this.attributes[name]; }, addEventListener(_type, handler) { this.click = handler; },
+        querySelector: () => action };
+      const action = { textContent: '' }, body = { hidden: true };
+      return { id, dataset: { defaultExpanded: fallback ? 'true' : 'false' }, closest: () => panel,
+        classList: { toggle() {} }, querySelector: selector => selector === '.calendar-week-toggle' ? toggle : body,
+        toggle, body };
+    }
+    const weeks = [week('week-2026-10-1', false), week('week-2026-10-2', true)];
+    const scope = { querySelectorAll: selector => selector === '.calendar-week' ? weeks :
+      selector === '.calendar-all-weeks' ? [bulk] : [] };
+    list.bind(scope);
+    assert.equal(bulk.textContent, 'Show all weeks');
+    bulk.click();
+    assert.ok(weeks.every(item => !item.body.hidden));
+    assert.equal(bulk.textContent, 'Hide all weeks');
+    assert.deepEqual(JSON.parse(saved.get(list.STORAGE_KEY)), { 'week-2026-10-1': true, 'week-2026-10-2': true });
+    weeks[0].toggle.click();
+    assert.equal(bulk.textContent, 'Show all weeks');
+    bulk.click();
+    bulk.click();
+    assert.ok(weeks.every(item => item.body.hidden));
+    assert.deepEqual(JSON.parse(saved.get(list.STORAGE_KEY)), { 'week-2026-10-1': false, 'week-2026-10-2': false });
+  } finally { global.localStorage = previousStorage; }
+});
+
 test('active calendar renders a list with persistent week controls and risk line of sight', () => {
   const html = read('generated-v5.html');
   const css = read('calendar-list-view.css');
@@ -46,6 +82,7 @@ test('active calendar renders a list with persistent week controls and risk line
   assert.match(html, /calendar-list-view\.css\?v=20261001navydash1/);
   assert.match(html, /calendar-list-view\.js\?v=20261001navydash1/);
   assert.match(html, /class="calendar-list"/);
+  assert.match(html, /class="calendar-all-weeks"/);
   assert.match(html, /data-calendar-view="calendar"/);
   assert.match(html, /week\.days\.map\(dayHtml\)/);
   assert.match(html, /BillsOSCalendarList\.bindView\(mount\)/);

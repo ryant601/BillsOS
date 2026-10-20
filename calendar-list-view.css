@@ -6,6 +6,10 @@
 .calendar-view-switch button[aria-pressed="true"]{background:var(--primary);color:#fff}
 .calendar-dow,.calendar-short-date,.calendar-day-more{display:none}
 .calendar-list{gap:6px}
+.calendar-week-actions{display:flex;justify-content:flex-end;margin:0 0 6px}
+.calendar-all-weeks{border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--primary);padding:6px 10px;font:750 11px/1 system-ui;cursor:pointer}
+.calendar-all-weeks:hover,.calendar-all-weeks:focus-visible{border-color:var(--primary)}
+body.calendar-box-mode .calendar-week-actions{display:none}
 .calendar-week{border-radius:13px}
 .calendar-week-toggle{padding:8px 12px}
 .calendar-week-title strong{font-size:13px}
