@@ -165,3 +165,35 @@ test('dashboard installs one current calendar sync script and date resets use to
   assert.match(editor, /deleted:true,originalDate:orig,updatedAt:stamp/);
   assert.match(editor, /map\[key\]=\{deleted:true,originalDate:originalDate\(key\),updatedAt:new Date\(\)\.toISOString\(\)\}/);
 });
+
+test('phones force list and restore the saved desktop view when resized', () => {
+  const previous = { window: global.window, document: global.document, localStorage: global.localStorage };
+  let sizeChange;
+  let calendarMode;
+  const media = { matches: true, addEventListener: (_event, handler) => { sizeChange = handler; } };
+  const saved = new Map([[list.VIEW_KEY, 'calendar']]);
+  const buttons = ['list', 'calendar'].map(view => ({ dataset: { calendarView: view },
+    setAttribute(name, value) { this[name] = value; }, addEventListener(_event, handler) { this.click = handler; } }));
+  const scope = { querySelectorAll: () => [], addEventListener() {} };
+  global.window = { matchMedia: () => media };
+  global.document = { body: { classList: { toggle: (_name, value) => { calendarMode = value; } } },
+    querySelectorAll: () => buttons };
+  global.localStorage = { getItem: key => saved.get(key), setItem: (key, value) => saved.set(key, value) };
+  try {
+    list.bindView(scope);
+    assert.equal(calendarMode, false);
+    assert.equal(buttons[0]['aria-pressed'], 'true');
+    buttons[1].click();
+    assert.equal(saved.get(list.VIEW_KEY), 'calendar');
+    assert.equal(calendarMode, false);
+    media.matches = false;
+    sizeChange();
+    assert.equal(calendarMode, true);
+    assert.equal(buttons[1]['aria-pressed'], 'true');
+    media.matches = true;
+    sizeChange();
+    assert.equal(calendarMode, false);
+    assert.equal(saved.get(list.VIEW_KEY), 'calendar');
+    assert.match(read('calendar-list-view.css'), /@media\(max-width:720px\)\{\.calendar-view-switch\{display:none!important\}\}/);
+  } finally { Object.assign(global, previous); }
+});

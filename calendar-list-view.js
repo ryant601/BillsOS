@@ -185,7 +185,11 @@
     try { return localStorage.getItem(VIEW_KEY) === 'calendar' ? 'calendar' : 'list'; }
     catch (error) { return 'list'; }
   }
+  function phoneView() {
+    return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 720px)').matches;
+  }
   function applyView(scope, view) {
+    if (phoneView()) view = 'list';
     const calendar = view === 'calendar';
     document.body.classList.toggle('calendar-box-mode', calendar);
     document.querySelectorAll('[data-calendar-view]').forEach(function (button) {
@@ -202,6 +206,7 @@
       if (button.dataset.bound) return;
       button.dataset.bound = '1';
       button.addEventListener('click', function () {
+        if (phoneView()) return;
         const view = button.dataset.calendarView === 'calendar' ? 'calendar' : 'list';
         try { localStorage.setItem(VIEW_KEY, view); } catch (error) {}
         applyView(scope, view);
@@ -209,6 +214,12 @@
     });
     if (!scope.__billsosViewBound) {
       scope.__billsosViewBound = true;
+      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+        const media = window.matchMedia('(max-width: 720px)');
+        const onSizeChange = function () { applyView(scope, readView()); };
+        if (media.addEventListener) media.addEventListener('change', onSizeChange);
+        else if (media.addListener) media.addListener(onSizeChange);
+      }
       scope.addEventListener('click', function (event) {
         const button = event.target.closest('.calendar-day-more');
         if (!button) return;

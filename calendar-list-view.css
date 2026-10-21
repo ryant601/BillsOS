@@ -137,3 +137,6 @@ body.calendar-box-mode .calendar-list .calendar-day .billsosCardNote{display:non
   body.calendar-box-mode .calendar-day-ending b,body.calendar-box-mode .calendar-day-ending button{white-space:nowrap}
   body.calendar-box-mode .calendar-day-more{min-height:28px;padding:4px 0;font-size:11px}
 }
+
+/* Phones always use the compact list; the saved desktop choice is preserved. */
+@media(max-width:720px){.calendar-view-switch{display:none!important}}
