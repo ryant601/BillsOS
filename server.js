@@ -10,6 +10,8 @@ const {
   sameSourceVersion
 } = require("./bills-data-integrity");
 
+const { cleanCalendarNotes } = require("./calendar-note-cleanup");
+
 const app = express();
 const access = createAccessControl(process.env);
 const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, "data");
@@ -82,6 +84,7 @@ function readBillsData() {
 
 function writeBillsData(data) {
   const clean = normalizeBillsData(data);
+  cleanCalendarNotes(clean);
   clean.updatedAt = new Date().toISOString();
   archiveBillsData();
   return writeJsonFile(BILLS_FILE, clean);
@@ -397,6 +400,13 @@ app.get(["/generated.html", "/generated-v2.html", "/generated-v3.html", "/genera
 app.get("/index.html", (_req, res) => res.redirect(302, "/legacy"));
 
 app.use(express.static(__dirname));
+
+// Remove legacy import boilerplate from every recurring and occurrence note.
+// Archive first, and use the normal atomic writer so unrelated calendar data is preserved.
+if (fs.existsSync(BILLS_FILE)) {
+  const notesData = readJsonFile(BILLS_FILE, {});
+  if (cleanCalendarNotes(notesData)) writeBillsData(notesData);
+}
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

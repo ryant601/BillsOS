@@ -56,7 +56,7 @@
   }
   function cleanDone(map){var out={};Object.keys(map||{}).forEach(function(k){if(map[k])out[k]=1});return out}
   function currentDone(){return cleanDone(read(DONE_KEY))}
-  function noteBodyFor(row,key){var edit=read(NOTES_KEY)[key];return edit&&!edit.deleted&&typeof edit.notes==='string'?edit.notes:String(row.dataset.noteDefault||'')}
+  function noteBodyFor(row,key){var edit=read(NOTES_KEY)[key];var note=edit&&!edit.deleted&&typeof edit.notes==='string'?edit.notes:String(row.dataset.noteDefault||'');return note.replace(/\bImported from (?:the )?existing calendar\.?\s*(?:Review schedule\.?\s*|Dates seen:\s*[\d,\s-]*\.?\s*)?/gi,'').replace(/^\s*[·;|]\s*|\s*[·;|]\s*$/g,'').trim()}
   function moveNoteFor(key){var edit=read(DATE_KEY)[key],from=originalDate(key);if(!edit||edit.deleted||!validDate(edit.date)||!validDate(from)||edit.date===from)return '';var options={month:'short',day:'numeric'};if(edit.date.slice(0,4)!==from.slice(0,4))options.year='numeric';return 'Moved '+new Date(from+'T12:00:00').toLocaleDateString(undefined,options)+' → '+new Date(edit.date+'T12:00:00').toLocaleDateString(undefined,options)}
   function noteFor(row,key){var body=noteBodyFor(row,key).trim(),move=moveNoteFor(key);return body&&move?move+' · '+body:move||body}
   function saveNote(key,value,restoreDefault){var map=read(NOTES_KEY);map[key]=restoreDefault?{deleted:true,updatedAt:new Date().toISOString()}:{notes:String(value).trim(),updatedAt:new Date().toISOString()};return write(NOTES_KEY,map)}
