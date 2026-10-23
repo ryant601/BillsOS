@@ -70,7 +70,7 @@
     var path=location.pathname,control=path.indexOf('/control')===0,legacy=path.indexOf('/legacy')===0,dashboard=!control&&!legacy;
     var shell=document.createElement('div');shell.id='billsosAppShell';shell.className='billsos-app-shell';
     var sidebar=document.createElement('aside');sidebar.id='billsosSidebar';sidebar.className='billsos-sidebar';sidebar.setAttribute('aria-label','BillsOS navigation');
-    sidebar.innerHTML='<div class="billsos-brand"><div class="billsos-brand-mark">B</div><div><strong>BillsOS</strong><small>Cash flow planner</small></div></div><nav class="billsos-side-nav">'+navLink('⌂','Dashboard','/',dashboard)+navButton('▦','Calendar','calendar')+navLink('◎','Control Center','/control',control)+navLink('◫','Legacy','/legacy',legacy)+navButton('✦','Ask BillsOS','ask')+'<div class="billsos-nav-divider"></div>'+navButton('−','Collapse weeks','week-toggle')+'</nav><div class="billsos-sidebar-footer"><div id="billsosSidebarSyncSlot"></div></div>';
+    sidebar.innerHTML='<div class="billsos-brand"><div class="billsos-brand-mark">B</div><div><strong>BillsOS</strong><small>Cash flow planner</small></div></div><nav class="billsos-side-nav">'+navLink('⌂','Dashboard','/',dashboard)+navButton('▦','Calendar','calendar')+navLink('◎','Control Center','/control',control)+navLink('◫','Legacy','/legacy',legacy)+'<div class="billsos-nav-divider"></div>'+navButton('−','Collapse weeks','week-toggle')+'</nav><div class="billsos-sidebar-footer"><div id="billsosSidebarSyncSlot"></div></div>';
     var main=document.createElement('main');main.className='billsos-main';
     wrap.parentNode.insertBefore(shell,wrap);shell.appendChild(sidebar);shell.appendChild(main);main.appendChild(wrap);
     var mobile=document.createElement('button');mobile.id='billsosSidebarToggle';mobile.type='button';mobile.setAttribute('aria-label','Open navigation');mobile.textContent='☰';document.body.appendChild(mobile);
@@ -83,7 +83,6 @@
       var action=event.target&&event.target.closest&&event.target.closest('[data-billsos-action]');if(!action)return;
       var name=action.getAttribute('data-billsos-action');
       if(name==='calendar'){var panel=currentPanel();if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});else window.location.assign('/')}
-      if(name==='ask'){var candidates=Array.prototype.slice.call(document.querySelectorAll('button,a'));var ask=candidates.find(function(el){return /ask billsos/i.test(text(el))&&!el.closest('#billsosSidebar')});if(ask)ask.click();else window.location.assign('/')}
       if(name==='week-toggle'){var panel=currentPanel(),weeks=panel?Array.prototype.slice.call(panel.querySelectorAll('.billsos-week')):[];var allCollapsed=weeks.length&&weeks.every(function(week){return week.classList.contains('is-collapsed')});weeks.forEach(function(week){setWeekCollapsed(week,!allCollapsed,true)})}
       document.body.classList.remove('billsos-sidebar-open');
     });

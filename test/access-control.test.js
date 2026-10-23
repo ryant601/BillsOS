@@ -14,12 +14,12 @@ const env = {
   BILLS_SESSION_SECRET: 'test-session-secret-that-is-not-committed'
 };
 
-test('Viewer GET requests and Assistant queries are allowed', () => {
+test('Viewer GET requests are allowed and retired Assistant writes are denied', () => {
   const access = createAccessControl(env);
   const viewer = access.readSession(access.createSession(access.authenticate('viewer', 'viewer-secret')));
   assert.deepEqual(access.requestAccessDecision(viewer, 'GET', '/api/bills'), { allowed: true });
   assert.deepEqual(access.requestAccessDecision(viewer, 'GET', '/'), { allowed: true });
-  assert.deepEqual(access.requestAccessDecision(viewer, 'POST', '/api/assistant/intent'), { allowed: true });
+  assert.equal(access.requestAccessDecision(viewer, 'POST', '/api/assistant/intent').status, 403);
 });
 
 test('Viewer writes are 403 while Owner writes are allowed', () => {

@@ -90,14 +90,11 @@
     try { return new URL(typeof input === 'string' ? input : input.url, location.href).pathname; }
     catch (_err) { return ''; }
   }
-  function isAllowedViewerPost(method, path) {
-    return method === 'POST' && (path === '/api/assistant' || path === '/api/assistant/intent');
-  }
   if (nativeFetch) {
     window.fetch = function (input, init) {
       var method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
       var path = pathFor(input);
-      if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS' && !isAllowedViewerPost(method, path)) {
+      if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
         return Promise.resolve(new Response(JSON.stringify({ error: 'View only access cannot make changes' }), {
           status: 403,
           headers: { 'Content-Type': 'application/json' }

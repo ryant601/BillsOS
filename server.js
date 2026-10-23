@@ -1,7 +1,6 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
-const registerAssistantApi = require("./assistant-api");
 const { createAccessControl } = require("./access-control");
 const { calendarRevision, writeReadonlySnapshot } = require("./readonly-calendar-preload");
 const {
@@ -17,6 +16,16 @@ const access = createAccessControl(process.env);
 const DATA_DIR = process.env.BILLS_DATA_DIR || path.join(__dirname, "data");
 const CHECKMARK_FILE = path.join(DATA_DIR, "checkmarks.json");
 const BILLS_FILE = path.join(DATA_DIR, "bills.json");
+
+// Retired assistant routes and assets cannot invoke providers or expose the chat UI.
+app.use((req, res, next) => {
+  if (/^\/api\/assistant(?:\/|$)/.test(req.path) ||
+      /^\/assistant(?:\.html|-(?:api|ui|ai-bridge|review|calendar-consistency)\.js)?$/.test(req.path)) {
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(410).json({ error: "Ask BillsOS has been removed" });
+  }
+  next();
+});
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: "2mb" }));
@@ -352,7 +361,6 @@ app.patch("/api/bills/calendar-state", (req, res) => {
   }
 });
 
-registerAssistantApi(app, { readBillsData });
 
 app.get("/generated", (req, res) => {
   res.setHeader("Cache-Control", "no-store");

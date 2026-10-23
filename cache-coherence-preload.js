@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20261023futurerisk1';
+const BUILD = '20261023removeask1';
 const CRITICAL_ASSETS = [
   'billsos-cross-device-sync-v2.js',
   'billsos-sidebar-calculator.js',
@@ -15,8 +15,10 @@ const CRITICAL_ASSETS = [
   'negative-balance-recommendations.js',
   'negative-balance-recommendations.css',
   'cashflow-engine.js',
+  'action-log.js',
+  'assistant.js',
+  'access-control-ui.js',
   'billsos-v2-ui.js',
-  'assistant-calendar-consistency.js',
   'income-14day-home.js'
 ];
 
@@ -28,12 +30,6 @@ function forceVersion(html) {
     html = html.replace(re, '$1?v=' + BUILD);
   });
   return html;
-}
-
-function ensureAssistantConsistency(html, isDashboard) {
-  if (!isDashboard || html.includes('id="billsosAssistantCalendarConsistency"')) return html;
-  const tag = '<script id="billsosAssistantCalendarConsistency" defer src="/assistant-calendar-consistency.js?v=' + BUILD + '"></script>';
-  return html.replace('</body>', tag + '\n</body>');
 }
 
 function ensureIncome14Day(html, isDashboard) {
@@ -57,7 +53,6 @@ fs.readFileSync = function coherentReadFileSync(filePath, options) {
   if (!isText || !isHtml) return result;
   const html = Buffer.isBuffer(result) ? result.toString('utf8') : String(result);
   let updated = forceVersion(html);
-  updated = ensureAssistantConsistency(updated, isDashboard);
   updated = ensureIncome14Day(updated, isDashboard);
   updated = removeLegacySpendingHeaderLink(updated, isDashboard);
   return Buffer.isBuffer(result) ? Buffer.from(updated, 'utf8') : updated;

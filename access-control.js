@@ -5,7 +5,6 @@ const crypto = require("crypto");
 const COOKIE_NAME = "billsos_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
-const VIEWER_POST_PATHS = new Set(["/api/assistant", "/api/assistant/intent"]);
 
 function firstValue(...values) {
   return values.find(value => typeof value === "string" && value.length) || "";
@@ -101,7 +100,6 @@ function createAccessControl(env = process.env) {
     if (!session) return { allowed: false, status: 401, error: "Authentication required" };
     if (SAFE_METHODS.has(normalizedMethod)) return { allowed: true };
     if (session.role === "owner") return { allowed: true };
-    if (session.role === "viewer" && normalizedMethod === "POST" && VIEWER_POST_PATHS.has(requestPath)) return { allowed: true };
     return { allowed: false, status: 403, error: "View only access cannot make changes" };
   }
 
