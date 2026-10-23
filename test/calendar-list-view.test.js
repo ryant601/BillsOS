@@ -197,3 +197,28 @@ test('phones force list and restore the saved desktop view when resized', () => 
     assert.match(read('calendar-list-view.css'), /@media\(max-width:720px\)\{\.calendar-view-switch\{display:none!important\}\}/);
   } finally { Object.assign(global, previous); }
 });
+
+test('risk banner excludes past lows, counts today, and jumps to the first upcoming risk', () => {
+  const source = read('generated-v5.html');
+  const fn = source.slice(source.indexOf('function riskHtml(summary)'), source.indexOf('\nfunction recommendationsHtml'));
+  const context = { todayIso: () => '2026-10-23', money: n => '$' + n, longDate: d => d };
+  vm.runInNewContext(fn, context);
+  const summary = list.buildMonth([
+    { day: 1, amount: -600 }, { day: 20, amount: 1000 },
+    { day: 24, amount: -1000 }, { day: 25, amount: 1000 }
+  ], 2026, 10, 500, { today: '2026-10-23' });
+  const before = JSON.stringify(summary);
+  const html = context.riskHtml(summary);
+  assert.match(html, /1 negative projected day/);
+  assert.match(html, /Lowest \$-100 on 2026-10-24/);
+  assert.match(html, new RegExp('data-week-target="' + summary.weeks.find(w => w.days.some(d => d.day === 24)).id + '"'));
+  assert.equal(JSON.stringify(summary), before, 'historical balances and weekly summaries remain intact');
+  const recovered = list.buildMonth([{ day: 1, amount: -600 }, { day: 20, amount: 1000 }], 2026, 10, 500);
+  assert.match(context.riskHtml(recovered), /No negative projected days ahead/);
+  assert.doesNotMatch(context.riskHtml(recovered), /is-negative|is-low|2026-10-01/);
+  const todayLow = list.buildMonth([{ day: 23, amount: -400 }, { day: 24, amount: 400 }], 2026, 10, 500);
+  assert.match(context.riskHtml(todayLow), /1 low-balance day/);
+  assert.match(context.riskHtml(todayLow), /2026-10-23/);
+  assert.equal(context.riskHtml(list.buildMonth([], 2026, 9, -100)), '');
+  assert.match(context.riskHtml(list.buildMonth([], 2026, 11, -100)), /30 negative projected days/);
+});
