@@ -15,7 +15,7 @@ test('retired assistant routes are gone and the authenticated dashboard still wo
     BILLS_OWNER_PASSWORD: 'test-password', BILLS_SESSION_SECRET: 'test-session' };
   const listener = path.join(dir, 'listener.cjs');
   fs.writeFileSync(listener, `const http=require('node:http');const listen=http.Server.prototype.listen;http.Server.prototype.listen=function(){const s=listen.apply(this,arguments);s.on('listening',()=>console.log('TEST_PORT='+s.address().port));return s};`);
-  const child = spawn(process.execPath, ['-r', listener, '-r', './html-hotfix-loader.js', '-r', './cache-coherence-preload.js', 'server.js'], { cwd: root, env });
+  const child = spawn(process.execPath, ['-r', listener, '-r', './readonly-calendar-preload.js', '-r', './html-hotfix-loader.js', '-r', './cache-coherence-preload.js', 'server.js'], { cwd: root, env });
   try {
     const port = await new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Server did not start')), 10000);
@@ -28,10 +28,26 @@ test('retired assistant routes are gone and the authenticated dashboard still wo
       const response = await fetch(base + route, { method: route.startsWith('/api/') ? 'POST' : 'GET' });
       assert.equal(response.status, 410, route);
     }
+    for (const route of ['/api/calendar-readonly', '/calendar-readonly.json']) {
+      const blocked = await fetch(base + route);
+      assert.equal(blocked.status, 401, route + ' requires login');
+      assert.equal(blocked.headers.get('cache-control'), 'no-store');
+      assert.equal(blocked.headers.get('access-control-allow-origin'), null);
+    }
+    for (const route of ['/data/bills.json', '/server.js', '/readonly-calendar-preload.js', '/package.json', '/docs/HANDOFF.md']) {
+      assert.equal((await fetch(base + route)).status, 404, route + ' is not a browser asset');
+    }
     const access = createAccessControl(env);
     const cookie = COOKIE_NAME + '=' + access.createSession(access.authenticate('owner', 'test-password'));
     const response = await fetch(base + '/', { headers: { Cookie: cookie } });
     assert.equal(response.status, 200);
+    assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(response.headers.get('x-powered-by'), null);
+    for (const route of ['/api/calendar-readonly', '/calendar-readonly.json']) {
+      const allowed = await fetch(base + route, { headers: { Cookie: cookie } });
+      assert.equal(allowed.status, 200, route + ' available after login');
+      assert.equal(allowed.headers.get('cache-control'), 'no-store');
+    }
     const html = await response.text();
     assert.doesNotMatch(html, /src=["'][^"']*assistant-(?:ui|ai-bridge|calendar-consistency)\.js/);
     assert.match(html, /negative-balance-recommendations/);

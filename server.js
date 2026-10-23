@@ -27,6 +27,25 @@ app.use((req, res, next) => {
   next();
 });
 
+// Only browser assets are served; repository internals and raw data are private.
+app.use((req, res, next) => {
+  const file = req.path;
+  if (/^\/(?:data|history|backups?|test|scripts|node_modules|docs)(?:\/|$)/i.test(file) ||
+      /(?:^|\/)\./.test(file) || /\.(?:json|jsonl|env|log|bak|sql|md)$/i.test(file) ||
+      /^\/(?:server|access-control|assistant-api|bills-data-integrity|calendar-note-cleanup|html-hotfix-loader|[^/]*-preload)\.js$/i.test(file)) {
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(404).end();
+  }
+  next();
+});
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "same-origin");
+  res.setHeader("X-Frame-Options", "DENY");
+  next();
+});
+
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: "2mb" }));
 

@@ -1,5 +1,10 @@
 # BillsOS developer handoff
 
+## October 23, 2026: Security hardening
+
+Read-only calendar exports now require a valid BillsOS session and return no-store. Unauthenticated fetchers must use an authenticated browser or a user-exported backup; do not reintroduce public financial endpoints. Repository internals and raw JSON are blocked from static serving. Ask BillsOS is retired; server provider routes and UI loaders are disabled. Production still uses BILLS_PASS and SESSION_SECRET: rotate both following the Railway incident. These code changes do not revoke leaked credentials or make the GitHub repository private.
+
+
 ## October 20, 2026: Compact calendar month navigation
 
 The live calendar uses previous/next arrows, a month/year button that opens a native dialog, and Today. The dialog has a year selector and a 12-month grid; months outside the available projection range are disabled. Past months are always available. The last selected month still uses `bills-last-view-live`; retired year-expansion and past-month flags are ignored. Keep the `btn-<month id>` buttons in the dialog even for a hidden year: Home's focus links click those IDs to select the correct panel. `showMonth()` updates the panel, navigator label, picker selection, and saved month together. Weekly expansion remains independent.

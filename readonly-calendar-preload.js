@@ -1,7 +1,7 @@
 'use strict';
 
-// Registers public read-only analysis endpoints before server.js installs the login gate.
-// These endpoints intentionally expose no mutation methods, credentials, or session data.
+// Registers authenticated read-only analysis endpoints before the main login gate.
+// The same BillsOS session is required; financial exports are never publicly cached.
 const fs = require('fs');
 const path = require('path');
 
@@ -87,7 +87,7 @@ function writeReadonlySnapshot(calendar) {
 
 function setReadonlyHeaders(res, cacheControl) {
   res.setHeader('Cache-Control', cacheControl);
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Vary', 'Cookie');
   res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
 }
 
@@ -97,17 +97,21 @@ function readonlyApi(_req, res) {
 }
 
 function readonlyJson(_req, res) {
-  // Short-lived public caching makes this easier for generic web fetchers/CDNs
-  // while keeping calendar analysis effectively current.
-  setReadonlyHeaders(res, 'public, max-age=30, s-maxage=30, stale-while-revalidate=30');
+  setReadonlyHeaders(res, 'no-store');
   res.type('application/json').send(JSON.stringify(payload()));
 }
 
 if (!exportOnly) {
   function wrappedExpress(...args) {
     const app = originalExpress(...args);
-    app.get('/api/calendar-readonly', readonlyApi);
-    app.get('/calendar-readonly.json', readonlyJson);
+    const access = require('./access-control').createAccessControl(process.env);
+    function requireCalendarSession(req, res, next) {
+      setReadonlyHeaders(res, 'no-store');
+      if (!access.sessionFromRequest(req)) return res.status(401).json({ error: 'Authentication required' });
+      next();
+    }
+    app.get('/api/calendar-readonly', requireCalendarSession, readonlyApi);
+    app.get('/calendar-readonly.json', requireCalendarSession, readonlyJson);
     return app;
   }
 
