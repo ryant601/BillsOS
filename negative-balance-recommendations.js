@@ -172,7 +172,7 @@
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
-    }).slice(0, 3);
+    }).slice(0, 5);
   }
 
   function recommendAhead(rows, allDays, today, horizonDays, targetFloor) {
@@ -247,9 +247,9 @@
       seen.add(key);
       return true;
     });
-    const selected = unique.slice(0, 3), preparation = unique.find(function (item) { return item.preparesAhead; });
+    const selected = unique.slice(0, 5), preparation = unique.find(function (item) { return item.preparesAhead; });
     if (preparation && !selected.includes(preparation)) {
-      if (selected.length < 3) selected.push(preparation);
+      if (selected.length < 5) selected.push(preparation);
       else selected[selected.length - 1] = preparation;
     }
     return selected;

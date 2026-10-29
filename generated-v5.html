@@ -15,7 +15,7 @@
 <div class="wrap">
 
 <section class="hero"><div><div class="eyebrow">BillsOS</div><h1>Bills Dashboard</h1><div class="sub">Plan payments around the cash already on your calendar.</div></div><div class="nav"><div class="calendar-view-switch" role="group" aria-label="Calendar view"><button type="button" data-calendar-view="list" aria-pressed="true">List</button><button type="button" data-calendar-view="calendar" aria-pressed="false">Calendar</button></div><button class="export-btn planner-open" id="openPaymentPlanner" type="button">Find a payment day</button><button class="export-btn" id="openMonthItems" type="button">Month items</button><button class="export-btn" id="exportTransactions" type="button">Export transactions</button></div></section>
-<section class="risk-floor-bar" aria-label="Recommendation target"><label for="recommendationFloor">Recommendation floor</label><input id="recommendationFloor" type="range" min="0" max="500" step="25" value="300"><output id="recommendationFloorValue" for="recommendationFloor">$300</output><small>Lower this when eliminating negative days matters more than keeping every day above $300.</small></section>
+<section class="risk-floor-bar" aria-label="Recommendation target"><label for="recommendationFloor">Recommendation floor</label><input id="recommendationFloor" type="range" min="0" max="2000" step="25" value="950"><output id="recommendationFloorValue" for="recommendationFloor">$950</output><small>Choose the cushion you want to protect. Suggestions prioritize avoiding negative days.</small></section>
 <div class="tabs" id="tabs"></div><div id="mount"><div class="loader">Loading calendar…</div></div>
 </div>
 <script id="billsosCashflowEngineSync" src="/cashflow-engine.js?v=20260826fy2027a"></script>
@@ -23,7 +23,7 @@
 <script id="billsosNegativeBalanceRecommendations" src="/negative-balance-recommendations.js?v=20260930forwardsplit1"></script>
 <script>
 (function(){'use strict';
-var VERSION='20261020monthpicker1',LOW_BALANCE_WARNING=300,AMOUNT_KEY='billsos-amount-adjust-v1',DATE_KEY='billsos-pay-adjust-v1',RISK_FLOOR_KEY='billsos-recommendation-floor-v1';
+var VERSION='20261020monthpicker1',LOW_BALANCE_WARNING=300,DEFAULT_RISK_FLOOR=950,AMOUNT_KEY='billsos-amount-adjust-v1',DATE_KEY='billsos-pay-adjust-v1',RISK_FLOOR_KEY='billsos-recommendation-floor-v2';
 var months=[['june','June',6,2026],['july','July',7,2026],['august','August',8,2026],['september','September',9,2026],['october','October',10,2026],['november','November',11,2026],['december','December',12,2026],['january-2027','January',1,2027],['february-2027','February',2,2027],['march-2027','March',3,2027],['april-2027','April',4,2027],['may-2027','May',5,2027],['june-2027','June',6,2027],['july-2027','July',7,2027],['august-2027','August',8,2027],['september-2027','September',9,2027],['october-2027','October',10,2027],['november-2027','November',11,2027],['december-2027','December',12,2027]];
 var shortIds={june:'june',july:'july',august:'aug',september:'sep',october:'oct',november:'nov',december:'dec','january-2027':'jan-2027','february-2027':'feb-2027','march-2027':'mar-2027','april-2027':'apr-2027','may-2027':'may-2027','june-2027':'jun-2027','july-2027':'jul-2027','august-2027':'aug-2027','september-2027':'sep-2027','october-2027':'oct-2027','november-2027':'nov-2027','december-2027':'dec-2027'};
 var mount=document.getElementById('mount'),tabs=document.getElementById('tabs'),plannerState={data:null,days:[]};
@@ -35,7 +35,7 @@ function iso(month,day,year){return year+'-'+String(month).padStart(2,'0')+'-'+S
 function validIso(v){return /^20\d{2}-\d{2}-\d{2}$/.test(String(v||''))}
 function todayIso(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function readMap(k){try{var parsed=JSON.parse(localStorage.getItem(k)||'{}');return parsed&&typeof parsed==='object'&&!Array.isArray(parsed)?parsed:{}}catch(e){return {}}}
-function readRiskFloor(){try{var raw=localStorage.getItem(RISK_FLOOR_KEY);if(raw==null||raw==='')return LOW_BALANCE_WARNING;var value=Number(raw);return isFinite(value)&&value>=0&&value<=500?value:LOW_BALANCE_WARNING}catch(e){return LOW_BALANCE_WARNING}}
+function readRiskFloor(){try{var raw=localStorage.getItem(RISK_FLOOR_KEY);if(raw==null||raw==='')return DEFAULT_RISK_FLOOR;var value=Number(raw);return isFinite(value)&&value>=0&&value<=2000?value:DEFAULT_RISK_FLOOR}catch(e){return DEFAULT_RISK_FLOOR}}
 function bindRiskFloor(){var input=document.getElementById('recommendationFloor'),output=document.getElementById('recommendationFloorValue');if(!input||!output)return;var floor=readRiskFloor();input.value=String(floor);output.textContent=money(floor);input.oninput=function(){output.textContent=money(Number(input.value||0))};input.onchange=function(){try{localStorage.setItem(RISK_FLOOR_KEY,String(Number(input.value||0)))}catch(e){}location.reload()}}
 function rowKey(r){return (r.iso||r.date)+'|'+r.name+'|'+r.amount}
 function monthKey(m){return Number(m[3])*100+Number(m[2])}

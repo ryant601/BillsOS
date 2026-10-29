@@ -106,7 +106,7 @@ var months=[[today.getFullYear(),today.getMonth()+1],[end.getFullYear(),end.getM
       return ending&&Number.isFinite(value)?{date:node.dataset.date,ending:value,items:Array.from(node.querySelectorAll('.ev')).map(function(ev){return text(ev.querySelector('.billsosCardName,.nm'))}).filter(Boolean)}:null
     }).filter(Boolean).sort(function(a,b){return a.date.localeCompare(b.date)})
   }
-  function homeFloor(){try{var raw=localStorage.getItem('billsos-recommendation-floor-v1'),value=raw==null?300:Number(raw);return Number.isFinite(value)&&value>=0&&value<=500?value:300}catch(e){return 300}}
+  function homeFloor(){try{var raw=localStorage.getItem('billsos-recommendation-floor-v2'),value=raw==null||raw===''?950:Number(raw);return Number.isFinite(value)&&value>=0&&value<=2000?value:950}catch(e){return 950}}
   function homeDate(date){return new Date(date+'T12:00:00').toLocaleDateString([], {month:'short',day:'numeric'})}
   function calendarLink(date,suggestions){return '/?view=calendar&focus='+encodeURIComponent(date)+(suggestions?'&section=suggestions':'')}
   function renderHomeCalendar(){

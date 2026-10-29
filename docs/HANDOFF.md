@@ -142,7 +142,7 @@ The main risk is layered mutation: literal `server.js` replacements, several `fs
 - Control Center restore paths historically dropped newer fields; don't bypass the integrity code.
 - Cross-month moves must leave the old month, appear once in the new one, update carry-forward, and survive refresh and another device.
 - Opening adjustments and signed corrections are not expenses; misclassifying them inverts amounts.
-- Thresholds differ on purpose: user floor $0–$500, $300 list warnings, engine helper default $1,000 (`FLOOR`). Don't unify them by accident.
+- Thresholds differ on purpose: user floor $0–$2,000 (default $950, preference key v2), $300 list warnings, engine helper default $1,000 (`FLOOR`). Don't unify them by accident.
 - The December 2027 horizon is hardcoded in several files; extend it everywhere at once (navigation, split validation, export, recommendations).
 - Startup seeds depend on marker files; a fresh volume can replay them.
 - Public read-only routes and root static serving deserve review before any access change.

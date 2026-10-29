@@ -33,7 +33,10 @@ test('Home focus honors the saved floor and uses the first future low day from t
   };
   vm.createContext(context);vm.runInContext(functions, context);
   context.renderHomeCalendar();
-  assert.match(elements.boFocus.innerHTML, /Next day below \$300/);
+  assert.match(elements.boFocus.innerHTML, /Next day below \$950/);
+  assert.match(elements.boFocus.innerHTML, new RegExp('focus=' + dayNodes[0].dataset.date));
+  context.localStorage.getItem = () => '300';
+  context.renderHomeCalendar();
   assert.match(elements.boFocus.innerHTML, new RegExp('focus=' + dayNodes[3].dataset.date));
   assert.match(elements.boFocus.innerHTML, /Review options/);
   assert.equal((elements.boWeek.innerHTML.match(/class="bo-week-day/g) || []).length, 7);

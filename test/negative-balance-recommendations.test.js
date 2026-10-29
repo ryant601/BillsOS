@@ -1,4 +1,5 @@
 'use strict';
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const list = require('../calendar-list-view.js');
@@ -261,4 +262,14 @@ test('a lower recommendation floor can prioritize clearing negatives below $300'
   assert.equal(choices[0].negativeDaysAfter, 0);
   assert.equal(choices[0].lowestAfter, 50);
   assert.equal(choices[0].targetFloor, 0);
+});
+
+test('a $950 target offers up to five useful choices above the old $300 floor', () => {
+  const rows = Array.from({ length: 6 }, (_, i) => ({ iso: '2026-10-05', name: 'Card ' + i, amount: -100 }));
+  rows.push({ iso: '2026-10-06', name: 'Paycheck', amount: 1000 });
+  const summary = list.buildMonth(rows, 2026, 10, 1500, {});
+  assert.equal(recommendations.recommend(rows, summary, '2026-10-01', 300).length, 0);
+  const choices = recommendations.recommend(rows, summary, '2026-10-01', 950);
+  assert.equal(choices.length, 5);
+  assert.ok(choices.every(choice => choice.targetFloor === 950 && choice.daysResolved > 0 && choice.negativeDaysAfter === 0));
 });
