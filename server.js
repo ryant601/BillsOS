@@ -435,6 +435,19 @@ if (fs.existsSync(BILLS_FILE)) {
   if (cleanCalendarNotes(notesData)) writeBillsData(notesData);
 }
 
+// One-time operator recovery: snapshot payload stays in Railway, never in Git.
+if (process.env.BILLS_ADJUSTMENT_RECOVERY_JSON) {
+  const recoveryMarker = path.join(DATA_DIR, '.adjustments-recovered-20261029');
+  if (!fs.existsSync(recoveryMarker)) {
+    const seed = JSON.parse(process.env.BILLS_ADJUSTMENT_RECOVERY_JSON);
+    const recovered = require('./calendar-adjustment-recovery').recoverAdjustments(readBillsData(), seed);
+    const saved = writeBillsData(recovered);
+    writeReadonlySnapshot(saved);
+    fs.writeFileSync(recoveryMarker, JSON.stringify({ recoveredAt: new Date().toISOString(), revision: saved.revision }));
+    console.log('Calendar adjustment recovery completed');
+  }
+}
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`BillsOS running on port ${port}`);
