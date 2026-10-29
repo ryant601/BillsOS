@@ -29,6 +29,7 @@ function cleanCalendarState(value) {
     dateAdjustments: object(state.dateAdjustments),
     amountAdjustments: object(state.amountAdjustments),
     notesAdjustments: object(state.notesAdjustments),
+    recommendationPreferences: object(state.recommendationPreferences),
     completed: object(state.completed),
     updatedAt: state.updatedAt || null,
     revision: Number(state.revision || 0)
@@ -88,6 +89,7 @@ function mergeCalendarState(existing, incoming, options = {}) {
     notesAdjustments: sameRevision
       ? { ...clone(remote.notesAdjustments), ...clone(local.notesAdjustments) }
       : mergeTimedMap(remote.notesAdjustments, local.notesAdjustments),
+    recommendationPreferences: mergeTimedMap(remote.recommendationPreferences, local.recommendationPreferences),
     completed: mergeCompleted(remote.completed, local.completed, sameRevision),
     updatedAt: options.incrementRevision ? now : (timestamp(local) > timestamp(remote) ? local.updatedAt : remote.updatedAt),
     revision

@@ -120,7 +120,7 @@
       return option;
     });
   }
-  function recommend(rows, summary, today, targetFloor) {
+  function recommend(rows, summary, today, targetFloor, preferences) {
     if (!summary || !Array.isArray(summary.days) || !summary.days.length) return [];
     const days = summary.days.filter(function (day) { return day.date >= today; });
     if (!days.length) return [];
@@ -169,6 +169,7 @@
     });
     const seen = new Set();
     return candidates.filter(function (item) {
+      if (!allowed(item, preferences)) return false;
       const key = item.name + '|' + item.from + '|' + item.kind;
       if (seen.has(key)) return false;
       seen.add(key);
@@ -176,7 +177,7 @@
     }).slice(0, 5);
   }
 
-  function recommendAhead(rows, allDays, today, horizonDays, targetFloor) {
+  function recommendAhead(rows, allDays, today, horizonDays, targetFloor, preferences) {
     const first = String(today || ''), days = (allDays || []).filter(function (day) { return day.date >= first; })
       .slice(0, Number(horizonDays || 120));
     if (!days.length) return [];
@@ -243,6 +244,7 @@
     });
     const seen = new Set();
     const unique = results.filter(function (item) {
+      if (!allowed(item, preferences)) return false;
       const key = item.kind + '|' + item.from + '|' + (item.preparesAhead ? 'prepare' : 'split');
       if (seen.has(key)) return false;
       seen.add(key);
@@ -256,5 +258,14 @@
     return selected;
   }
 
-  return { recommend: recommend, recommendAhead: recommendAhead, planExpense: planExpense };
+  function fixedKey(name) { return 'fixed|' + String(name || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+  function suggestionKey(item) {
+    return 'skip|' + JSON.stringify([item.kind, item.name, item.from, item.to || '', item.amount || 0,
+      item.firstDate || '', item.secondDate || '', item.firstAmount || 0, item.secondAmount || 0]);
+  }
+  function allowed(item, preferences) {
+    const prefs = preferences || {};
+    return ![prefs[suggestionKey(item)], prefs[fixedKey(item.name)]].some(value => value && !value.deleted);
+  }
+  return { suggestionKey: suggestionKey, fixedKey: fixedKey, recommend: recommend, recommendAhead: recommendAhead, planExpense: planExpense };
 });

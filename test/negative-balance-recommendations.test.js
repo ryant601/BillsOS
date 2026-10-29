@@ -286,3 +286,19 @@ test('NJC remains in cash flow but is never a payment timing suggestion', () => 
   assert.ok(choices.length);
   assert.ok(choices.every(choice => !/NJC/i.test(choice.name)));
 });
+
+test('skipping a proposal replenishes options and restoring it makes it eligible again', () => {
+ const rows=Array.from({length:8},(_,i)=>({iso:'2026-11-15',name:'Card '+i,amount:-100}));
+ rows.push({iso:'2026-11-20',name:'Paycheck',amount:2000});
+ const summary=list.buildMonth(rows,2026,11,1700,{});
+ const first=recommendations.recommend(rows,summary,'2026-11-01',950);
+ const key=recommendations.suggestionKey(first[0]),prefs={[key]:{updatedAt:'2026-10-29T20:00:00Z'}};
+ const next=recommendations.recommend(rows,summary,'2026-11-01',950,prefs);
+ assert.equal(next.length,5);
+ assert.ok(next.every(item=>recommendations.suggestionKey(item)!==key));
+ assert.ok(next.some(item=>!first.some(old=>recommendations.suggestionKey(old)===recommendations.suggestionKey(item))));
+ prefs[key].deleted=true;
+ assert.equal(recommendations.suggestionKey(recommendations.recommend(rows,summary,'2026-11-01',950,prefs)[0]),key);
+ prefs[recommendations.fixedKey(first[0].name)]={updatedAt:'2026-10-29T20:01:00Z'};
+ assert.ok(recommendations.recommend(rows,summary,'2026-11-01',950,prefs).every(item=>item.name!==first[0].name));
+});

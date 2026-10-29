@@ -255,3 +255,15 @@ test('legacy cleanup preserves sync metadata and recovery preserves newer resets
   assert.deepEqual(restored.bills,current.bills);
   assert.deepEqual(restored.oneTimeEvents[1],current.oneTimeEvents[1]);
 });
+
+test('recommendation preferences survive stale clients and restore without changing payments', () => {
+ const source={bills:[{id:'bill',name:'Card',amount:100}],oneTimeEvents:[],income:[],paymentSplits:[]};
+ const saved=applyCalendarStatePatch(source,{baseRevision:-1,calendarState:{recommendationPreferences:{proposal:{label:'Card',updatedAt:'2026-10-29T20:00:00Z'}}}});
+ const stale=applyCalendarStatePatch(saved,{baseRevision:-1,calendarState:{amountAdjustments:{}}});
+ assert.equal(systemState(stale).recommendationPreferences.proposal.label,'Card');
+ const restored=applyCalendarStatePatch(stale,{baseRevision:-1,calendarState:{recommendationPreferences:{proposal:{deleted:true,updatedAt:'2026-10-29T20:01:00Z'}}}});
+ const late=applyCalendarStatePatch(restored,{baseRevision:-1,calendarState:{recommendationPreferences:{proposal:{updatedAt:'2026-10-29T20:00:00Z'}}}});
+ assert.equal(systemState(late).recommendationPreferences.proposal.deleted,true);
+ assert.deepEqual(late.bills,source.bills);
+ assert.deepEqual(late.income,source.income);
+});
