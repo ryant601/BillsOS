@@ -222,3 +222,36 @@ test('browser calendar sync polls the canonical server frequently', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'billsos-cross-device-sync-v2.js'), 'utf8');
   assert.match(source, /setInterval\(function\(\)\{if\(!document\.hidden\)reconcile\(false\)\},5000\)/);
 });
+
+test('a current-revision empty map cannot erase saved amounts or dates', () => {
+  const key = '2026-10-30|Payment|-100';
+  const saved = { dateAdjustments: { [key]: { date: '2026-10-29', updatedAt: '2026-10-20T00:00:00Z' } },
+    amountAdjustments: { [key]: { amount: 75, updatedAt: '2026-10-20T00:00:00Z' } }, revision: 10 };
+  const current = { oneTimeEvents: [{ id: '__billsos_system_rules__', notes: JSON.stringify({calendarState: saved}) }] };
+  const next = applyCalendarStatePatch(current, { baseRevision: 10, calendarState: { dateAdjustments: {}, amountAdjustments: {} } });
+  assert.deepEqual(systemState(next).dateAdjustments, saved.dateAdjustments);
+  assert.deepEqual(systemState(next).amountAdjustments, saved.amountAdjustments);
+});
+
+test('legacy cleanup preserves sync metadata and recovery preserves newer resets and rows', () => {
+  const vm = require('node:vm');
+  const source = fs.readFileSync(path.join(__dirname, '..', 'action-log.js'), 'utf8');
+  const context = { LEGACY_META_IDS: { __billsos_action_log__: 1 } };
+  const start = source.indexOf('  function stripLegacyMetaRows');
+  const end = source.indexOf('  function installBillsDataGuard', start);
+  vm.runInNewContext(source.slice(start, end), context);
+  assert.doesNotMatch(source, /LEGACY_META_IDS=\{[^}]*__billsos_system_rules__/);
+  const system = { id: '__billsos_system_rules__', notes: JSON.stringify({calendarState:{revision:4,
+    dateAdjustments:{x:{deleted:true,updatedAt:'2026-10-29T00:00:00Z'}},amountAdjustments:{},completed:{paid:1}}}) };
+  const current = { bills: [{name:'Preserve me',amount:12}], oneTimeEvents: [system, {id:'new-payment',amount:-42}], income: [] };
+  assert.equal(context.stripLegacyMetaRows(current).data.oneTimeEvents.length, 2);
+  const { recoverAdjustments } = require('../calendar-adjustment-recovery');
+  const restored = recoverAdjustments(current, {schema:'billsos-adjustments-recovery-v1',
+    dateAdjustments:{x:{date:'2026-10-25',updatedAt:'2026-10-20T00:00:00Z'}},
+    amountAdjustments:{y:{amount:77,updatedAt:'2026-10-20T00:00:00Z'}}});
+  assert.equal(systemState(restored).dateAdjustments.x.deleted,true);
+  assert.equal(systemState(restored).amountAdjustments.y.amount,77);
+  assert.equal(systemState(restored).completed.paid,1);
+  assert.deepEqual(restored.bills,current.bills);
+  assert.deepEqual(restored.oneTimeEvents[1],current.oneTimeEvents[1]);
+});

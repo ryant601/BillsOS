@@ -32,7 +32,7 @@ app.use((req, res, next) => {
   const file = req.path;
   if (/^\/(?:data|history|backups?|test|scripts|node_modules|docs)(?:\/|$)/i.test(file) ||
       /(?:^|\/)\./.test(file) || /\.(?:json|jsonl|env|log|bak|sql|md)$/i.test(file) ||
-      /^\/(?:server|access-control|assistant-api|bills-data-integrity|calendar-note-cleanup|html-hotfix-loader|[^/]*-preload)\.js$/i.test(file)) {
+      /^\/(?:server|access-control|assistant-api|bills-data-integrity|calendar-note-cleanup|calendar-adjustment-recovery|html-hotfix-loader|[^/]*-preload)\.js$/i.test(file)) {
     res.setHeader("Cache-Control", "no-store");
     return res.status(404).end();
   }

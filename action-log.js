@@ -3,7 +3,7 @@
   var CHECKMARK_KEY='billsos-generated-done-v5';
   var AMOUNT_KEY='billsos-amount-adjust-v1';
   var LOW_BALANCE_WARNING=300;
-  var LEGACY_META_IDS={__billsos_action_log__:1,__billsos_system_rules__:1};
+  var LEGACY_META_IDS={__billsos_action_log__:1};
   var checkmarkSyncing=false;
   var lastCheckmarkUpdatedAt=null;
   var lastAmountSignature='';
