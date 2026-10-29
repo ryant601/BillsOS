@@ -273,3 +273,16 @@ test('a $950 target offers up to five useful choices above the old $300 floor', 
   assert.equal(choices.length, 5);
   assert.ok(choices.every(choice => choice.targetFloor === 950 && choice.daysResolved > 0 && choice.negativeDaysAfter === 0));
 });
+
+test('NJC remains in cash flow but is never a payment timing suggestion', () => {
+  const rows = [
+    { iso: '2026-11-15', name: 'NJC #5', amount: -200 },
+    { iso: '2026-11-15', name: 'Flexible bill', amount: -200 },
+    { iso: '2026-11-20', name: 'Paycheck', amount: 1000 }
+  ];
+  const summary = list.buildMonth(rows, 2026, 11, 1250, {});
+  assert.equal(summary.days.find(day => day.date === '2026-11-15').ending, 850);
+  const choices = recommendations.recommend(rows, summary, '2026-11-01', 950);
+  assert.ok(choices.length);
+  assert.ok(choices.every(choice => !/NJC/i.test(choice.name)));
+});

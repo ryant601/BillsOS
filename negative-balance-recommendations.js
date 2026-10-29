@@ -15,6 +15,7 @@
   function excluded(row) {
     const name = String(row.name || '');
     const text = name + ' ' + String(row.category || '') + ' ' + String(row.cls || '');
+    if (/\bnjc\b/i.test(name)) return true;
     const fundsSpendingAccount = /\bfund(?:ing)?(?:\s+the)?\s+(?:everyday\s+)?spending(?:\s+account)?\b/i.test(text);
     return fundsSpendingAccount || /transfer|funding|sweep|correction|reconciliation|balance-opening/i.test(text) ||
       (!/mortgage|jeep/i.test(name) && /upstart|chase/i.test(name));
