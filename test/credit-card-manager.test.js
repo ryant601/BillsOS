@@ -1,8 +1,29 @@
 'use strict';
 const test = require('node:test'), assert = require('node:assert/strict');
 const { projection, discover, validateCard, quote, register } = require('../credit-card-manager');
+const { estimateBalances } = require('../credit-card-manager');
 function fixture() { return { bills: [], income: [], oneTimeEvents: [{id:'opening',name:'Opening balance',type:'balance-opening-adjustment',date:'2026-06-01',amount:5000,requestedBalance:5000}], paymentSplits:[] }; }
 const card = {id:'card',name:'Apple Card',balance:2000,payment:100,apr:20,history:[]};
+test('estimates subtract marked-paid payments through today and only future scheduled payments afterward',()=>{
+ const data=fixture();data.bills=[{id:'apple',name:'Apple Card',amount:100,dueDay:10,startMonth:'2026-11'}];
+ data.oneTimeEvents.push({id:'extra',creditCardId:'card',name:'Extra',date:'2026-11-20',amount:-50,type:'adjustment'},{id:'late',creditCardId:'card',name:'Unpaid',date:'2026-11-05',amount:-40,type:'adjustment'});
+ const c={...card,sourceBillId:'apple',balance:1000,apr:0,balanceAsOf:'2026-11-01'};
+ const e=estimateBalances(data,[c],{'2026-11-10|Apple Card|-100':1},'2026-11-15')[0];
+ assert.equal(e.current,900);const nov=e.months.find(m=>m.month==='2026-11');assert.equal(nov.paid,100);assert.equal(nov.planned,50);assert.equal(nov.ending,850);assert.equal(nov.interest,0);
+ assert.equal(c.balance,1000);assert.equal(c.balanceAsOf,'2026-11-01');
+});
+test('estimates accrue daily interest, reset at a confirmed update, and do not double count baseline-day payments',()=>{
+ const data=fixture();data.oneTimeEvents.push({id:'extra',creditCardId:'card',name:'Extra',date:'2026-11-01',amount:-500,type:'adjustment'});
+ const c={...card,balance:1000,apr:36.5,balanceAsOf:'2026-11-01'};
+ const e=estimateBalances(data,[c],{'2026-11-01|Extra|-500':1},'2026-11-03')[0];assert.equal(e.current,1002);
+ const reset=estimateBalances(data,[{...c,balance:800,balanceAsOf:'2026-11-03'}],{},'2026-11-03')[0];assert.equal(reset.current,800);
+ assert.equal(estimateBalances(data,[{...c,apr:null}],{},'2026-11-03')[0].available,false);
+});
+test('estimated payments follow cross-month moves, amount edits, and replacement card schedules',()=>{
+ const data=fixture();data.bills=[{id:'old',name:'Apple Card',amount:100,dueDay:31,startMonth:'2026-10',endMonth:'2026-10'},{id:'new',name:'Apple Card',amount:100,dueDay:10,startMonth:'2026-11'}];
+ data.oneTimeEvents.push({id:'__billsos_system_rules__',notes:JSON.stringify({calendarState:{completed:{'2026-10-31|Apple Card|-100':1},dateAdjustments:{'2026-10-31|Apple Card|-100':{date:'2026-11-02'}},amountAdjustments:{'2026-10-31|Apple Card|-100':{amount:120}}}})});
+ const e=estimateBalances(data,[{...card,sourceBillId:'new',balance:1000,apr:0,balanceAsOf:'2026-11-01'}],{},'2026-11-03')[0];assert.equal(e.current,880);assert.equal(e.months[0].ending,780);
+});
 test('discovery preserves entered balances and does not infer balances from bill payments',()=>{
  const data=fixture();data.bills=[{id:'apple',name:'Apple Card',amount:100},{id:'jeep',name:'Jeep (Capital One)',amount:1200}];
  const first=discover(data,{cards:[]});assert.equal(first.length,1);assert.equal(first[0].balance,null);

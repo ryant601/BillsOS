@@ -19,7 +19,7 @@ function projection(data, extra) {
   const model = engine.build(clean, { floorNegative: false }), edits = state(data);
   const rows = Object.values(model.months).flatMap(m => m.rows).map(row => {
     const key = row.iso + '|' + row.name + '|' + row.amount, amount = matching(edits.amountAdjustments, key), date = matching(edits.dateAdjustments, key);
-    const r = { ...row };
+    const r = { ...row, originalKey: key };
     if (amount && Number.isFinite(Number(amount.amount))) r.amount = (r.amount < 0 ? -1 : 1) * Math.abs(Number(amount.amount));
     if (date && /^\d{4}-\d{2}-\d{2}$/.test(date.date)) { r.iso = date.date; r.day = Number(date.date.slice(8)); }
     return r;
@@ -63,6 +63,38 @@ function validateCard(input, old, date = today()) {
   result.history = result.history.slice(-250);
   return result;
 }
+// Estimates remain derived: a new confirmed balance always becomes the baseline.
+function estimateBalances(data, cards, legacyDone = {}, asOf = today()) {
+  const savedState = state(data), done = savedState.completed || legacyDone;
+  const days = projection(data), allRows = days.flatMap(d => d.items), sources = new Map((data.oneTimeEvents || []).map(e => [e.id, e]));
+  const normalize = name => String(name || '').trim().toLowerCase();
+  const end = days.at(-1).date;
+  return cards.map(card => {
+    if (card.balance == null || card.apr == null || !validDate(card.balanceAsOf || '') || card.balanceAsOf < days[0].date || card.balanceAsOf > asOf || asOf > end) return { cardId: card.id, available: false };
+    const bill = (data.bills || []).find(b => b.id === card.sourceBillId);
+    const ids = new Set((data.bills || []).filter(b => b.id === card.sourceBillId || (bill && normalize(b.name) === normalize(bill.name) && ((b.endMonth && bill.startMonth && b.endMonth < bill.startMonth) || (bill.endMonth && b.startMonth && bill.endMonth < b.startMonth)))).map(b => b.id));
+    const payments = allRows.filter(r => r.amount < 0 && r.iso > card.balanceAsOf && (sources.get(r.sourceId)?.creditCardId === card.id || ids.has(r.sourceId) || (!bill && normalize(r.name) === normalize(card.name)))).map(r => ({ date: r.iso, amount: cents(-r.amount), paid: !!done[r.originalKey || (r.iso + '|' + r.name + '|' + r.amount)] }));
+    const byDate = new Map(); payments.forEach(p => { const a = byDate.get(p.date) || []; a.push(p); byDate.set(p.date, a); });
+    let balance = cents(card.balance), current = balance, month = null;
+    const months = [];
+    for (let date = engine.addDays(card.balanceAsOf, 1); date <= end; date = engine.addDays(date, 1)) {
+      const key = date.slice(0, 7);
+      if (!month || month.month !== key) { month = { month: key, opening: balance / 100, interest: 0, paid: 0, planned: 0, ending: 0 }; months.push(month); }
+      const interest = balance * card.apr / 36500;
+      balance += interest; month.interest += interest / 100;
+      for (const p of byDate.get(date) || []) {
+        if (date > asOf || p.paid) {
+          const amount = Math.min(balance, p.amount); balance -= amount;
+          month[date <= asOf ? 'paid' : 'planned'] += amount / 100;
+        }
+      }
+      month.ending = balance / 100;
+      if (date <= asOf) current = balance;
+    }
+    const round = n => Math.round(n * 100) / 100;
+    return { cardId: card.id, available: true, baseline: card.balance, baselineDate: card.balanceAsOf, asOf, current: round(current / 100), through: end, months: months.map(m => Object.fromEntries(Object.entries(m).map(([k,v]) => [k, typeof v === 'number' ? round(v) : v]))) };
+  });
+}
 function quote(data, card, input, date = today()) {
   const amount = Number(input.amount), buffer = Number(input.buffer), start = String(input.start || date), end = String(input.end || engine.addDays(date, 30));
   if (!card || card.archived || card.balance == null || card.balance <= 0) throw new Error('Enter a current balance for an active card first');
@@ -81,7 +113,8 @@ function quote(data, card, input, date = today()) {
 function register(app, deps) {
   const { readStore, writeStore, readBills, writeBills } = deps;
   const get = () => { const s = readStore(); return { revision: s.revision || 0, cards: discover(readBills(), s) }; };
-  app.get('/api/credit-cards', (_req, res) => { res.setHeader('Cache-Control', 'no-store'); res.json(get()); });
+  const withEstimates = s => ({ ...s, estimates: estimateBalances(readBills(), s.cards, deps.readCompleted ? deps.readCompleted() : {}) });
+  app.get('/api/credit-cards', (_req, res) => { res.setHeader('Cache-Control', 'no-store'); res.json(withEstimates(get())); });
   app.post('/api/credit-cards', (req, res) => {
     try {
       const s = get();
@@ -91,7 +124,7 @@ function register(app, deps) {
       const old = existing || { id: crypto.randomUUID(), history: [] };
       const card = validateCard(req.body.card || {}, old);
       s.cards = s.cards.filter(c => c.id !== card.id).concat(card); s.revision++;
-      writeStore(s); res.json(s);
+      writeStore(s); res.json(withEstimates(s));
     } catch (e) { res.status(400).json({ error: e.message }); }
   });
   app.post('/api/credit-cards/preview', (req, res) => {
@@ -114,4 +147,4 @@ function register(app, deps) {
     } catch (e) { res.status(400).json({ error: e.message }); }
   });
 }
-module.exports = { register, projection, discover, validateCard, quote, matching };
+module.exports = { register, projection, discover, validateCard, quote, matching, estimateBalances };
