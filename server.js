@@ -32,7 +32,7 @@ app.use((req, res, next) => {
   const file = req.path;
   if (/^\/(?:data|history|backups?|test|scripts|node_modules|docs)(?:\/|$)/i.test(file) ||
       /(?:^|\/)\./.test(file) || /\.(?:json|jsonl|env|log|bak|sql|md)$/i.test(file) ||
-      /^\/(?:server|access-control|assistant-api|bills-data-integrity|calendar-note-cleanup|calendar-adjustment-recovery|html-hotfix-loader|[^/]*-preload)\.js$/i.test(file)) {
+      /^\/(?:server|credit-card-manager|access-control|assistant-api|bills-data-integrity|calendar-note-cleanup|calendar-adjustment-recovery|html-hotfix-loader|[^/]*-preload)\.js$/i.test(file)) {
     res.setHeader("Cache-Control", "no-store");
     return res.status(404).end();
   }
@@ -327,6 +327,13 @@ app.use((req, res, next) => {
     return res.status(410).json({ error: "This feature is no longer available" });
   }
   next();
+});
+
+require('./credit-card-manager').register(app, {
+  readStore: () => readJsonFile(path.join(DATA_DIR, 'credit-cards.json'), { revision: 0, cards: [] }),
+  writeStore: data => writeJsonFile(path.join(DATA_DIR, 'credit-cards.json'), data),
+  readBills: readBillsData,
+  writeBills: data => { const saved = writeBillsData(data); writeReadonlySnapshot(saved); return saved; }
 });
 
 app.get("/api/checkmarks", (_req, res) => {
