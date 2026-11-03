@@ -52,7 +52,7 @@ function cards(months){
  return '<div class="rp-kpis">'+card('Card payments',money(total),'Selected period')+card('Monthly average',money(total/months.length),'Scheduled payment average')+card('Cards represented',String(names.length),'Includes joint & store cards')+card('Share of expenses',pct(total,months.reduce((n,m)=>n+m.expenses,0))+'%','Excludes spending transfers')+'</div>'+panel('Credit-card payment map','Click a card to see its transactions. These are planned payments, not statement balances or payoff predictions.',table);
 }
 function forecast(months){
- var from=months[0].key,to=months[months.length-1].key,todayMonth=today().slice(0,7),endings=(snapshot.data.bills||[]).filter(b=>b.endMonth&&b.endMonth>=from&&b.endMonth<=to&&b.endMonth>=todayMonth&&b.active!==false);
+ var from=months[0].key,to=months[months.length-1].key,todayMonth=today().slice(0,7),endings=api.scheduledEndings(snapshot.data.bills||[],from,to,todayMonth);
  var rows=rowsFor(months),fixed=rows.filter(r=>r.kind==='expense'&&r.recurring),one=rows.filter(r=>r.kind==='expense'&&!r.recurring),risks=months.flatMap(m=>m.days.filter(d=>d.date>=today()&&d.ending<300)).sort((a,b)=>a.ending-b.ending).slice(0,12);
  var endingsHtml=endings.length?'<div class="rp-ending-list">'+endings.sort((a,b)=>a.endMonth.localeCompare(b.endMonth)).map(b=>'<article><span class="rp-ending-date">'+monthLabel(b.endMonth,true)+'</span><div><h3>'+esc(b.name)+'</h3><p>Last configured month · '+money(Math.abs(Number(b.amount||0)))+' recurring payment</p></div><a href="/control#bills">Review</a></article>').join('')+'</div>':'<p class="rp-empty">No recurring payments are configured to end in this range.</p>';
  return '<div class="rp-kpis">'+card('Recurring expenses',money(fixed.reduce((n,r)=>n+r.cents,0)/100),'Source: recurring bills')+card('One-time expenses',money(one.reduce((n,r)=>n+r.cents,0)/100),'Includes saved split payment parts')+card('Payments scheduled to end',String(endings.length),'Within the selected future range')+card('Future days below $300',String(months.flatMap(m=>m.days).filter(d=>d.date>=today()&&d.ending<300).length),'Fixed reference, separate from your recommendation floor')+'</div><div class="rp-two">'+panel('Room opening up','End dates reflect your configuration. They do not confirm the debt is paid off.',endingsHtml)+panel('Days to watch','Future projected days below $300, sorted by lowest balance.',risks.length?'<div class="rp-ending-list">'+risks.map(d=>'<article><div><h3>'+dateLabel(d.date)+'</h3><p>'+ (d.ending<0?'Negative projected balance':'Low projected balance')+'</p></div><a href="/?view=calendar&focus='+d.date+'">'+money(d.ending)+' →</a></article>').join('')+'</div>':'<p class="rp-empty">No future days below $300 in this range.</p>')+'</div>'+panel('Projected month-end path','All scheduled transactions and adjustments included.',lineChart(months.map(m=>({date:m.days.slice(-1)[0].date,ending:m.ending}))));
@@ -182,5 +182,14 @@ function debtPlan(inputs,extra,lump,strategy){
  return{paidOff:debts.every(d=>!d.balance),months:months,interest:interest/100,path:path,initial:initial/100,initialPayment:initialPayment/100,debts:debts.map(d=>({name:d.name,initial:d.initial,paidMonth:d.paidMonth}))};
 }
 
-return{analyze:analyze,isCard:isCard,csvCell:csvCell,cashScenario:cashScenario,debtPlan:debtPlan};
+
+function scheduledEndings(bills,from,to,current){
+ return bills.filter(function(b){
+  if(!b.endMonth||b.endMonth<from||b.endMonth>to||b.endMonth<current||b.active===false)return false;
+  var name=String(b.name||'').trim().toLowerCase(),parts=b.endMonth.split('-').map(Number),next=new Date(parts[0],parts[1],1),nextMonth=next.getFullYear()+'-'+String(next.getMonth()+1).padStart(2,'0');
+  return !bills.some(other=>other.id!==b.id&&other.active!==false&&String(other.name||'').trim().toLowerCase()===name&&(!other.startMonth||other.startMonth<=nextMonth)&&(!other.endMonth||other.endMonth>b.endMonth));
+ });
+}
+
+return{analyze:analyze,isCard:isCard,csvCell:csvCell,cashScenario:cashScenario,debtPlan:debtPlan,scheduledEndings:scheduledEndings};
 });

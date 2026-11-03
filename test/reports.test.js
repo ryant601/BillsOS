@@ -62,3 +62,9 @@ test('CSV exports escape quoted text and neutralize formula text',()=>{
  assert.equal(csvCell('=SUM(A1)'),'"\'=SUM(A1)"');
  assert.equal(csvCell(-50),'"-50"');assert.equal(csvCell('a"b'),'"a""b"');
 });
+
+test('forecast excludes a due-date transition replaced by a continuing schedule',()=>{
+ const {scheduledEndings}=require('../reports');
+ const bills=[{id:'old',name:'AT&T',endMonth:'2026-11',active:true},{id:'new',name:'AT&T',startMonth:'2026-11',active:true},{id:'deck',name:'Deck',amount:148,endMonth:'2027-07'}];
+ assert.deepEqual(scheduledEndings(bills,'2026-11','2027-11','2026-11').map(b=>b.id),['deck']);
+});
