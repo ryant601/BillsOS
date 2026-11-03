@@ -330,7 +330,13 @@ app.use((req, res, next) => {
 });
 
 require('./credit-card-manager').register(app, {
-  readStore: () => readJsonFile(path.join(DATA_DIR, 'credit-cards.json'), { revision: 0, cards: [] }),
+  readStore: () => {
+    const file = path.join(DATA_DIR, 'credit-cards.json');
+    if (!fs.existsSync(file)) return { revision: 0, cards: [] };
+    const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (!saved || !Array.isArray(saved.cards)) throw new Error('Card data could not be read. No changes were saved.');
+    return saved;
+  },
   writeStore: data => writeJsonFile(path.join(DATA_DIR, 'credit-cards.json'), data),
   readBills: readBillsData,
   writeBills: data => { const saved = writeBillsData(data); writeReadonlySnapshot(saved); return saved; }
