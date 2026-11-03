@@ -140,3 +140,5 @@ body.calendar-box-mode .calendar-list .calendar-day .billsosCardNote{display:non
 
 /* Phones always use the compact list; the saved desktop choice is preserved. */
 @media(max-width:720px){.calendar-view-switch{display:none!important}}
+
+body .calendar-list .calendar-day .billsosPaymentMethod{flex:0 0 auto!important;display:inline-block!important;width:auto!important;white-space:nowrap!important;font:500 10px/1.2 system-ui!important;color:var(--mut)!important;text-decoration:none!important;padding:1px 0!important;background:transparent!important}

@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20261103quick1';
+const BUILD = '20261103paymethod1';
 const CRITICAL_ASSETS = [
   'quick-transaction.js',
   'access-control-ui.js',
