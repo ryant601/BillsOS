@@ -2,8 +2,10 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20261029suggestionskip1';
+const BUILD = '20261103quick1';
 const CRITICAL_ASSETS = [
+  'quick-transaction.js',
+  'access-control-ui.js',
   'billsos-cross-device-sync-v2.js',
   'billsos-sidebar-calculator.js',
   'amount-balance-hotfix.js',

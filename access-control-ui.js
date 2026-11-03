@@ -118,6 +118,8 @@
     '.bb-scrim',
     '.amountEditable',
     'input[type="checkbox"][data-id]',
+    '#openQuickTransaction',
+    '.quick-transaction-dialog',
     '#paySheet'
   ].join(',');
 
