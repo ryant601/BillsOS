@@ -13,7 +13,7 @@ test('sidebar exposes only working control destinations', () => {
   assert.doesNotMatch(loader, /'Cash Flow','\/control#oneTime'/);
   assert.match(loader, /'Backup','\/control#backup'/);
   assert.doesNotMatch(loader, /link\([^\n]+,'Accounts'/);
-  assert.doesNotMatch(loader, /link\([^\n]+,'Reports'/);
+  assert.match(loader, /link\('◫','Reports','\/\?view=reports'/);
   assert.doesNotMatch(loader, /link\([^\n]+,'Settings'/);
 });
 
