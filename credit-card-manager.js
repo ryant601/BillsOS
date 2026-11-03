@@ -33,10 +33,15 @@ function projection(data, extra) {
   });
   return result;
 }
-function discover(data, store) {
+function discover(data, store, date = today()) {
   const cards = (store.cards || []).map(c => ({ ...c }));
   const seen = new Set(cards.map(c => c.sourceBillId));
-  (data.bills || []).filter(b => b.active !== false && isCard(b.name)).forEach(b => {
+  (data.bills || []).filter(b => b.active !== false && isCard(b.name) && (!b.startMonth || b.startMonth <= date.slice(0, 7)) && (!b.endMonth || b.endMonth >= date.slice(0, 7))).forEach(b => {
+    const previous = cards.find(c => {
+      const old = (data.bills || []).find(x => x.id === c.sourceBillId);
+      return old && String(old.name).trim().toLowerCase() === String(b.name).trim().toLowerCase() && ((old.endMonth && b.startMonth && old.endMonth < b.startMonth) || (b.endMonth && old.startMonth && b.endMonth < old.startMonth));
+    });
+    if (previous && !seen.has(b.id)) { previous.sourceBillId = b.id; seen.add(b.id); return; }
     if (!seen.has(b.id)) { cards.push({ id: 'cc-' + b.id, sourceBillId: b.id, name: b.name, balance: null, apr: null, payment: Math.abs(Number(b.amount || 0)), limit: null, history: [], archived: false }); seen.add(b.id); }
   });
   return cards;

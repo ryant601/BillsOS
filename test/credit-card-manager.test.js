@@ -15,6 +15,12 @@ test('manual balance updates append history, preserve source identity, and suppo
  assert.throws(()=>validateCard({...card,balance:-1},card));assert.throws(()=>validateCard({...card,apr:101},card));
  assert.throws(()=>validateCard({...card,balanceAsOf:'2027-01-01'},card,'2026-11-03'));
 });
+test('a replacement schedule is one card and retains saved balances across month changes',()=>{
+ const data=fixture();data.bills=[{id:'old',name:'Amex Blue',amount:100.67,startMonth:'2026-09',endMonth:'2026-10'},{id:'new',name:'Amex Blue',amount:67,startMonth:'2026-11'}];
+ const fresh=discover(data,{cards:[]},'2026-11-03');assert.equal(fresh.length,1);assert.equal(fresh[0].payment,67);
+ const existing={...card,id:'cc-old',sourceBillId:'old',name:'Amex Blue',balance:1200};
+ const saved=discover(data,{cards:[existing]},'2026-11-03');assert.equal(saved.length,1);assert.equal(saved[0].balance,1200);assert.equal(saved[0].sourceBillId,'new');assert.equal(saved[0].id,'cc-old');
+});
 test('projection applies cross-month moves and amount edits before carrying balances',()=>{
  const data=fixture();data.oneTimeEvents.push({id:'expense',name:'Repair',date:'2026-10-02',amount:-100,type:'adjustment'});
  data.oneTimeEvents.push({id:'__billsos_system_rules__',notes:JSON.stringify({calendarState:{dateAdjustments:{'2026-10-02|Repair|-100':{date:'2026-09-30'}},amountAdjustments:{'2026-10-02|Repair|-100':{amount:150}}}})});

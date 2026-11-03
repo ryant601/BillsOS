@@ -339,7 +339,7 @@ require('./credit-card-manager').register(app, {
   },
   writeStore: data => writeJsonFile(path.join(DATA_DIR, 'credit-cards.json'), data),
   readBills: readBillsData,
-  writeBills: data => { const saved = writeBillsData(data); writeReadonlySnapshot(saved); return saved; }
+  writeBills: data => { const saved = writeBillsData(prepareFullWrite(readBillsData(), data)); writeReadonlySnapshot(saved); return saved; }
 });
 
 app.get("/api/checkmarks", (_req, res) => {

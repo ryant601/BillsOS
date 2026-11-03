@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20261103cards1';
+const BUILD = '20261103cards2';
 const CRITICAL_ASSETS = [
   'credit-cards.js',
   'credit-cards.css',
