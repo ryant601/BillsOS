@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const engine = require('./cashflow-engine');
 const calendar = require('./calendar-list-view');
 const isCard = name => /^(amex|american express|citi\b|capital one\b|discover\b|apple card\b|macy|firestone\b|paypal credit)/i.test(name || '');
+const isPaymentPlan = card => typeof card?.paymentPlan === 'boolean' ? card.paymentPlan : /^(amex|american express)\b/i.test(card?.name || '');
 const cents = n => Math.round(Number(n) * 100);
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
@@ -49,13 +50,15 @@ function discover(data, store, date = today()) {
     const named = active.filter(b => String(b.name || '').trim().toLowerCase() === String(card.name || '').trim().toLowerCase());
     const bill = card.sourceBillId ? active.find(b => b.id === card.sourceBillId) : (named.length === 1 ? named[0] : null);
     const dueDay = Number(bill?.dueDay);
-    return { ...card, dueDay: bill && (!bill.frequency || bill.frequency === 'monthly') && Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 31 ? dueDay : null };
+    const paymentPlan = typeof card.paymentPlan === 'boolean' ? card.paymentPlan : isPaymentPlan(card) || isPaymentPlan(bill);
+    return { ...card, paymentPlan, payment: paymentPlan && bill ? Math.abs(Number(bill.amount || 0)) : card.payment, dueDay: bill && (!bill.frequency || bill.frequency === 'monthly') && Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 31 ? dueDay : null };
   });
 }
 function validateCard(input, old, date = today()) {
   const name = String(input.name || '').trim();
   if (!name || name.length > 100) throw new Error('Enter a card name (100 characters or fewer)');
   const result = { ...old, name, archived: !!input.archived };
+  if (typeof input.paymentPlan === 'boolean') result.paymentPlan = input.paymentPlan;
   for (const field of ['balance', 'apr', 'payment', 'limit']) {
     const v = input[field] === '' || input[field] == null ? null : Number(input[field]);
     if (v != null && (!Number.isFinite(v) || v < 0 || v > (field === 'apr' ? 100 : 10000000))) throw new Error('Enter a valid ' + field);
@@ -102,6 +105,7 @@ function estimateBalances(data, cards, legacyDone = {}, asOf = today()) {
   });
 }
 function quote(data, card, input, date = today()) {
+  if (isPaymentPlan(card)) throw new Error('Fixed payment-plan cards are excluded from extra-payment planning');
   const amount = Number(input.amount), buffer = Number(input.buffer), start = String(input.start || date), end = String(input.end || engine.addDays(date, 30));
   if (!card || card.archived || card.balance == null || card.balance <= 0) throw new Error('Enter a current balance for an active card first');
   if (!Number.isFinite(amount) || cents(amount) <= 0 || cents(amount) > cents(card.balance)) throw new Error('Extra payment must be positive and no larger than the recorded balance');
@@ -153,4 +157,4 @@ function register(app, deps) {
     } catch (e) { res.status(400).json({ error: e.message }); }
   });
 }
-module.exports = { register, projection, discover, validateCard, quote, matching, estimateBalances };
+module.exports = { register, projection, discover, validateCard, quote, matching, estimateBalances, isPaymentPlan };

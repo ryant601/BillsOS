@@ -79,3 +79,20 @@ test('commit rechecks latest cash flow, saves once, preserves calendar, and reje
  assert.equal(call('/api/credit-cards/payments',{...payload,planId:'abcdefghijklmnop456'}).statusCode,409);
  assert.equal(call('/api/credit-cards',{revision:0,card}).statusCode,409);
 });
+
+test('Amex payment plans retain balances and fixed schedules while blocking extra payments',()=>{
+ const data=fixture();data.bills=[{id:'amex',name:'Amex Blue',amount:67,dueDay:28},{id:'apple',name:'Apple Card',amount:100,dueDay:15}];
+ const existing={...card,id:'cc-amex',sourceBillId:'amex',name:'Amex Blue',balance:900,payment:999};
+ const before=JSON.stringify(data), rows=discover(data,{cards:[existing]},'2026-11-04'), plan=rows.find(c=>c.id==='cc-amex');
+ assert.equal(plan.paymentPlan,true);assert.equal(plan.payment,67);assert.equal(plan.balance,900);assert.equal(plan.dueDay,28);
+ assert.equal(rows.find(c=>c.sourceBillId==='apple').paymentPlan,false);
+ assert.throws(()=>quote(data,plan,{amount:20,buffer:0,start:'2026-11-04',end:'2026-11-04'},'2026-11-04'));
+ assert.equal(JSON.stringify(data),before);
+});
+test('payment-plan grouping is reversible and survives balance updates',()=>{
+ const data=fixture();data.bills=[{id:'amex',name:'Amex Platinum',amount:108,dueDay:28}];
+ const old={...card,id:'cc-amex',name:'Amex Platinum',sourceBillId:'amex',paymentPlan:true};
+ const updated=validateCard({...old,balance:1500},old,'2026-11-04');assert.equal(updated.paymentPlan,true);
+ const restored=validateCard({...old,paymentPlan:false},old,'2026-11-04');
+ assert.equal(discover(data,{cards:[restored]},'2026-11-04')[0].paymentPlan,false);
+});
