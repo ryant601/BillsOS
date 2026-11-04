@@ -44,7 +44,13 @@ function discover(data, store, date = today()) {
     if (previous && !seen.has(b.id)) { previous.sourceBillId = b.id; seen.add(b.id); return; }
     if (!seen.has(b.id)) { cards.push({ id: 'cc-' + b.id, sourceBillId: b.id, name: b.name, balance: null, apr: null, payment: Math.abs(Number(b.amount || 0)), limit: null, history: [], archived: false }); seen.add(b.id); }
   });
-  return cards;
+  return cards.map(card => {
+    const active = (data.bills || []).filter(b => b.active !== false && (!b.startMonth || b.startMonth <= date.slice(0, 7)) && (!b.endMonth || b.endMonth >= date.slice(0, 7)));
+    const named = active.filter(b => String(b.name || '').trim().toLowerCase() === String(card.name || '').trim().toLowerCase());
+    const bill = card.sourceBillId ? active.find(b => b.id === card.sourceBillId) : (named.length === 1 ? named[0] : null);
+    const dueDay = Number(bill?.dueDay);
+    return { ...card, dueDay: bill && (!bill.frequency || bill.frequency === 'monthly') && Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 31 ? dueDay : null };
+  });
 }
 function validateCard(input, old, date = today()) {
   const name = String(input.name || '').trim();

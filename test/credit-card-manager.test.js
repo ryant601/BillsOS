@@ -4,6 +4,18 @@ const { projection, discover, validateCard, quote, register } = require('../cred
 const { estimateBalances } = require('../credit-card-manager');
 function fixture() { return { bills: [], income: [], oneTimeEvents: [{id:'opening',name:'Opening balance',type:'balance-opening-adjustment',date:'2026-06-01',amount:5000,requestedBalance:5000}], paymentSplits:[] }; }
 const card = {id:'card',name:'Apple Card',balance:2000,payment:100,apr:20,history:[]};
+test('card due dates always follow the active Bills source while preserving entered balances',()=>{
+ const data=fixture();data.bills=[{id:'apple',name:'Apple Card',amount:100,dueDay:28}];
+ const saved={...card,sourceBillId:'apple',dueDay:14};
+ assert.equal(discover(data,{cards:[saved]},'2026-11-03')[0].dueDay,28);
+ data.bills[0].dueDay=20;const updated=discover(data,{cards:[saved]},'2026-11-03')[0];assert.equal(updated.dueDay,20);assert.equal(updated.balance,2000);
+ data.bills[0].endMonth='2026-10';assert.equal(discover(data,{cards:[saved]},'2026-11-03')[0].dueDay,null);
+});
+test('replacement schedules use the current due day, and unlinked cards do not invent one',()=>{
+ const data=fixture();data.bills=[{id:'old',name:'Apple Card',amount:100,dueDay:14,endMonth:'2026-10'},{id:'new',name:'Apple Card',amount:100,dueDay:28,startMonth:'2026-11'}];
+ const rows=discover(data,{cards:[{...card,sourceBillId:'old'},{...card,id:'custom',name:'Other card'}]},'2026-11-03');
+ assert.equal(rows.find(c=>c.id==='card').dueDay,28);assert.equal(rows.find(c=>c.id==='custom').dueDay,null);
+});
 test('estimates subtract marked-paid payments through today and only future scheduled payments afterward',()=>{
  const data=fixture();data.bills=[{id:'apple',name:'Apple Card',amount:100,dueDay:10,startMonth:'2026-11'}];
  data.oneTimeEvents.push({id:'extra',creditCardId:'card',name:'Extra',date:'2026-11-20',amount:-50,type:'adjustment'},{id:'late',creditCardId:'card',name:'Unpaid',date:'2026-11-05',amount:-40,type:'adjustment'});
