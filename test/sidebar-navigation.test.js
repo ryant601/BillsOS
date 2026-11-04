@@ -6,14 +6,35 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const loader = fs.readFileSync(path.join(root, 'html-hotfix-loader.js'), 'utf8');
 const control = fs.readFileSync(path.join(root, 'control.html'), 'utf8');
+const vm = require('node:vm');
+
+test('all navigation destinations have distinct accessible SVG icons', () => {
+  const source = loader.slice(loader.indexOf('  function navigationIcon('), loader.indexOf('  function controlSection('));
+  const context = {}; vm.createContext(context); vm.runInContext(source, context);
+  const names = ['home', 'calendar', 'cards', 'reports', 'bills', 'income'];
+  const icons = names.map(name => context.navigationIcon(name));
+  assert.equal(new Set(icons.map(icon => icon.replace(/data-bo-icon="[^"]+"/, ''))).size, 6);
+  names.forEach(name => {
+    const markup = context.link(name, name, '/', false);
+    assert.match(markup, /<svg /); assert.match(markup, /aria-hidden="true"/);
+    assert.match(markup, new RegExp('<span>' + name + '</span>'));
+  });
+});
+
+test('retired Backup panel and handlers are removed without breaking old control links', () => {
+  assert.doesNotMatch(control, /panel-backup|data-tab="backup"|downloadBackup|restoreBackup|renderRaw|rawData|restoreText/);
+  const source = loader.slice(loader.indexOf('  function controlSection('), loader.indexOf('  function syncSidebarActive('));
+  const context = {location: {hash: '#backup'}}; vm.createContext(context); vm.runInContext(source, context);
+  assert.equal(context.controlSection(), 'bills');
+});
 
 test('sidebar exposes only working control destinations', () => {
   assert.match(loader, /'Bills','\/control#bills'/);
   assert.match(loader, /'Income','\/control#income'/);
   assert.doesNotMatch(loader, /'Cash Flow','\/control#oneTime'/);
-  assert.match(loader, /'Backup','\/control#backup'/);
+  assert.doesNotMatch(loader, /'Backup','\/control#backup'/);
   assert.doesNotMatch(loader, /link\([^\n]+,'Accounts'/);
-  assert.match(loader, /link\('◫','Reports','\/\?view=reports'/);
+  assert.match(loader, /link\('reports','Reports','\/\?view=reports'/);
   assert.doesNotMatch(loader, /link\([^\n]+,'Settings'/);
 });
 

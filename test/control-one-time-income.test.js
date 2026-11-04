@@ -22,7 +22,7 @@ test('one-time income saves as a positive synced calendar event', () => {
   assert.match(html, /type:'income'/);
   assert.match(html, /state\.oneTimeEvents\.push\(row\)/);
   assert.match(html, /await persistState\(/);
-  assert.match(html, /function renderAll\(\)\{renderBills\(\);renderOne\(\);renderIncome\(\);renderOneTimeIncome\(\);renderRaw\(\)\}/);
+  assert.match(html, /function renderAll\(\)\{renderBills\(\);renderOne\(\);renderIncome\(\);renderOneTimeIncome\(\)\}/);
 });
 
 test('one-time income can be edited and removed from the income tab', () => {

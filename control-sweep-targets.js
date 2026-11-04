@@ -63,11 +63,11 @@
   }
   function addTab(){
     if(document.querySelector('[data-tab="sweeps"]'))return;addStyles();
-    var tabs=document.querySelector('.tabs'),backup=document.querySelector('[data-tab="backup"]');if(!tabs)return;
-    var b=document.createElement('button');b.className='tab';b.dataset.tab='sweeps';b.textContent='Sweeps';b.onclick=function(){showTab('sweeps');renderSweepEditor();};tabs.insertBefore(b,backup||null);
+    var tabs=document.querySelector('.tabs');if(!tabs)return;
+    var b=document.createElement('button');b.className='tab';b.dataset.tab='sweeps';b.textContent='Sweeps';b.onclick=function(){showTab('sweeps');renderSweepEditor();};tabs.appendChild(b);
     var p=document.createElement('section');p.id='panel-sweeps';p.className='panel';
     p.innerHTML='<div class="card"><div class="cardhead"><div><h2>Sweep plan</h2><p class="mut" style="margin:4px 0 0">Create or edit projected sweep transfers by month. These flow into the calendar math.</p></div><span class="pill sweep">Purple in calendar</span></div><div class="sweep-toolbar"><button class="btn primary" type="button" id="addSweepRow">Add sweep</button><button class="btn" type="button" id="saveSweepRows">Save sweep plan</button><button class="btn" type="button" id="refreshSweepRows">Refresh</button></div><div id="sweepRows" style="margin-top:12px"></div><p class="sweep-note">Zero is allowed. Deleting the last row means no planned sweep.</p></div><div class="card"><div class="cardhead"><h2>Bulk edit</h2><button class="btn small" type="button" id="applySweepBulk">Apply bulk rows</button></div><p class="mut" style="margin:0 0 8px">Paste rows as <b>month, day, amount, label</b>. Example: <code>2026-08, 30, 500, Sweep to savings / debt</code></p><textarea id="sweepBulk" class="sweep-bulk" placeholder="2026-07, 31, 0, Sweep to savings / debt&#10;2026-08, 30, 500, Sweep to savings / debt"></textarea></div>';
-    tabs.parentNode.insertBefore(p,document.getElementById('panel-backup'));
+    tabs.parentNode.appendChild(p);
     p.querySelector('#addSweepRow').onclick=function(){addSweepInputRow();};p.querySelector('#saveSweepRows').onclick=function(){saveSweepRows(true);};p.querySelector('#refreshSweepRows').onclick=renderSweepEditor;p.querySelector('#applySweepBulk').onclick=applyBulkRows;
   }
   function sweepRowsFromRules(){var rules=getRules(),targets=rules.sweep.targets||{};return Object.keys(targets).sort().map(function(month){var t=targets[month]||{};return {month:month,day:Number(t.day||28),amount:Number(t.amount||0),label:t.label||DEFAULT_LABEL};});}

@@ -71,7 +71,6 @@ th,td{border-bottom-color:var(--line2)!important}
 .pill.off{background:var(--softred)!important;color:var(--red)!important}
 .pill.auto{background:var(--softblue)!important;color:var(--primary)!important}
 .pill.manual{background:var(--softgold)!important;color:#6f4f18!important}
-.code{background:#f2f4ef!important;border-color:var(--line)!important}
 
 /* Keep the Control Center aligned with the Claude dark workspace. */
 html[data-billsos-theme="dark"] body.billsos-control{
@@ -128,8 +127,7 @@ html[data-billsos-theme="dark"] body.billsos-control table{
   box-shadow:none!important;
 }
 html[data-billsos-theme="dark"] body.billsos-control .banner,
-html[data-billsos-theme="dark"] body.billsos-control .split-box,
-html[data-billsos-theme="dark"] body.billsos-control .code{
+html[data-billsos-theme="dark"] body.billsos-control .split-box{
   background:#37301F!important;
   border-color:#4A4232!important;
   color:#E4D6B4!important;

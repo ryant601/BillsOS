@@ -2,8 +2,14 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20261104plans1';
+const BUILD = '20261104nav1';
 const CRITICAL_ASSETS = [
+  'control-theme.css',
+  'control-import.js',
+  'control-compare.js',
+  'control-preview.js',
+  'control-rules.js',
+  'control-sweep-targets.js',
   'credit-cards.js',
   'credit-cards.css',
   'reports.js',
