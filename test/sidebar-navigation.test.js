@@ -11,9 +11,9 @@ const vm = require('node:vm');
 test('all navigation destinations have distinct accessible SVG icons', () => {
   const source = loader.slice(loader.indexOf('  function navigationIcon('), loader.indexOf('  function controlSection('));
   const context = {}; vm.createContext(context); vm.runInContext(source, context);
-  const names = ['home', 'calendar', 'cards', 'reports', 'bills', 'income'];
+  const names = ['home', 'calendar', 'cards', 'liabilities', 'reports', 'bills', 'income'];
   const icons = names.map(name => context.navigationIcon(name));
-  assert.equal(new Set(icons.map(icon => icon.replace(/data-bo-icon="[^"]+"/, ''))).size, 6);
+  assert.equal(new Set(icons.map(icon => icon.replace(/data-bo-icon="[^"]+"/, ''))).size, 7);
   names.forEach(name => {
     const markup = context.link(name, name, '/', false);
     assert.match(markup, /<svg /); assert.match(markup, /aria-hidden="true"/);
