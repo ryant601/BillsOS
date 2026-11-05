@@ -32,7 +32,7 @@ app.use((req, res, next) => {
   const file = req.path;
   if (/^\/(?:data|history|backups?|test|scripts|node_modules|docs)(?:\/|$)/i.test(file) ||
       /(?:^|\/)\./.test(file) || /\.(?:json|jsonl|env|log|bak|sql|md)$/i.test(file) ||
-      /^\/(?:server|liability-manager|credit-card-manager|access-control|assistant-api|bills-data-integrity|calendar-note-cleanup|calendar-adjustment-recovery|html-hotfix-loader|[^/]*-preload)\.js$/i.test(file)) {
+      /^\/(?:server|payment-plan-migration|liability-manager|credit-card-manager|access-control|assistant-api|bills-data-integrity|calendar-note-cleanup|calendar-adjustment-recovery|html-hotfix-loader|[^/]*-preload)\.js$/i.test(file)) {
     res.setHeader("Cache-Control", "no-store");
     return res.status(404).end();
   }
@@ -329,31 +329,35 @@ app.use((req, res, next) => {
   next();
 });
 
+function readTrackerStore(name,key) {
+  const file=path.join(DATA_DIR,name+'.json');
+  if(!fs.existsSync(file))return {revision:0,[key]:[]};
+  const saved=JSON.parse(fs.readFileSync(file,'utf8'));
+  if(!saved||!Array.isArray(saved[key]))throw new Error('Tracker data could not be read. No changes were saved.');
+  return saved;
+}
+function syncFixedPaymentPlans() {
+  return require('./payment-plan-migration').migratePaymentPlans({
+    readCards:()=>readTrackerStore('credit-cards','cards'),
+    readLiabilities:()=>readTrackerStore('liabilities','items'),
+    readBills:readBillsData,
+    writeCards:data=>writeJsonFile(path.join(DATA_DIR,'credit-cards.json'),data),
+    writeLiabilities:data=>writeJsonFile(path.join(DATA_DIR,'liabilities.json'),data)
+  });
+}
+try { syncFixedPaymentPlans(); } catch (_err) { console.error('Payment plan migration could not complete; original tracker data is retained.'); }
 require('./credit-card-manager').register(app, {
-  readStore: () => {
-    const file = path.join(DATA_DIR, 'credit-cards.json');
-    if (!fs.existsSync(file)) return { revision: 0, cards: [] };
-    const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
-    if (!saved || !Array.isArray(saved.cards)) throw new Error('Card data could not be read. No changes were saved.');
-    return saved;
-  },
-  writeStore: data => writeJsonFile(path.join(DATA_DIR, 'credit-cards.json'), data),
-  readBills: readBillsData,
-  readCompleted: () => readCheckmarks().completed,
-  writeBills: data => { const saved = writeBillsData(prepareFullWrite(readBillsData(), data)); writeReadonlySnapshot(saved); return saved; }
+  readStore:()=>{syncFixedPaymentPlans();return readTrackerStore('credit-cards','cards');},
+  writeStore:data=>writeJsonFile(path.join(DATA_DIR,'credit-cards.json'),data),
+  readBills:readBillsData,
+  readCompleted:()=>readCheckmarks().completed,
+  writeBills:data=>{const saved=writeBillsData(prepareFullWrite(readBillsData(),data));writeReadonlySnapshot(saved);return saved;}
 });
-
 require('./liability-manager').register(app, {
-  readStore: () => {
-    const file = path.join(DATA_DIR, 'liabilities.json');
-    if (!fs.existsSync(file)) return { revision: 0, items: [] };
-    const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
-    if (!saved || !Array.isArray(saved.items)) throw new Error('Liability data could not be read. No changes were saved.');
-    return saved;
-  },
-  writeStore: data => writeJsonFile(path.join(DATA_DIR, 'liabilities.json'), data),
-  readBills: readBillsData,
-  writeBills: data => { const saved = writeBillsData(prepareFullWrite(readBillsData(), data)); writeReadonlySnapshot(saved); return saved; }
+  readStore:()=>{syncFixedPaymentPlans();return readTrackerStore('liabilities','items');},
+  writeStore:data=>writeJsonFile(path.join(DATA_DIR,'liabilities.json'),data),
+  readBills:readBillsData,
+  writeBills:data=>{const saved=writeBillsData(prepareFullWrite(readBillsData(),data));writeReadonlySnapshot(saved);return saved;}
 });
 
 app.get("/api/checkmarks", (_req, res) => {

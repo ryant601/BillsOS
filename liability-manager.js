@@ -27,6 +27,7 @@ function validate(input, old, date = today()) {
   out.history=out.history.slice(-250);return out;
 }
 function amortize(item) {
+  if(item.balance==null||item.apr==null)return {rows:[],needsBalance:item.balance==null,needsApr:item.apr==null,needsSchedule:!item.payment,cleared:false,months:null,interest:null,totalPayments:0,totalCharges:0,remaining:item.balance,ongoing:!!item.monthlyCharge};
   if (!item.payment) return {rows:[],needsSchedule:true,cleared:false,months:null,interest:0,totalPayments:0,totalCharges:0,remaining:item.balance,ongoing:!!item.monthlyCharge};
   let balance=cents(item.balance), interestTotal=0, paidTotal=0, chargeTotal=0;
   const rows=[];let cleared=false, payoffMonth=null;
@@ -41,13 +42,14 @@ function amortize(item) {
   return {rows,cleared,months:payoffMonth,interest:interestTotal/100,totalPayments:paidTotal/100,totalCharges:chargeTotal/100,remaining:balance/100,ongoing:!!cents(item.monthlyCharge)};
 }
 function preview(data,item,input,date=today()) {
-  if (!item || item.archived) throw new Error('Choose an active liability');
+  if (!item || item.removed || item.archived) throw new Error('Choose an active liability');
+  if(item.balance==null||item.apr==null)throw new Error('Enter the actual balance and APR (including 0% if applicable) before planning payments');
   if (input.mode==='calendar' || !item.payment) return suggest(data,item,input,date);
   const count=Number(input.months), buffer=Number(input.buffer);
   if (!Number.isInteger(count) || count<1 || count>24 || !Number.isFinite(buffer) || buffer<0 || buffer>1000000) throw new Error('Choose 1–24 payments and a valid cash buffer');
   if (item.linkedBillId) throw new Error('This liability is linked to an existing bill. Its payments are already managed in Bills.');
   if ((data.bills || []).some(b=>b.active!==false && String(b.name || '').trim().toLowerCase()===item.name.toLowerCase())) throw new Error('A recurring bill with this name already exists. Link it in the liability editor to avoid duplicate payments.');
-  const plan=amortize(item), existing=(data.oneTimeEvents || []).filter(e=>e.liabilityId===item.id);
+  const plan=amortize(item), existing=(data.oneTimeEvents || []).filter(e=>e.liabilityId===item.id||(item.originCardId&&e.creditCardId===item.originCardId));
   const future=plan.rows.filter(r=>r.date>=date && r.date<='2027-12-31').slice(0,count);
   const payments=future.filter(r=>!existing.some(e=>(e.liabilityPeriod || String(e.date).slice(0,7))===r.date.slice(0,7))).map(r=>({date:r.date,amount:r.payment,period:r.date.slice(0,7)}));
   const fingerprint=crypto.createHash('sha256').update(JSON.stringify(payments)).digest('hex');
@@ -63,7 +65,7 @@ function suggest(data,item,input,date=today()) {
   if (!validDate(start)||!validDate(end)||start<date||end<start||end>'2027-12-31'||!Number.isFinite(buffer)||buffer<0||buffer>1000000) throw new Error('Choose future dates within the calendar and a valid cash buffer');
   if(item.linkedBillId)throw new Error('This liability is linked to a bill. Manage that schedule in Control Center, or unlink it to plan separate payments.');
   if((data.bills||[]).some(b=>b.active!==false&&(!b.endMonth||b.endMonth>=date.slice(0,7))&&String(b.name||'').trim().toLowerCase()===item.name.toLowerCase()))throw new Error('A recurring bill with this name already exists. Link it or use a separate name for arrears to avoid duplicates.');
-  const base=projection(data),source=new Map((data.oneTimeEvents||[]).filter(e=>e.liabilityId===item.id).map(e=>[e.id,e]));
+  const base=projection(data),source=new Map((data.oneTimeEvents||[]).filter(e=>e.liabilityId===item.id||(item.originCardId&&e.creditCardId===item.originCardId)).map(e=>[e.id,e]));
   const reserved=base.flatMap(d=>d.items).filter(r=>source.has(r.sourceId)&&r.iso>=date&&r.amount<0);
   let remaining=Math.max(0,cents(item.balance)-reserved.reduce((n,r)=>n+cents(-r.amount),0));
   const pendingMonths=new Set([...reserved.map(r=>r.iso.slice(0,7)),...Array.from(source.values()).filter(e=>e.date>=date).map(e=>e.liabilityPeriod||e.date.slice(0,7))]);
@@ -99,15 +101,20 @@ function register(app,deps) {
   const {readStore,writeStore,readBills,writeBills}=deps;
   const currentDate=deps.currentDate||today;
   const get=()=>{const s=readStore();return {revision:s.revision || 0,items:s.items || []};};
-  const present=s=>({...s,items:s.items.map(item=>({...item,amortization:amortize(item)})),bills:(readBills().bills || []).filter(b=>b.active!==false).map(b=>({id:b.id,name:b.name,amount:b.amount,dueDay:b.dueDay})),planned:(readBills().oneTimeEvents || []).filter(e=>e.liabilityId).map(e=>({id:e.id,liabilityId:e.liabilityId,date:e.date,amount:e.amount}))});
+  const present=s=>{const data=readBills(),visible=s.items.filter(i=>!i.removed);return {revision:s.revision,items:visible.map(item=>({...item,amortization:amortize(item)})),removed:s.items.filter(i=>i.removed).map(i=>({id:i.id,name:i.name})),bills:(data.bills||[]).filter(b=>b.active!==false).map(b=>({id:b.id,name:b.name,amount:b.amount,dueDay:b.dueDay})),planned:(data.oneTimeEvents||[]).filter(e=>e.liabilityId||visible.some(i=>i.originCardId&&i.originCardId===e.creditCardId)).map(e=>({id:e.id,liabilityId:e.liabilityId||visible.find(i=>i.originCardId===e.creditCardId)?.id,date:e.date,amount:e.amount}))};};
   app.get('/api/liabilities',(_req,res)=>{res.setHeader('Cache-Control','no-store');res.json(present(get()));});
   app.post('/api/liabilities',(req,res)=>{try{
     const s=get();if(req.body.revision!==s.revision)return res.status(409).json({error:'Liabilities changed on another device. Reload before saving.'});
     const existing=s.items.find(i=>i.id===req.body.item?.id);
+    if(existing?.removed)throw new Error('Restore this liability before updating it');
     if(req.body.item?.id&&!existing)throw new Error('Liability no longer exists');
     const item=validate(req.body.item || {},existing || {id:crypto.randomUUID(),history:[]},currentDate());
     if(item.linkedBillId&&!(readBills().bills || []).some(b=>b.id===item.linkedBillId&&b.active!==false))throw new Error('Choose an active bill to link');
     s.items=s.items.filter(i=>i.id!==item.id).concat(item);s.revision++;writeStore(s);res.json(present(s));
+  }catch(e){res.status(400).json({error:e.message});}});
+  for(const action of ['remove','restore'])app.post('/api/liabilities/'+action,(req,res)=>{try{
+    const s=get();if(req.body.revision!==s.revision)return res.status(409).json({error:'Liabilities changed on another device. Reload before continuing.'});
+    const item=s.items.find(i=>i.id===req.body.id);if(!item)throw new Error('Liability no longer exists');item.removed=action==='remove';item.removedAt=item.removed?new Date().toISOString():null;s.revision++;writeStore(s);res.json(present(s));
   }catch(e){res.status(400).json({error:e.message});}});
   app.post('/api/liabilities/preview',(req,res)=>{try{const s=get();res.json(preview(readBills(),s.items.find(i=>i.id===req.body.itemId),req.body,currentDate()));}catch(e){res.status(400).json({error:e.message});}});
   app.post('/api/liabilities/payments',(req,res)=>{try{

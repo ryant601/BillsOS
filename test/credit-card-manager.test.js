@@ -83,7 +83,7 @@ test('commit rechecks latest cash flow, saves once, preserves calendar, and reje
 test('Amex payment plans retain balances and fixed schedules while blocking extra payments',()=>{
  const data=fixture();data.bills=[{id:'amex',name:'Amex Blue',amount:67,dueDay:28},{id:'apple',name:'Apple Card',amount:100,dueDay:15}];
  const existing={...card,id:'cc-amex',sourceBillId:'amex',name:'Amex Blue',balance:900,payment:999};
- const before=JSON.stringify(data), rows=discover(data,{cards:[existing]},'2026-11-04'), plan=rows.find(c=>c.id==='cc-amex');
+ const before=JSON.stringify(data), rows=discover(data,{cards:[existing]},'2026-11-04',{legacyPaymentPlans:true}), plan=rows.find(c=>c.id==='cc-amex');
  assert.equal(plan.paymentPlan,true);assert.equal(plan.payment,67);assert.equal(plan.balance,900);assert.equal(plan.dueDay,28);
  assert.equal(rows.find(c=>c.sourceBillId==='apple').paymentPlan,false);
  assert.throws(()=>quote(data,plan,{amount:20,buffer:0,start:'2026-11-04',end:'2026-11-04'},'2026-11-04'));

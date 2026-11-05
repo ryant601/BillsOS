@@ -34,7 +34,7 @@ function projection(data, extra) {
   });
   return result;
 }
-function discover(data, store, date = today()) {
+function discover(data, store, date = today(), options = {}) {
   const cards = (store.cards || []).map(c => ({ ...c }));
   const seen = new Set(cards.map(c => c.sourceBillId));
   (data.bills || []).filter(b => b.active !== false && isCard(b.name) && (!b.startMonth || b.startMonth <= date.slice(0, 7)) && (!b.endMonth || b.endMonth >= date.slice(0, 7))).forEach(b => {
@@ -50,7 +50,7 @@ function discover(data, store, date = today()) {
     const named = active.filter(b => String(b.name || '').trim().toLowerCase() === String(card.name || '').trim().toLowerCase());
     const bill = card.sourceBillId ? active.find(b => b.id === card.sourceBillId) : (named.length === 1 ? named[0] : null);
     const dueDay = Number(bill?.dueDay);
-    const paymentPlan = typeof card.paymentPlan === 'boolean' ? card.paymentPlan : isPaymentPlan(card) || isPaymentPlan(bill);
+    const paymentPlan = typeof card.paymentPlan === 'boolean' ? card.paymentPlan : !!options.legacyPaymentPlans && (isPaymentPlan(card) || isPaymentPlan(bill));
     return { ...card, paymentPlan, payment: paymentPlan && bill ? Math.abs(Number(bill.amount || 0)) : card.payment, dueDay: bill && (!bill.frequency || bill.frequency === 'monthly') && Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 31 ? dueDay : null };
   });
 }
@@ -107,7 +107,7 @@ function estimateBalances(data, cards, legacyDone = {}, asOf = today()) {
 function quote(data, card, input, date = today()) {
   if (isPaymentPlan(card)) throw new Error('Fixed payment-plan cards are excluded from extra-payment planning');
   const amount = Number(input.amount), buffer = Number(input.buffer), start = String(input.start || date), end = String(input.end || engine.addDays(date, 30));
-  if (!card || card.archived || card.balance == null || card.balance <= 0) throw new Error('Enter a current balance for an active card first');
+  if (!card || card.removed || card.archived || card.balance == null || card.balance <= 0) throw new Error('Enter a current balance for an active card first');
   if (!Number.isFinite(amount) || cents(amount) <= 0 || cents(amount) > cents(card.balance)) throw new Error('Extra payment must be positive and no larger than the recorded balance');
   if (!Number.isFinite(buffer) || buffer < 0 || buffer > 1000000) throw new Error('Enter a valid cash buffer');
   if (!validDate(start) || !validDate(end) || start < date || end < start || end > '2027-12-31') throw new Error('Choose future dates within the calendar, through December 2027');
@@ -122,14 +122,15 @@ function quote(data, card, input, date = today()) {
 }
 function register(app, deps) {
   const { readStore, writeStore, readBills, writeBills } = deps;
-  const get = () => { const s = readStore(); return { revision: s.revision || 0, cards: discover(readBills(), s) }; };
-  const withEstimates = s => ({ ...s, estimates: estimateBalances(readBills(), s.cards, deps.readCompleted ? deps.readCompleted() : {}) });
+  const get = () => { const s = readStore(); return { ...s, revision: s.revision || 0, cards: discover(readBills(), s) }; };
+  const withEstimates = s => {const cards=s.cards.filter(c=>!c.removed&&!c.paymentPlan);return {revision:s.revision,cards,removed:s.cards.filter(c=>c.removed&&!c.paymentPlan).map(c=>({id:c.id,name:c.name})),estimates:estimateBalances(readBills(),cards,deps.readCompleted?deps.readCompleted():{})};};
   app.get('/api/credit-cards', (_req, res) => { res.setHeader('Cache-Control', 'no-store'); res.json(withEstimates(get())); });
   app.post('/api/credit-cards', (req, res) => {
     try {
       const s = get();
       if (req.body.revision !== s.revision) return res.status(409).json({ error: 'Cards changed on another device. Reload before saving.' });
       const existing = s.cards.find(c => c.id === req.body.card?.id);
+      if (existing&&(existing.removed||existing.paymentPlan)) throw new Error('Restore the card first, or manage fixed plans in Liabilities');
       if (req.body.card?.id && !existing) throw new Error('Card no longer exists. Reload before saving.');
       const old = existing || { id: crypto.randomUUID(), history: [] };
       const card = validateCard(req.body.card || {}, old);
@@ -137,6 +138,11 @@ function register(app, deps) {
       writeStore(s); res.json(withEstimates(s));
     } catch (e) { res.status(400).json({ error: e.message }); }
   });
+  for (const action of ['remove','restore']) app.post('/api/credit-cards/'+action,(req,res)=>{try{
+    const s=get();if(req.body.revision!==s.revision)return res.status(409).json({error:'Cards changed on another device. Reload before continuing.'});
+    const card=s.cards.find(c=>c.id===req.body.id);if(!card)throw new Error('Card no longer exists');if(card.paymentPlan)throw new Error('Manage fixed payment plans in Liabilities');
+    card.removed=action==='remove';card.removedAt=card.removed?new Date().toISOString():null;s.revision++;writeStore(s);res.json(withEstimates(s));
+  }catch(e){res.status(400).json({error:e.message});}});
   app.post('/api/credit-cards/preview', (req, res) => {
     try { const s = get(); res.json(quote(readBills(), s.cards.find(c => c.id === req.body.cardId), req.body)); }
     catch (e) { res.status(400).json({ error: e.message }); }
