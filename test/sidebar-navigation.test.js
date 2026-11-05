@@ -11,9 +11,9 @@ const vm = require('node:vm');
 test('all navigation destinations have distinct accessible SVG icons', () => {
   const source = loader.slice(loader.indexOf('  function navigationIcon('), loader.indexOf('  function controlSection('));
   const context = {}; vm.createContext(context); vm.runInContext(source, context);
-  const names = ['home', 'calendar', 'cards', 'liabilities', 'reports', 'bills', 'income'];
+  const names = ['home', 'calendar', 'cards', 'liabilities', 'reports', 'control'];
   const icons = names.map(name => context.navigationIcon(name));
-  assert.equal(new Set(icons.map(icon => icon.replace(/data-bo-icon="[^"]+"/, ''))).size, 7);
+  assert.equal(new Set(icons.map(icon => icon.replace(/data-bo-icon="[^"]+"/, ''))).size, 6);
   names.forEach(name => {
     const markup = context.link(name, name, '/', false);
     assert.match(markup, /<svg /); assert.match(markup, /aria-hidden="true"/);
@@ -29,8 +29,9 @@ test('retired Backup panel and handlers are removed without breaking old control
 });
 
 test('sidebar exposes only working control destinations', () => {
-  assert.match(loader, /'Bills','\/control#bills'/);
-  assert.match(loader, /'Income','\/control#income'/);
+  assert.match(loader, /'Control Center','\/control#bills'/);
+  assert.doesNotMatch(loader, /link\('income','Income'/);
+  assert.doesNotMatch(loader, /link\('bills','Bills'/);
   assert.doesNotMatch(loader, /'Cash Flow','\/control#oneTime'/);
   assert.doesNotMatch(loader, /'Backup','\/control#backup'/);
   assert.doesNotMatch(loader, /link\([^\n]+,'Accounts'/);

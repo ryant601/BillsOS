@@ -64,14 +64,15 @@ const appUi = String.raw`<script id="billsosAppUi">
       cards:'<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20m-15 5h4m5 0h1"/>',
       liabilities:'<path d="M12 3v18m-6 0h12M4 7h16M6 7l-4 7h8Zm12 0-4 7h8Z"/>',
       reports:'<path d="M4 3v18h17M9 16v-5m5 5V6m5 10V9"/>',
+      control:'<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
       bills:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2Zm3 4h6m-6 4h6m-6 4h3"/>',
       income:'<path d="M12 3v12m-4-4 4 4 4-4M4 14v6a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-6"/>'
     };
     return '<svg data-bo-icon="'+name+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">'+(shapes[name]||'')+'</svg>';
   }
   function link(icon,label,href,active,section){return '<a href="'+href+'" target="_self"'+(active?' class="is-active"':'')+(section?' data-bo-section="'+section+'"':'')+'><span class="bo-icon" aria-hidden="true">'+navigationIcon(icon)+'</span><span>'+label+'</span></a>'}
-  function controlSection(){var section=location.hash.slice(1)||'bills';return section==='oneTime'?'bills':['bills','income'].indexOf(section)>=0?section:'bills'}
-  function syncSidebarActive(section){document.querySelectorAll('.bo-nav [data-bo-section]').forEach(function(item){item.classList.toggle('is-active',item.getAttribute('data-bo-section')===section)})}
+  function controlSection(){var section=location.hash.slice(1)||'bills';return ['bills','oneTime','income'].indexOf(section)>=0?section:'bills'}
+  function syncSidebarActive(section){document.querySelectorAll('.bo-nav [data-bo-section]').forEach(function(item){item.classList.toggle('is-active',item.getAttribute('data-bo-section')==='control')})}
   window.BillsOSSyncSidebarActive=syncSidebarActive;
   function installSidebar(){
     if(document.getElementById('boSidebar'))return;
@@ -79,7 +80,7 @@ const appUi = String.raw`<script id="billsosAppUi">
     document.body.classList.toggle('bo-calendar', dashboard && view==='calendar');
     var section=controlSection();
     var a=document.createElement('aside');a.id='boSidebar';a.className='bo-sidebar';
-    a.innerHTML='<div class="bo-brand"><div class="bo-brand-mark">B</div><div><strong>BillsOS</strong><small>Cash flow planner</small></div></div><nav class="bo-nav">'+link('home','Home','/',dashboard&&view!=='calendar'&&view!=='reports'&&view!=='credit-cards'&&view!=='liabilities')+link('calendar','Calendar','/?view=calendar',dashboard&&view==='calendar')+link('cards','Credit Cards','/?view=credit-cards',dashboard&&view==='credit-cards')+link('liabilities','Liabilities','/?view=liabilities',dashboard&&view==='liabilities')+link('reports','Reports','/?view=reports',dashboard&&view==='reports')+link('bills','Bills','/control#bills',control&&section==='bills','bills')+link('income','Income','/control#income',control&&section==='income','income')+'</nav><div class="bo-side-bottom"><div class="bo-status"><strong><span class="bo-dot"></span>BillsOS online</strong>All changes synced<br><span>'+new Date().toLocaleString([], {month:'numeric',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+'</span></div><div class="bo-copy">© 2026 BillsOS</div></div>';
+    a.innerHTML='<div class="bo-brand"><div class="bo-brand-mark">B</div><div><strong>BillsOS</strong><small>Cash flow planner</small></div></div><nav class="bo-nav">'+link('home','Home','/',dashboard&&view!=='calendar'&&view!=='reports'&&view!=='credit-cards'&&view!=='liabilities')+link('calendar','Calendar','/?view=calendar',dashboard&&view==='calendar')+link('cards','Credit Cards','/?view=credit-cards',dashboard&&view==='credit-cards')+link('liabilities','Liabilities','/?view=liabilities',dashboard&&view==='liabilities')+link('reports','Reports','/?view=reports',dashboard&&view==='reports')+link('control','Control Center','/control#bills',control,'control')+'</nav><div class="bo-side-bottom"><div class="bo-status"><strong><span class="bo-dot"></span>BillsOS online</strong>All changes synced<br><span>'+new Date().toLocaleString([], {month:'numeric',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+'</span></div><div class="bo-copy">© 2026 BillsOS</div></div>';
     document.body.appendChild(a);
     var m=document.createElement('button');m.id='boMenu';m.type='button';m.setAttribute('aria-label','Open navigation');m.setAttribute('aria-expanded','false');m.setAttribute('aria-controls','boSidebar');m.textContent='☰';document.body.appendChild(m);var q=document.createElement('div');q.id='boScrim';document.body.appendChild(q);
     function setNavOpen(open){document.body.classList.toggle('bo-open',open);m.setAttribute('aria-expanded',open?'true':'false')}
