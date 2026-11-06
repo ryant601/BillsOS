@@ -1,5 +1,9 @@
 # BillsOS developer handoff
 
+## November 6, 2026: Midnight visual direction
+
+The owner supplied a Monarch reference: navy-to-teal background, translucent rounded cards, mint balances, and coral actions. `midnight.css` applies this appearance across the existing Home, Calendar, trackers, Reports, and Control Center without changing calculations or records. `html-hotfix-loader.js` installs the stylesheet, sets the theme before paint, and adds a sidebar appearance switch. The new `billsos-theme-v2` preference defaults to dark and retains an explicit light choice. `action-log.js` uses the same key. Control Center overrides need `body.bo-app.billsos-control` specificity because its theme stylesheet is injected later. Browser checks used synthetic data: Home, calendar list, Credit Cards, Control Center, and persisted light/dark switching. Mobile media rules remain in place; a phone viewport was not browser-verified.
+
 ## November 6, 2026: Accept calendar suggestions
 
 Calendar timing cards now offer an owner-only Accept suggestion action. `calendar-suggestion-manager.js` regenerates eligible suggestions from the latest saved projection, rejects stale/ambiguous/paid payments, and atomically saves a one-occurrence amount/date override plus a second one-time payment for splits. Recurring schedules remain intact. Existing sync loads the saved overrides on refresh. The `/api/bills/accept-suggestion` route uses the normal owner write authorization and updates the read-only snapshot. Tests cover moves, partial shifts, forward mortgage splits, existing overrides, stale/repeated acceptance and preserved future occurrences.

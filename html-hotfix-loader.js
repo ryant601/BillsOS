@@ -57,6 +57,15 @@ const appUi = String.raw`<script id="billsosAppUi">
     ].join('');document.head.appendChild(s)
   }
 
+  function installAppearance(){
+    var key='billsos-theme-v2',button=document.createElement('button');button.id='boAppearance';button.type='button';
+    function apply(value){var dark=value!=='light';document.documentElement.setAttribute('data-billsos-theme',dark?'dark':'light');button.innerHTML='<span aria-hidden="true">'+(dark?'☀':'☾')+'</span><span>'+(dark?'Light appearance':'Midnight appearance')+'</span><span aria-hidden="true">↗</span>';button.setAttribute('aria-label',dark?'Switch to light appearance':'Switch to midnight appearance');}
+    function read(){try{return localStorage.getItem(key)||'dark'}catch(_){return 'dark'}}
+    button.onclick=function(){var next=read()==='light'?'dark':'light';try{localStorage.setItem(key,next)}catch(_){}apply(next)};
+    var host=document.querySelector('.bo-side-bottom');if(host&&!document.getElementById('boAppearance'))host.prepend(button);apply(read());
+    window.addEventListener('storage',function(e){if(e.key===key)apply(e.newValue||'dark')});
+  }
+
   function navigationIcon(name){
     var shapes={
       home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/>',
@@ -181,7 +190,7 @@ var months=[[today.getFullYear(),today.getMonth()+1],[end.getFullYear(),end.getM
 
   function selectControlTab(){if(location.pathname.indexOf('/control')!==0)return;var tab=controlSection();if(typeof window.showTab==='function')window.showTab(tab);syncSidebarActive(tab);document.body.classList.remove('bo-open')}
   window.addEventListener('hashchange',selectControlTab);
-  function install(){addFont();addStyles();document.body.classList.add('bo-app');installSidebar();selectControlTab();buildHome();focusCalendarDate()}
+  function install(){addFont();addStyles();document.body.classList.add('bo-app');installSidebar();installAppearance();selectControlTab();buildHome();focusCalendarDate()}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
 </script>`;
@@ -203,6 +212,7 @@ fs.readFileSync = function patchedReadFileSync(filePath, options) {
     html = upsertScript(html, '<script defer src="/billsos-balance-editor.js?v=20260812balanceeditor1"></script>');
   }
   html = upsertScript(html, '<script defer src="/billsos-sidebar-calculator.js?v=20260828rowcollapse1"></script>');
+  if (!html.includes('id="billsosMidnightCss"')) html = html.replace('</head>', '<script>try{document.documentElement.setAttribute("data-billsos-theme",localStorage.getItem("billsos-theme-v2")||"dark")}catch(_){document.documentElement.setAttribute("data-billsos-theme","dark")}</script><link id="billsosMidnightCss" rel="stylesheet" href="/midnight.css?v=20261106midnight1">\n</head>');
   if (!html.includes('id="billsosAppUi"')) html = html.replace('</body>', appUi + '\n</body>');
   return Buffer.isBuffer(result) ? Buffer.from(html, 'utf8') : html;
 };

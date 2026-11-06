@@ -1,5 +1,5 @@
 (function(){
-  var THEME_KEY='billsos-theme-v1';
+  var THEME_KEY='billsos-theme-v2';
   var CHECKMARK_KEY='billsos-generated-done-v5';
   var AMOUNT_KEY='billsos-amount-adjust-v1';
   var LOW_BALANCE_WARNING=300;
@@ -9,7 +9,7 @@
   var lastAmountSignature='';
   var purgePosted=false;
 
-  function currentTheme(){return localStorage.getItem(THEME_KEY)||'light'}
+  function currentTheme(){try{return localStorage.getItem(THEME_KEY)||'dark'}catch(_){return 'dark'}}
   function themeLabel(){return currentTheme()==='dark'?'☀️':'🌙'}
   function loadCss(id,href){if(document.getElementById(id))return;var l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href=href;document.head.appendChild(l)}
   function loadJs(id,src){if(document.getElementById(id))return;var s=document.createElement('script');s.id=id;s.src=src;s.defer=true;document.head.appendChild(s)}

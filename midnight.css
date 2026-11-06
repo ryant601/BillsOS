@@ -1,0 +1,265 @@
+/* BillsOS Midnight: navy, teal glass, mint balances and coral actions. */
+
+html[data-billsos-theme="dark"]{
+ color-scheme:dark;
+ --midnight-bg:#081722;--midnight-card:rgba(34,61,70,.64);--midnight-inset:rgba(9,30,40,.46);
+ --midnight-ink:#f4f8f7;--midnight-muted:#afc4c8;--midnight-line:rgba(185,220,222,.2);
+ --midnight-mint:#6ce5b5;--midnight-coral:#ff936d;--midnight-gold:#f3cd85;
+ --bo-bg:#081722!important;--bo-bg-2:#0b1e29!important;--bo-card:var(--midnight-card)!important;
+ --bo-inset:var(--midnight-inset)!important;--bo-ink:var(--midnight-ink)!important;--bo-muted:var(--midnight-muted)!important;
+ --bo-faint:#92adb5!important;--bo-line:var(--midnight-line)!important;--bo-green:var(--midnight-mint)!important;
+ --bo-green2:#b3f4dc!important;--bo-soft:rgba(108,229,181,.12)!important;--bo-red:#ffaaa0!important;
+ --bo-shadow:inset 0 1px 0 rgba(237,255,255,.08),0 12px 32px rgba(0,9,18,.15)!important;
+ --billsos-paper:#081722!important;--billsos-surface-solid:#19333d!important;--billsos-inset:var(--midnight-inset)!important;
+ --billsos-ink:var(--midnight-ink)!important;--billsos-muted:var(--midnight-muted)!important;--billsos-line:var(--midnight-line)!important;
+ --billsos-accent:var(--midnight-coral)!important;--billsos-green:var(--midnight-mint)!important;--billsos-red:#ffaaa0!important;
+ --billsos-gold:var(--midnight-gold)!important;--billsos-green-tint:rgba(66,201,148,.12)!important;
+ --billsos-red-tint:rgba(232,117,110,.1)!important;--billsos-gold-tint:rgba(232,187,104,.12)!important;
+ --bg:#081722!important;--paper:#19333d!important;--card:var(--midnight-card)!important;--ink:var(--midnight-ink)!important;
+ --mut:var(--midnight-muted)!important;--muted:var(--midnight-muted)!important;--line:var(--midnight-line)!important;
+ --line2:rgba(185,220,222,.1)!important;--primary:var(--midnight-coral)!important;--green:var(--midnight-mint)!important;
+ --in:var(--midnight-mint)!important;--red:#ffaaa0!important;--out:#ffaaa0!important;--warn:var(--midnight-gold)!important;
+ --gold:var(--midnight-gold)!important;--blue:#9bcce9!important;--softgreen:rgba(66,201,148,.12)!important;
+ --softred:rgba(232,117,110,.1)!important;--softblue:rgba(96,176,213,.12)!important;--softgold:rgba(232,187,104,.12)!important;
+ --cc-bg:#081722!important;--cc-paper:var(--midnight-card)!important;--cc-ink:var(--midnight-ink)!important;
+ --cc-muted:var(--midnight-muted)!important;--cc-line:var(--midnight-line)!important;--cc-accent:var(--midnight-coral)!important;
+ --rp-bg:#102b35!important;--rp-card:var(--midnight-card)!important;--rp-ink:var(--midnight-ink)!important;
+ --rp-muted:var(--midnight-muted)!important;--rp-line:var(--midnight-line)!important;--rp-accent:var(--midnight-coral)!important;
+ --rp-green:var(--midnight-mint)!important;--rp-out:#ffaaa0!important;
+}
+
+html[data-billsos-theme="dark"] body,
+html[data-billsos-theme="dark"] body.bo-app,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control{background:radial-gradient(ellipse at 100% 8%,rgba(0,117,85,.38),transparent 64%),linear-gradient(115deg,#081321,#0a242d 65%,#073c36)!important;background-attachment:fixed!important;color:var(--midnight-ink)!important;min-height:100vh;}
+
+html[data-billsos-theme="dark"] body.bo-app,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control{--bg:#081722!important;--card:var(--midnight-card)!important;--ink:var(--midnight-ink)!important;--mut:var(--midnight-muted)!important;--line:var(--midnight-line)!important;--primary:var(--midnight-coral)!important;--green:var(--midnight-mint)!important;--out:#ffaaa0!important;--bo-bg:#081722!important;--bo-card:var(--midnight-card)!important;--bo-ink:var(--midnight-ink)!important;--bo-muted:var(--midnight-muted)!important;--bo-line:var(--midnight-line)!important;--bo-green:var(--midnight-mint)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-sidebar{background:rgba(7,23,34,.86)!important;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-color:var(--midnight-line)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-brand-mark{background:linear-gradient(145deg,#ffad86,#f47856)!important;color:#17232c!important;border-radius:12px;box-shadow:0 4px 20px rgba(246,123,86,.18);}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-brand strong{font-family:Newsreader,Georgia,serif!important;font-size:27px;letter-spacing:-.04em;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-nav{gap:6px;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-nav a{padding:12px;border:1px solid transparent;border-radius:12px;color:#c1d3d6!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-nav a.is-active{background:linear-gradient(110deg,rgba(108,229,181,.16),rgba(108,229,181,.04))!important;border-color:rgba(108,229,181,.24)!important;color:#b4f7dc!important;box-shadow:none!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-nav a.is-active .bo-icon{color:var(--midnight-mint)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-nav a:hover{background:rgba(196,238,230,.07)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-focus,
+html[data-billsos-theme="dark"] body.bo-app .bo-kpi,
+html[data-billsos-theme="dark"] body.bo-app .bo-panel,
+html[data-billsos-theme="dark"] body.bo-app .bo-week-day,
+html[data-billsos-theme="dark"] body.bo-app .hero,
+html[data-billsos-theme="dark"] body.bo-app .month-panel,
+html[data-billsos-theme="dark"] body.bo-app .card,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control .card,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control .advanced,
+html[data-billsos-theme="dark"] #creditCards .cc-stat,
+html[data-billsos-theme="dark"] #creditCards .cc-panel,
+html[data-billsos-theme="dark"] #liabilities .cc-stat,
+html[data-billsos-theme="dark"] #liabilities .cc-panel,
+html[data-billsos-theme="dark"] #billsReports .rp-kpi,
+html[data-billsos-theme="dark"] #billsReports .rp-panel,
+html[data-billsos-theme="dark"] #billsReports .rp-controls{background:linear-gradient(135deg,rgba(224,250,248,.055),rgba(116,207,188,.025)),var(--midnight-card)!important;border:1px solid var(--midnight-line)!important;border-radius:22px!important;box-shadow:var(--bo-shadow)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-focus,
+html[data-billsos-theme="dark"] body.bo-app .bo-kpi,
+html[data-billsos-theme="dark"] body.bo-app .bo-panel{padding:24px!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-home-head h1,
+html[data-billsos-theme="dark"] #creditCards h1,
+html[data-billsos-theme="dark"] #liabilities h1,
+html[data-billsos-theme="dark"] #billsReports h1{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;color:var(--midnight-ink)!important;font-weight:650!important;letter-spacing:-.045em!important;line-height:1.12!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-home-head h1{font-size:clamp(30px,3.1vw,44px)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-panel h2,
+html[data-billsos-theme="dark"] body.bo-app .bo-week-head h2,
+html[data-billsos-theme="dark"] body.bo-app .bo-detail-head h2,
+html[data-billsos-theme="dark"] body.bo-app .card h2,
+html[data-billsos-theme="dark"] body.bo-app .hero h1{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;color:var(--midnight-ink)!important;font-weight:600!important;letter-spacing:-.03em!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-kpi-value,
+html[data-billsos-theme="dark"] #creditCards .cc-stat strong,
+html[data-billsos-theme="dark"] #liabilities .cc-stat strong,
+html[data-billsos-theme="dark"] #billsReports .rp-kpi>strong{color:var(--midnight-ink);font-weight:600!important;letter-spacing:-.045em!important;font-variant-numeric:tabular-nums;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-focus small,
+html[data-billsos-theme="dark"] body.bo-app .cc-eyebrow,
+html[data-billsos-theme="dark"] body.bo-app .eyebrow{color:var(--midnight-mint)!important;letter-spacing:.14em!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-month,
+html[data-billsos-theme="dark"] body.bo-app .bo-action,
+html[data-billsos-theme="dark"] body.bo-app .bo-status,
+html[data-billsos-theme="dark"] body.bo-app .bo-outlook-month,
+html[data-billsos-theme="dark"] body.bo-app .bo-attention-link,
+html[data-billsos-theme="dark"] body.bo-app .bo-detail-row,
+html[data-billsos-theme="dark"] body.bo-app .bo-detail-close,
+html[data-billsos-theme="dark"] body.bo-app #boAppearance,
+html[data-billsos-theme="dark"] body.bo-app #boMenu{background:rgba(178,224,220,.065)!important;border:1px solid var(--midnight-line)!important;border-radius:13px!important;color:var(--midnight-ink)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-upcoming-row{background:rgba(191,233,229,.04)!important;border-color:rgba(185,220,222,.13)!important;border-radius:13px;padding:15px 13px;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-kpi-icon{background:rgba(108,229,181,.12)!important;color:var(--midnight-mint)!important;border:1px solid rgba(108,229,181,.17);border-radius:14px;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-upcoming-status.is-complete{background:rgba(108,229,181,.13)!important;color:var(--midnight-mint)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-detail-drawer{background:#102a34!important;border-color:var(--midnight-line)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-focus a,
+html[data-billsos-theme="dark"] body.bo-app .bo-detail-action,
+html[data-billsos-theme="dark"] body.bo-app .btn.primary,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control .btn.primary,
+html[data-billsos-theme="dark"] #creditCards button.cc-primary,
+html[data-billsos-theme="dark"] #liabilities button.cc-primary,
+html[data-billsos-theme="dark"] body.bo-app .planner-calculate,
+html[data-billsos-theme="dark"] body.bo-app .planner-add,
+html[data-billsos-theme="dark"] body.bo-app [data-accept-suggestion]{background:linear-gradient(120deg,#ffad86,#ff8e67)!important;color:#15222b!important;border:1px solid #ffb492!important;border-radius:11px!important;font-weight:700!important;box-shadow:0 4px 14px rgba(255,136,96,.1)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-outlook-month:not(.is-negative):not(.is-low) strong,
+html[data-billsos-theme="dark"] body.bo-app .bo-week-day:not(.is-negative):not(.is-low) span,
+html[data-billsos-theme="dark"] body.bo-app .rp-positive{color:var(--midnight-mint)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-week-day.is-low,
+html[data-billsos-theme="dark"] body.bo-app .bo-focus.is-low,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day.is-low:not(.is-negative),
+html[data-billsos-theme="dark"] body.bo-app .month-risk.is-low{background:rgba(112,84,33,.27)!important;border-color:rgba(243,205,133,.4)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-week-day.is-negative,
+html[data-billsos-theme="dark"] body.bo-app .bo-focus.is-negative,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day.is-negative,
+html[data-billsos-theme="dark"] body.bo-app .month-risk.is-negative,
+html[data-billsos-theme="dark"] body.bo-app .bo-attention-item{background:rgba(126,52,53,.27)!important;border-color:rgba(255,170,160,.42)!important;color:#ffbeb4!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-week-day.is-low span,
+html[data-billsos-theme="dark"] body.bo-app .bo-outlook-month.is-low strong,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day-ending.low b,
+html[data-billsos-theme="dark"] body.bo-app .risk-low{color:var(--midnight-gold)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .bo-week-day.is-negative span,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day-ending.negative b,
+html[data-billsos-theme="dark"] body.bo-app .risk-negative,
+html[data-billsos-theme="dark"] body.bo-app .bo-outlook-month.is-negative strong{color:#ffaaa0!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .risk-floor-bar,
+html[data-billsos-theme="dark"] body.bo-app .risk-recommendations,
+html[data-billsos-theme="dark"] body.bo-app .risk-option,
+html[data-billsos-theme="dark"] body.bo-app .calendar-week,
+html[data-billsos-theme="dark"] body.bo-app .calendar-view-switch,
+html[data-billsos-theme="dark"] body.bo-app .planner-option,
+html[data-billsos-theme="dark"] body.bo-app .month-items-summary span{background:rgba(24,50,61,.75)!important;border-color:var(--midnight-line)!important;color:var(--midnight-ink)!important;border-radius:16px!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .calendar-day,
+html[data-billsos-theme="dark"] body.bo-app.calendar-box-mode .calendar-day,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day-balance,
+html[data-billsos-theme="dark"] body.bo-app .calendar-week-body,
+html[data-billsos-theme="dark"] body.bo-app .month-item-row{background:rgba(10,33,44,.3)!important;border-color:rgba(185,220,222,.13)!important;color:var(--midnight-ink)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .calendar-day.is-today{background:rgba(74,178,154,.1)!important;box-shadow:inset 3px 0 var(--midnight-mint)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .calendar-week-toggle,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day-heading strong,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day-balance b,
+html[data-billsos-theme="dark"] body.bo-app .risk-option p,
+html[data-billsos-theme="dark"] body.bo-app .risk-months b,
+html[data-billsos-theme="dark"] body.bo-app .month-item-row strong,
+html[data-billsos-theme="dark"] body.bo-app .month-item-row b{color:var(--midnight-ink)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .calendar-week-action,
+html[data-billsos-theme="dark"] body.bo-app .calendar-day-more{color:var(--midnight-mint)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .calendar-view-switch button[aria-pressed="true"],
+html[data-billsos-theme="dark"] body.bo-app .tab.active,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control .tab.active{background:rgba(108,229,181,.16)!important;color:#b4f7dc!important;border-color:rgba(108,229,181,.35)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .btn,
+html[data-billsos-theme="dark"] body.bo-app .linkbtn,
+html[data-billsos-theme="dark"] body.bo-app .tab,
+html[data-billsos-theme="dark"] body.bo-app .risk-find-payment,
+html[data-billsos-theme="dark"] body.bo-app .suggestion-actions button,
+html[data-billsos-theme="dark"] body.bo-app .month-nav-choose,
+html[data-billsos-theme="dark"] body.bo-app .month-nav-arrow,
+html[data-billsos-theme="dark"] body.bo-app .month-nav-today,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control .btn,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control .tab{background:rgba(182,227,220,.07)!important;color:var(--midnight-ink)!important;border-color:var(--midnight-line)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .ev,
+html[data-billsos-theme="dark"] body.bo-app .ev.out{background:rgba(38,66,76,.72)!important;border-color:var(--midnight-line)!important;color:var(--midnight-ink)!important;box-shadow:inset 3px 0 #e6a08a!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .ev.in{background:rgba(55,156,119,.15)!important;border-color:rgba(108,229,181,.24)!important;box-shadow:inset 3px 0 var(--midnight-mint)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .ev .nm,
+html[data-billsos-theme="dark"] body.bo-app .ev span{color:var(--midnight-ink)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .ev .amt{color:#ffbeb4!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .ev.in .amt{color:var(--midnight-mint)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .ev.xfer,
+html[data-billsos-theme="dark"] body.bo-app .ev.system,
+html[data-billsos-theme="dark"] body.bo-app .ev.funding{background:rgba(111,102,57,.17)!important;box-shadow:inset 3px 0 var(--midnight-gold)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app .ev.xfer .amt,
+html[data-billsos-theme="dark"] body.bo-app .ev.funding .amt{color:var(--midnight-gold)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app input,
+html[data-billsos-theme="dark"] body.bo-app select,
+html[data-billsos-theme="dark"] body.bo-app textarea,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control input,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control select,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control textarea,
+html[data-billsos-theme="dark"] #creditCards input,
+html[data-billsos-theme="dark"] #creditCards select,
+html[data-billsos-theme="dark"] #liabilities input,
+html[data-billsos-theme="dark"] #liabilities select{background:#102b36!important;color:var(--midnight-ink)!important;border-color:rgba(185,220,222,.26)!important;color-scheme:dark;}
+
+html[data-billsos-theme="dark"] body.bo-app dialog,
+html[data-billsos-theme="dark"] body.bo-app .amountEditPopover,
+html[data-billsos-theme="dark"] body.bo-app .planner-dialog,
+html[data-billsos-theme="dark"] body.bo-app .month-picker,
+html[data-billsos-theme="dark"] #creditCards dialog,
+html[data-billsos-theme="dark"] #liabilities dialog{background:#14313c!important;color:var(--midnight-ink)!important;border:1px solid rgba(185,220,222,.32)!important;border-radius:20px;box-shadow:0 30px 90px rgba(0,0,0,.5)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app dialog::backdrop{background:rgba(1,12,20,.65);backdrop-filter:blur(5px);}
+
+html[data-billsos-theme="dark"] body.bo-app.billsos-control .tablewrap,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control table,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control .advanced,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control .workspace-toolbar{background:rgba(12,37,48,.7)!important;border-color:var(--midnight-line)!important;color:var(--midnight-ink)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app.billsos-control th{background:rgba(129,199,189,.08)!important;color:var(--midnight-muted)!important;border-color:var(--midnight-line)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app.billsos-control td,
+html[data-billsos-theme="dark"] #creditCards td,
+html[data-billsos-theme="dark"] #liabilities td{border-color:rgba(185,220,222,.12)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app.billsos-control tr:hover td{background:rgba(108,229,181,.06)!important;}
+
+html[data-billsos-theme="dark"] body.bo-app :focus-visible,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control :focus-visible{outline:2px solid var(--midnight-mint)!important;outline-offset:3px;}
+
+html[data-billsos-theme="dark"] body.bo-app input:focus,
+html[data-billsos-theme="dark"] body.bo-app select:focus,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control input:focus,
+html[data-billsos-theme="dark"] body.bo-app.billsos-control select:focus{border-color:var(--midnight-mint)!important;box-shadow:0 0 0 3px rgba(108,229,181,.14)!important;}
+
+/* Geometry and the appearance switch are shared by light and dark modes. */
+#boAppearance{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:12px;margin:0 0 12px;border:1px solid var(--bo-line);border-radius:12px;background:var(--bo-card);color:var(--bo-ink);font:inherit;font-size:12px;cursor:pointer}
+#boAppearance span:first-child{font-size:16px}
+body.bo-app .bo-home{max-width:1800px}
+@media(min-width:1200px){body.bo-app .bo-home{padding:38px 38px 60px}.bo-home-head{margin-bottom:30px}.bo-home-grid{gap:20px}.bo-kpis{gap:18px}}
+@media(max-width:760px){html[data-billsos-theme="dark"] body.bo-app .bo-focus,html[data-billsos-theme="dark"] body.bo-app .bo-kpi,html[data-billsos-theme="dark"] body.bo-app .bo-panel{padding:18px!important;border-radius:19px!important}html[data-billsos-theme="dark"] body.bo-app .bo-week-day{border-radius:15px!important}.bo-upcoming-amt{font-size:12px}.bo-home-head p{line-height:1.5}}
+@media(prefers-reduced-motion:reduce){body.bo-app *,body.bo-app *::before,body.bo-app *::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* Keep primary and inline editor controls legible above component rules. */
+html[data-billsos-theme="dark"] body.bo-app .suggestion-actions button[data-accept-suggestion]{background:linear-gradient(120deg,#ffad86,#ff8e67)!important;color:#15222b!important;border-color:#ffb492!important}
+html[data-billsos-theme="dark"] body.bo-app .calendar-day .ev button{color:#c5deda!important;opacity:1}
+html[data-billsos-theme="dark"] body.bo-app .month-risk:not(.is-low):not(.is-negative){background:rgba(69,161,116,.14)!important;border-color:rgba(108,229,181,.25)!important;color:#a9ebc9!important}
+
+body.bo-app #billsosThemeToggle{display:none!important}
