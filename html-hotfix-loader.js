@@ -13,24 +13,8 @@ function upsertScript(html, script) {
   return html.replace('</body>', script + '\n</body>');
 }
 
-const appUi = String.raw`<script id="billsosAppUi">
-(function(){
-  'use strict';
-  if(window.__billsosAppUi)return;
-  window.__billsosAppUi=true;
-
-  var DONE_KEY='billsos-generated-done-v5',AMOUNT_KEY='billsos-amount-adjust-v1',DATE_KEY='billsos-pay-adjust-v1',RULE_ID='__billsos_system_rules__';
-  var homeState={data:null,upcoming:[],metrics:{start:0,income:0,outflow:0,end:0}};
-  function money(value){return Number(value||0).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0})}
-  function esc(value){return String(value==null?'':value).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-  function text(node){return String(node&&node.textContent||'').trim()}
-  function num(node){var raw=text(node).replace(/[^0-9.-]/g,'');return Number(raw||0)}
-  function greeting(){var h=new Date().getHours();return h<12?'Good morning':h<18?'Good afternoon':'Good evening'}
-  function addFont(){if(document.getElementById('boFont'))return;var l=document.createElement('link');l.id='boFont';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap';document.head.appendChild(l)}
-
-  function addStyles(){
-    if(document.getElementById('boStyles'))return;
-    var s=document.createElement('style');s.id='boStyles';s.textContent=[
+// Render the shell styles with the document, before any app scripts or API calls.
+const APP_STYLES = [
       ':root{--bo-bg:#f6f7f4;--bo-bg-2:#eceee8;--bo-card:#fff;--bo-inset:#f2f4ef;--bo-ink:#1a2233;--bo-muted:#5f6673;--bo-faint:#878d97;--bo-line:#dde1dc;--bo-green:#24406b;--bo-green2:#7d9fd2;--bo-soft:#e6ecf5;--bo-red:#9c3d33;--bo-shadow:0 1px 2px rgba(26,34,51,.05)}',
       'html{background:var(--bo-bg)}body.bo-app{margin:0!important;background:var(--bo-bg)!important;color:var(--bo-ink)!important;font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;letter-spacing:-.008em}',
       '.bo-sidebar{position:fixed;inset:0 auto 0 0;width:224px;z-index:80;display:flex;flex-direction:column;padding:28px 14px 18px;background:var(--bo-bg-2);border-right:1px solid var(--bo-line)}',
@@ -54,7 +38,26 @@ const appUi = String.raw`<script id="billsosAppUi">
       '@media(max-width:1050px){.bo-week{grid-template-columns:repeat(4,minmax(0,1fr))}}',
       '@media(max-width:760px){.bo-focus{align-items:flex-start;flex-direction:column}.bo-week{grid-template-columns:repeat(2,minmax(0,1fr))}.bo-week-day{min-height:76px}}',
       '@media(max-width:760px){body.bo-app>.wrap{margin-left:0!important;padding:68px 10px 30px!important}.bo-home{margin-left:0;padding:72px 12px 30px}.bo-sidebar{width:min(84vw,290px);padding-top:72px;transform:translateX(-105%);transition:transform .2s ease}.bo-open .bo-sidebar{transform:translateX(0)}#boMenu{display:grid;place-items:center}.bo-open #boScrim{display:block;position:fixed;inset:0;z-index:70;background:rgba(26,34,51,.28)}.bo-kpis{grid-template-columns:1fr}.bo-outlook-values{grid-template-columns:repeat(2,minmax(0,1fr))}.bo-home-head{display:block}.bo-month{display:inline-block;margin-top:14px}.bo-actions{grid-template-columns:1fr}.bo-upcoming-row{grid-template-columns:72px minmax(0,1fr) auto}.bo-detail-drawer{top:auto;height:min(78vh,680px);width:auto;left:0;border-left:0;border-top:1px solid var(--bo-line);border-radius:18px 18px 0 0;transform:translateY(105%)}.bo-detail-open .bo-detail-drawer{transform:translateY(0)}}'
-    ].join('');document.head.appendChild(s)
+    ].join('');
+
+const appUi = String.raw`<script id="billsosAppUi">
+(function(){
+  'use strict';
+  if(window.__billsosAppUi)return;
+  window.__billsosAppUi=true;
+
+  var DONE_KEY='billsos-generated-done-v5',AMOUNT_KEY='billsos-amount-adjust-v1',DATE_KEY='billsos-pay-adjust-v1',RULE_ID='__billsos_system_rules__';
+  var homeState={data:null,upcoming:[],metrics:{start:0,income:0,outflow:0,end:0}};
+  function money(value){return Number(value||0).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0})}
+  function esc(value){return String(value==null?'':value).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function text(node){return String(node&&node.textContent||'').trim()}
+  function num(node){var raw=text(node).replace(/[^0-9.-]/g,'');return Number(raw||0)}
+  function greeting(){var h=new Date().getHours();return h<12?'Good morning':h<18?'Good afternoon':'Good evening'}
+  function addFont(){if(document.getElementById('boFont'))return;var l=document.createElement('link');l.id='boFont';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap';document.head.appendChild(l)}
+
+  function addStyles(){
+    if(document.getElementById('boStyles'))return;
+    var s=document.createElement('style');s.id='boStyles';s.textContent=${JSON.stringify(APP_STYLES)};document.head.appendChild(s)
   }
 
   function installAppearance(){
@@ -182,8 +185,8 @@ var months=[[today.getFullYear(),today.getMonth()+1],[end.getFullYear(),end.getM
     renderHomeCalendar();
     fetch('/api/bills?home='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(data){
       var upcoming=upcomingBills(data),openUpcoming=upcoming.filter(function(x){return !x.completed}),total=openUpcoming.reduce(function(s,x){return s+x.amount},0),income=(data.income||[]).filter(function(x){return x&&x.active!==false}).reduce(function(s,x){return s+Math.abs(Number(x.amount||0))},0);homeState.data=data;homeState.upcoming=upcoming;
-      function renderMetrics(){var c=readCalendarMetrics(),forecast=remainingMonthEnds();homeState.metrics=c;var cards=[['upcoming','Upcoming (14 days)',openUpcoming.length+' due',money(total)+' remaining','▦'],['income','Income remaining',income,money(income)+' scheduled','♙']],outlook='<article class="bo-kpi bo-outlook-card"><div class="bo-kpi-label">Month-end outlook</div><div class="bo-outlook-values">'+forecast.map(function(x){var ready=x.end!=null,state=!ready?'':x.end<0?' is-negative':x.end<300?' is-low':'',status=!ready?'Loading calendar':x.end<0?'Needs attention':x.end<300?'Low balance':'Projected ending',display=ready?money(x.end):'—';return '<button class="bo-outlook-month'+state+'" type="button" data-bo-detail="forecast-'+x.year+'-'+x.month+'" aria-label="'+x.label+' '+x.year+' ending balance '+display+'. '+status+'"><span>'+x.shortLabel+'</span><strong>'+display+'</strong></button>'}).join('')+'</div><div class="bo-kpi-note">Ending balances through December</div></article>';document.getElementById('boHomeKpis').innerHTML=cards.map(function(x){return '<article class="bo-kpi is-clickable" data-bo-detail="'+x[0]+'" role="button" tabindex="0"><span class="bo-kpi-chevron">›</span><div class="bo-kpi-label">'+x[1]+'</div><div class="bo-kpi-value">'+(typeof x[2]==='number'?money(x[2]):x[2])+'</div><div class="bo-kpi-note">'+x[3]+'</div><div class="bo-kpi-icon">'+x[4]+'</div></article>'}).join('')+outlook;document.querySelectorAll('[data-bo-detail]').forEach(function(card){card.onclick=function(){openDetail(this.dataset.boDetail)};if(card.tagName!=='BUTTON')card.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail(this.dataset.boDetail)}}});renderHomeCalendar()}
-      renderMetrics();setTimeout(renderMetrics,1200);setTimeout(renderMetrics,2400);
+      function renderMetrics(){var c=readCalendarMetrics(),forecast=remainingMonthEnds();homeState.metrics=c;var cards=[['upcoming','Upcoming (14 days)',openUpcoming.length+' due',money(total)+' remaining','▦'],['income','Income remaining',income,money(income)+' scheduled','♙']],outlook='<article class="bo-kpi bo-outlook-card"><div class="bo-kpi-label">Month-end outlook</div><div class="bo-outlook-values">'+forecast.map(function(x){var ready=x.end!=null,state=!ready?'':x.end<0?' is-negative':x.end<300?' is-low':'',status=!ready?'Loading calendar':x.end<0?'Needs attention':x.end<300?'Low balance':'Projected ending',display=ready?money(x.end):'—';return '<button class="bo-outlook-month'+state+'" type="button" data-bo-detail="forecast-'+x.year+'-'+x.month+'" aria-label="'+x.label+' '+x.year+' ending balance '+display+'. '+status+'"><span>'+x.shortLabel+'</span><strong>'+display+'</strong></button>'}).join('')+'</div><div class="bo-kpi-note">Ending balances through December</div></article>';document.getElementById('boHomeKpis').innerHTML=cards.map(function(x){return '<article class="bo-kpi is-clickable" data-bo-detail="'+x[0]+'" role="button" tabindex="0"><span class="bo-kpi-chevron">›</span><div class="bo-kpi-label">'+x[1]+'</div><div class="bo-kpi-value">'+(typeof x[2]==='number'?money(x[2]):x[2])+'</div><div class="bo-kpi-note">'+x[3]+'</div><div class="bo-kpi-icon">'+x[4]+'</div></article>'}).join('')+outlook;document.querySelectorAll('[data-bo-detail]').forEach(function(card){card.onclick=function(){openDetail(this.dataset.boDetail)};if(card.tagName!=='BUTTON')card.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail(this.dataset.boDetail)}}});renderHomeCalendar();window.dispatchEvent(new CustomEvent('billsos:home-metrics-ready'))}
+      renderMetrics();window.addEventListener('billsos:calendar-ready',renderMetrics);
       document.getElementById('boUpcoming').innerHTML=upcoming.length?upcoming.map(function(x){return upcomingRow(x,false)}).join(''):'<div class="bo-empty">No bills due in the next 14 days.</div>'
     }).catch(function(){document.getElementById('boUpcoming').innerHTML='<div class="bo-empty">Could not load upcoming bills.</div>'})
   }
@@ -191,7 +194,8 @@ var months=[[today.getFullYear(),today.getMonth()+1],[end.getFullYear(),end.getM
   function selectControlTab(){if(location.pathname.indexOf('/control')!==0)return;var tab=controlSection();if(typeof window.showTab==='function')window.showTab(tab);syncSidebarActive(tab);document.body.classList.remove('bo-open')}
   window.addEventListener('hashchange',selectControlTab);
   function install(){addFont();addStyles();document.body.classList.add('bo-app');installSidebar();installAppearance();selectControlTab();buildHome();focusCalendarDate()}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+  // This script is emitted at the end of body; the shell can mount before deferred scripts finish.
+  install();
 })();
 </script>`;
 
@@ -212,6 +216,19 @@ fs.readFileSync = function patchedReadFileSync(filePath, options) {
     html = upsertScript(html, '<script defer src="/billsos-balance-editor.js?v=20260812balanceeditor1"></script>');
   }
   html = upsertScript(html, '<script defer src="/billsos-sidebar-calculator.js?v=20260828rowcollapse1"></script>');
+  // The server knows the body markup; give it its final shell class before first paint.
+  html = html.replace(/<body([^>]*)>/i, (_match, attributes) => {
+    if (/\bclass=["']/.test(attributes)) return '<body'+attributes.replace(/\bclass=(["'])(.*?)\1/i, (_m, quote, classes) => 'class='+quote+classes+(classes.split(/\s+/).includes('bo-app')?'':' bo-app')+quote)+'>';
+    return '<body'+attributes+' class="bo-app">';
+  });
+  if (!html.includes('id="boStyles"')) html = html.replace('</head>', '<style id="boStyles">'+APP_STYLES+'</style>\n</head>');
+  if (!html.includes('id="boFont"')) html = html.replace('</head>', '<link id="boFont" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">\n</head>');
+  if (isControl || isLegacy) {
+    for (const [id, file] of [['billsosDesignCss','billsos-design.css'],['billsosImpactCss','billsos-impact.css'],['billsosDarkA11yCss','billsos-dark-a11y.css']]) {
+      if (!html.includes('id="'+id+'"')) html = html.replace('</head>', '<link id="'+id+'" rel="stylesheet" href="/'+file+'?v=20261106firstpaint1">\n</head>');
+    }
+  }
+  if (!html.includes('id="billsosRouteBoot"')) html = html.replace('</head>', '<script id="billsosRouteBoot">(function(){var root=document.documentElement,path=location.pathname,view=new URLSearchParams(location.search).get("view")||"home";if(path!=="/"&&path!=="/generated")return;root.setAttribute("data-billsos-view",view);if(view==="credit-cards"||view==="liabilities"||view==="reports")root.classList.add(view+"-active")})()</script><style>html[data-billsos-view="home"] body>.wrap{display:none!important}</style>\n</head>');
   if (!html.includes('id="billsosMidnightCss"')) html = html.replace('</head>', '<script>try{document.documentElement.setAttribute("data-billsos-theme",localStorage.getItem("billsos-theme-v2")||"dark")}catch(_){document.documentElement.setAttribute("data-billsos-theme","dark")}</script><link id="billsosMidnightCss" rel="stylesheet" href="/midnight.css?v=20261106midnight1">\n</head>');
   if (!html.includes('id="billsosAppUi"')) html = html.replace('</body>', appUi + '\n</body>');
   return Buffer.isBuffer(result) ? Buffer.from(html, 'utf8') : html;

@@ -25,7 +25,7 @@ test('calendar projected balance and month outlook remain available', () => {
   assert.match(home, /Month-end outlook/);
   assert.match(home, /Ending balances through December/);
   assert.match(home, /data-bo-detail="forecast-/);
-  assert.match(home, /setTimeout\(renderMetrics,2400\)/);
+  assert.match(home, /addEventListener\('billsos:calendar-ready',renderMetrics\)/);
 });
 
 test('retired bank balance URLs and spending reports are unavailable', () => {

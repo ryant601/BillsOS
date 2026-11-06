@@ -71,30 +71,12 @@
   function install(){
     if(location.pathname!=='/'||new URLSearchParams(location.search).get('view')==='calendar'){revealFallback();return}
     fetch('/api/bills?income14='+Date.now(),{cache:'no-store'}).then(function(response){if(!response.ok)throw new Error('income unavailable');return response.json()}).then(function(data){
-      var rows=scheduledIncome(data),observer=null,settleTimer=0;
-
-      function finalize(){
-        if(settleTimer){clearTimeout(settleTimer);settleTimer=0}
-        if(observer){observer.disconnect();observer=null}
-        patchCard(rows);
-        revealFallback();
-      }
-
-      function armOnce(){
-        if(settleTimer||!document.querySelector('[data-bo-detail="income"]'))return;
-        /* html-hotfix-loader owns the Home KPI markup and deliberately refreshes
-           it at 1.2s and 2.4s while calendar metrics settle. Keep the value hidden
-           through those shell renders, then write the calendar-backed 14-day value
-           once. This prevents the two renderers from ever becoming visible in turn. */
-        settleTimer=setTimeout(finalize,2600);
-        if(observer){observer.disconnect();observer=null}
-      }
-
-      if(document.querySelector('[data-bo-detail="income"]'))armOnce();
-      else{
-        observer=new MutationObserver(function(){armOnce()});
-        observer.observe(document.body,{childList:true,subtree:true});
-      }
+      var rows=scheduledIncome(data);
+      function finalize(){if(patchCard(rows))revealFallback()}
+      // Home emits after its API data and calendar projection have actually rendered.
+      // Reapply to that new card immediately instead of hiding values for a timer.
+      window.addEventListener('billsos:home-metrics-ready',finalize);
+      finalize();
 
       document.addEventListener('click',function(event){
         var card=event.target&&event.target.closest?event.target.closest('[data-bo-detail="income"]'):null;

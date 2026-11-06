@@ -1,5 +1,9 @@
 # BillsOS developer handoff
 
+## November 6, 2026: Stable first paint
+
+`html-hotfix-loader.js` now renders the existing shell CSS and `bo-app` body class into the initial HTML. Head bootstrap selects Home/trackers before the calendar can paint underneath, and the body-end UI script mounts immediately instead of waiting behind deferred scripts at DOMContentLoaded. Control Center design styles and fonts are also declared in the head. Home metrics refresh on `billsos:calendar-ready` and emit `billsos:home-metrics-ready`; `income-14day-home.js` uses that event instead of hiding values for 2.6 seconds while fixed metric timers replace cards. Keep first-paint regression tests passing; do not restore the 1.2/2.4-second rerenders or the settling timeout.
+
 ## November 6, 2026: Midnight visual direction
 
 The owner supplied a Monarch reference: navy-to-teal background, translucent rounded cards, mint balances, and coral actions. `midnight.css` applies this appearance across the existing Home, Calendar, trackers, Reports, and Control Center without changing calculations or records. `html-hotfix-loader.js` installs the stylesheet, sets the theme before paint, and adds a sidebar appearance switch. The new `billsos-theme-v2` preference defaults to dark and retains an explicit light choice. `action-log.js` uses the same key. Control Center overrides need `body.bo-app.billsos-control` specificity because its theme stylesheet is injected later. Browser checks used synthetic data: Home, calendar list, Credit Cards, Control Center, and persisted light/dark switching. Mobile media rules remain in place; a phone viewport was not browser-verified.
