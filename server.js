@@ -32,7 +32,7 @@ app.use((req, res, next) => {
   const file = req.path;
   if (/^\/(?:data|history|backups?|test|scripts|node_modules|docs)(?:\/|$)/i.test(file) ||
       /(?:^|\/)\./.test(file) || /\.(?:json|jsonl|env|log|bak|sql|md)$/i.test(file) ||
-      /^\/(?:server|payment-plan-migration|liability-manager|credit-card-manager|access-control|assistant-api|bills-data-integrity|calendar-note-cleanup|calendar-adjustment-recovery|html-hotfix-loader|[^/]*-preload)\.js$/i.test(file)) {
+      /^\/(?:server|calendar-suggestion-manager|payment-plan-migration|liability-manager|credit-card-manager|access-control|assistant-api|bills-data-integrity|calendar-note-cleanup|calendar-adjustment-recovery|html-hotfix-loader|[^/]*-preload)\.js$/i.test(file)) {
     res.setHeader("Cache-Control", "no-store");
     return res.status(404).end();
   }
@@ -352,6 +352,11 @@ require('./credit-card-manager').register(app, {
   readBills:readBillsData,
   readCompleted:()=>readCheckmarks().completed,
   writeBills:data=>{const saved=writeBillsData(prepareFullWrite(readBillsData(),data));writeReadonlySnapshot(saved);return saved;}
+});
+require('./calendar-suggestion-manager').register(app, {
+  readBills:readBillsData,
+  readCompleted:()=>readCheckmarks().completed,
+  writeBills:data=>{const saved=writeBillsData(data);writeReadonlySnapshot(saved);return saved;}
 });
 require('./liability-manager').register(app, {
   readStore:()=>{syncFixedPaymentPlans();return readTrackerStore('liabilities','items');},

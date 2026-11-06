@@ -1,5 +1,9 @@
 # BillsOS developer handoff
 
+## November 6, 2026: Accept calendar suggestions
+
+Calendar timing cards now offer an owner-only Accept suggestion action. `calendar-suggestion-manager.js` regenerates eligible suggestions from the latest saved projection, rejects stale/ambiguous/paid payments, and atomically saves a one-occurrence amount/date override plus a second one-time payment for splits. Recurring schedules remain intact. Existing sync loads the saved overrides on refresh. The `/api/bills/accept-suggestion` route uses the normal owner write authorization and updates the read-only snapshot. Tests cover moves, partial shifts, forward mortgage splits, existing overrides, stale/repeated acceptance and preserved future occurrences.
+
 ## October 23, 2026: Security hardening
 
 Read-only calendar exports now require a valid BillsOS session and return no-store. Unauthenticated fetchers must use an authenticated browser or a user-exported backup; do not reintroduce public financial endpoints. Repository internals and raw JSON are blocked from static serving. Ask BillsOS is retired; server provider routes and UI loaders are disabled. Production still uses BILLS_PASS and SESSION_SECRET: rotate both following the Railway incident. These code changes do not revoke leaked credentials or make the GitHub repository private.
