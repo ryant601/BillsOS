@@ -79,14 +79,14 @@ function bonusPlannerHtml() {
    <p>Compare how a one-time payment could reduce debt, interest, and monthly bills.</p>
    <form class="cc-debt-fields">
      <label>Expected deposit date<input name="start" type="date" min="${today()}" max="2027-12-31" value="${date}" required></label>
-     <label>Net bonus to add to forecast<input name="bonus" type="number" min="0" max="1000000" step=".01" value="0" required></label>
-     <label>Amount to put toward debt<input name="lump" type="number" min=".01" max="1000000" step=".01" required></label>
+     <label>Bonus amount for debt<input name="lump" type="number" min=".01" max="1000000" step=".01" required></label>
      <label>Cash floor<input name="buffer" type="number" min="0" max="1000000" step=".01" value="${esc(floor)}" required></label>
+     <label><span><input type="checkbox" name="alreadyScheduled" style="width:auto"> Debt portion already on the calendar</span></label>
      <input name="extra" type="hidden" value="0">
      <input name="months" type="hidden" value="1">
      <button type="submit" class="cc-primary">Compare bonus scenarios</button>
    </form>
-   <p class="cc-small">March 1, 2027 is a placeholder. Use your expected deposit date. Leave the bonus amount at zero if the income is already on the calendar. The scenario schedules the extra payments on the deposit date.</p>
+   <p class="cc-small">March 1, 2027 is a placeholder. Use your expected deposit date. Enter only the amount you’re setting aside for debt. BillsOS uses that amount as both the expected deposit and the payment budget on that date. Check the box if the debt portion is already on your calendar.</p>
    <div class="cc-debt-status" role="status"></div>
    <div class="cc-debt-results"></div>
  </section>`;
@@ -135,7 +135,7 @@ function debtPlanDetails(plan, baseline, result) {
      <table class="cc-table"><thead><tr><th>Month</th><th>Debt left</th><th>Current cash ending</th><th>Scenario cash ending</th><th>Change</th><th>Lowest cash</th><th>Potential bill relief</th><th>Cash if cleared bills stop</th></tr></thead><tbody>${months}</tbody></table>
    </div></details>
    <details><summary>Payoff by card</summary><ul>${plan.accounts.map(card => `<li>${esc(card.name)} · ${card.paidOn || money(card.remaining) + ' left at forecast end'}</li>`).join('')}</ul></details>
-   ${owner && plan.safe && payments ? '<button type="button" class="cc-primary" data-save-debt-plan>' + (result.bonus ? 'Add bonus and payments to calendar' : 'Add these payments to calendar') + '</button>' : ''}`;
+   ${owner && plan.safe && payments ? '<button type="button" class="cc-primary" data-save-debt-plan>' + (result.bonus ? 'Add debt funding and payments to calendar' : 'Add these payments to calendar') + '</button>' : ''}`;
 }
 
 function bindDebtPlanner(section) {
@@ -146,7 +146,9 @@ function bindDebtPlanner(section) {
  form.onsubmit = async event => {
    event.preventDefault();
    const request = ++version, planId = crypto.randomUUID();
-   const input = { ...Object.fromEntries(new FormData(form)), planId };
+   const { alreadyScheduled, ...fields } = Object.fromEntries(new FormData(form));
+   const input = { ...fields, planId };
+   if (section.dataset.debtPlanner === 'bonus' && !alreadyScheduled) input.bonus = fields.lump;
    const button = event.submitter;
    button.disabled = true;
    box.replaceChildren();
@@ -181,7 +183,7 @@ function bindDebtPlanner(section) {
            const saved = await api('/debt-scenarios/save', {input, strategy, fingerprint:result.fingerprint, planId});
            version++;
            box.replaceChildren();
-           status.textContent = saved.saved + ' payments' + (saved.bonusAdded ? ' and the expected bonus' : '') + ' added to your calendar.';
+           status.textContent = saved.saved + ' payments' + (saved.bonusAdded ? ' and the debt funding deposit' : '') + ' added to your calendar.';
            await refreshPlanned();
          } catch (error) {
            status.textContent = error.message;
