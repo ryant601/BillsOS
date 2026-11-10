@@ -88,3 +88,17 @@ test('a bonus comparison favors whole-card payoff for recurring relief and shows
   assert.equal(relief.monthly[1].possibleRelief, 25);
   assert.equal(relief.monthly[0].ending, avalanche.monthly[0].ending);
 });
+
+test('March bonus compares LMCC payoff after earlier dues and shows the remaining months of relief', () => {
+  const data = fixture();
+  const result = debtScenarios(data, cards, {...input, start:'2027-03-01', months:1,
+    extra:0, lump:2700, bonus:2700, includeLmcc:'on'}, {}, date);
+  const plan = result.scenarios.find(item => item.strategy === 'lmcc');
+  assert.equal(result.lmccAssumed,true);
+  assert.equal(plan.payments[0].debtAccountId,'lmcc-dues-2027');
+  assert.equal(plan.payments[0].amount,2500);
+  assert.equal(plan.payments.reduce((sum,payment) => sum + payment.amount,0),2700);
+  assert.equal(plan.monthly.find(month => month.month === '2027-03').possibleRelief >= 250,true);
+  assert.ok(plan.monthlyRelief >= 250);
+  assert.equal(data.oneTimeEvents.length,1);
+});

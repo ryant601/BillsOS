@@ -82,6 +82,7 @@ function bonusPlannerHtml() {
      <label>Bonus amount for debt<input name="lump" type="number" min=".01" max="1000000" step=".01" required></label>
      <label>Cash floor<input name="buffer" type="number" min="0" max="1000000" step=".01" value="${esc(floor)}" required></label>
      <label><span><input type="checkbox" name="alreadyScheduled" style="width:auto"> Debt portion already on the calendar</span></label>
+     <label><span><input type="checkbox" name="includeLmcc" style="width:auto" checked> Consider 2027 LMCC dues</span></label>
      <input name="extra" type="hidden" value="0">
      <input name="months" type="hidden" value="1">
      <button type="submit" class="cc-primary">Compare bonus scenarios</button>
@@ -92,9 +93,9 @@ function bonusPlannerHtml() {
  </section>`;
 }
 
-const strategyLabels = {baseline:'Current calendar', avalanche:'Avalanche', snowball:'Snowball', relief:'Monthly relief'};
+const strategyLabels = {baseline:'Current calendar', avalanche:'Avalanche', snowball:'Snowball', relief:'Monthly relief',lmcc:'LMCC first'};
 function scenarioChart(result, cash = false) {
- const colors = ['#8a9ba6', '#55b99a', '#e59a7c', '#a99bdc'];
+ const colors = ['#8a9ba6', '#55b99a', '#e59a7c', '#a99bdc', '#e4c478'];
  const series = result.scenarios.map(plan => cash ? plan.monthly.map(row => row.ending)
    : [result.starting, ...plan.monthly.map(row => row.debt)]);
  const values = series.flat();
@@ -106,7 +107,7 @@ function scenarioChart(result, cash = false) {
    return `<polyline points="${points}" fill="none" stroke="${colors[i]}" stroke-width="3" vector-effect="non-scaling-stroke"/>`;
  });
  const floor = cash ? `<path d="M12 ${y(result.buffer)}H588" stroke="currentColor" stroke-dasharray="5 5" opacity=".65"/>` : '';
- const title = cash ? 'Month-end cash' : 'Estimated card debt';
+ const title = cash ? 'Month-end cash' : 'Estimated remaining debt';
  const legend = result.scenarios.map((plan, i) => `<span><i style="background:${colors[i]}"></i>${strategyLabels[plan.strategy]}</span>`);
  if (cash) legend.push(`<span>Dashed line · ${money(result.buffer)} cash floor</span>`);
  return `<figure class="cc-debt-chart">
@@ -129,12 +130,12 @@ function debtPlanDetails(plan, baseline, result) {
  return `<h3>${strategyLabels[plan.strategy]} details</h3>
    ${plan.firstBelow ? `<p class="cc-error">Cash falls below ${money(result.buffer)} on ${plan.firstBelow}. Adjust the amount or timing to save this plan.</p>` : ''}
    ${payments ? `<details open><summary>Calendar payments · ${plan.payments.length} · ${money(plan.payments.reduce((sum, payment) => sum + payment.amount, 0))}</summary>
-     <div class="cc-table-wrap"><table class="cc-table"><thead><tr><th>Date</th><th>Card</th><th>Extra</th></tr></thead><tbody>${payments}</tbody></table></div>
+     <div class="cc-table-wrap"><table class="cc-table"><thead><tr><th>Date</th><th>Account</th><th>Extra</th></tr></thead><tbody>${payments}</tbody></table></div>
    </details>` : ''}
    <details open><summary>Monthly debt and cash flow</summary><div class="cc-table-wrap">
      <table class="cc-table"><thead><tr><th>Month</th><th>Debt left</th><th>Current cash ending</th><th>Scenario cash ending</th><th>Change</th><th>Lowest cash</th><th>Potential bill relief</th><th>Cash if cleared bills stop</th></tr></thead><tbody>${months}</tbody></table>
    </div></details>
-   <details><summary>Payoff by card</summary><ul>${plan.accounts.map(card => `<li>${esc(card.name)} · ${card.paidOn || money(card.remaining) + ' left at forecast end'}</li>`).join('')}</ul></details>
+   <details><summary>Payoff by account</summary><ul>${plan.accounts.map(card => `<li>${esc(card.name)} · ${card.paidOn || money(card.remaining) + ' left at forecast end'}</li>`).join('')}</ul></details>
    ${owner && plan.safe && payments ? '<button type="button" class="cc-primary" data-save-debt-plan>' + (result.bonus ? 'Add debt funding and payments to calendar' : 'Add these payments to calendar') + '</button>' : ''}`;
 }
 
@@ -159,11 +160,11 @@ function bindDebtPlanner(section) {
      status.textContent = result.modeled ? '' : 'Add a current balance, balance date, and APR in Card details to begin.';
      if (!result.modeled) return;
      const [baseline] = result.scenarios;
-     box.innerHTML = `<p class="cc-small">${result.modeled} cards modeled through ${result.through}.${result.excluded.length ? ' Needs a balance, date, or APR: ' + result.excluded.map(esc).join(', ') + '.' : ''}${result.unlinked.length ? ' No linked bill: ' + result.unlinked.map(esc).join(', ') + '.' : ''} ${result.bonus ? ' Includes ' + money(result.bonus) + ' in expected income on ' + result.start + ' across all scenarios.' : ''}${result.reliefApproximate ? ' Monthly relief uses a ranked estimate for large card sets.' : ''} Estimates assume fixed APR and no new charges. Existing bills and scheduled payments stay in the cash forecast after a projected payoff. Potential bill relief shows scheduled payments after a projected payoff that you could remove once the issuer confirms the balance is cleared. Cash floor checks every day from the first added payment through the forecast end.</p>
+     box.innerHTML = `<p class="cc-small">${result.modeled} accounts modeled through ${result.through}.${result.excluded.length ? ' Needs a balance, date, or APR: ' + result.excluded.map(esc).join(', ') + '.' : ''}${result.unlinked.length ? ' No linked bill: ' + result.unlinked.map(esc).join(', ') + '.' : ''} ${result.bonus ? ' Includes ' + money(result.bonus) + ' in expected income on ' + result.start + ' across all scenarios.' : ''}${result.reliefApproximate ? ' Monthly relief uses a ranked estimate for large card sets.' : ''} ${input.includeLmcc ? ' LMCC estimate starts at $3,000 in January with no interest assumed.' : ''}${result.lmccAssumed ? ' No 2027 LMCC payments were found. This preview assumes $250 at each month-end through December.' : ''} Estimates assume fixed APR and no new charges. Existing bills and scheduled payments stay in the cash forecast after a projected payoff. Potential bill relief shows scheduled payments after a projected payoff that you could remove once the issuer confirms the balance is cleared. Cash floor checks every day from the first added payment through the forecast end.</p>
        <div class="cc-debt-choices">${result.scenarios.map(plan => `<button type="button" class="cc-stat" data-strategy="${plan.strategy}" aria-pressed="false">
        <strong>${strategyLabels[plan.strategy]}</strong><span>${plan.payoffDate ? 'Paid off ' + plan.payoffDate : money(plan.remaining) + ' left at forecast end'}</span>
        <span>${money(plan.interest)} interest through forecast${plan.strategy !== 'baseline' ? ' · ' + money(baseline.interest - plan.interest) + ' saved' : ''}</span>
-       <span>${plan.monthlyRelief > 0 ? money(plan.monthlyRelief) + '/mo potential relief from cards cleared by extras' : '—'}</span>
+       <span>${plan.monthlyRelief > 0 ? money(plan.monthlyRelief) + '/mo potential relief from accounts cleared by extras' : '—'}</span>
        <span>Low cash ${money(plan.lowest)} on ${plan.lowestDate}</span>
        <span>${plan.safe ? 'Within cash floor' : 'Below cash floor'}</span></button>`).join('')}</div>
        <div class="cc-debt-charts">${scenarioChart(result)}${scenarioChart(result, true)}</div><div class="cc-debt-detail"></div>`;
@@ -209,7 +210,7 @@ function options() {
  box.innerHTML='<p>'+(result.safe?'These options keep your chosen buffer through '+esc(result.checkedThrough)+'.':'No safe option at this amount and buffer. Try a smaller payment or a later range.')+'</p>'+result.options.map((o,i)=>'<article class="cc-option"><strong>'+esc(o.date)+' · '+money(o.amount)+'</strong><div>Ending that day: '+money(o.before)+' → '+money(o.after)+'</div><div class="cc-small">Lowest afterward: '+money(o.lowest)+' on '+esc(o.lowestDate)+'</div>'+(o.safe&&owner?'<button class="cc-primary" data-plan="'+i+'">Add this payment to calendar</button>':'')+'</article>').join('');
  box.querySelectorAll('[data-plan]').forEach(b=>b.onclick=async()=>{if(busy)return;busy=true;b.disabled=true;try{const o=result.options[Number(b.dataset.plan)];await api('/payments',{...preview.input,...o,planId:preview.planIds[Number(b.dataset.plan)]});preview=null;box.innerHTML='<p>Payment added. Your balance is unchanged until you update it after posting.</p>';notice('Extra payment saved to the calendar.');await refreshPlanned();}catch(err){notice(err.message,true);}finally{busy=false;b.disabled=false;}});
 }
-function planned(){const box=root.querySelector('#ccPlanned');if(!box)return;const events=(snapshot?.data?.oneTimeEvents||[]).filter(e=>e.creditCardId&&store.cards.some(c=>c.id===e.creditCardId)).sort((a,b)=>a.date.localeCompare(b.date));box.innerHTML=events.length?events.map(e=>'<p><strong>'+esc(e.date)+' · '+esc(e.name)+'</strong> · '+money(Math.abs(e.amount))+' <a href="/?view=calendar">Open calendar</a></p>').join(''):'<p class="cc-small">No additional payments planned yet.</p>';}
+function planned(){const box=root.querySelector('#ccPlanned');if(!box)return;const events=(snapshot?.data?.oneTimeEvents||[]).filter(e=>e.debtAccountId==='lmcc-dues-2027'||(e.creditCardId&&store.cards.some(c=>c.id===e.creditCardId))).sort((a,b)=>a.date.localeCompare(b.date));box.innerHTML=events.length?events.map(e=>'<p><strong>'+esc(e.date)+' · '+esc(e.name)+'</strong> · '+money(Math.abs(e.amount))+' <a href="/?view=calendar">Open calendar</a></p>').join(''):'<p class="cc-small">No additional payments planned yet.</p>';}
 async function refreshPlanned(){const r=await fetch('/api/bills',{cache:'no-store',credentials:'same-origin'});if(r.ok){snapshot={data:await r.json()};planned();store=await api('');monthlyEstimates();}}
 window.addEventListener('billsos:calendar-ready',e=>{snapshot=e.detail;planned();});
 root.innerHTML='<p>Loading your credit cards…</p>';
