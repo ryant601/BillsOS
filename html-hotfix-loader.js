@@ -147,7 +147,14 @@ var months=[[today.getFullYear(),today.getMonth()+1],[end.getFullYear(),end.getM
   }
   function focusCalendarDate(){
     var params=new URLSearchParams(location.search),date=params.get('focus');if(params.get('view')!=='calendar'||!/^20\d{2}-\d{2}-\d{2}$/.test(date||''))return;
-    var attempts=0;function jump(){var day=Array.from(document.querySelectorAll('#mount .calendar-day[data-date]')).find(function(node){return node.dataset.date===date});if(!day){if(++attempts<80)setTimeout(jump,150);return}var panel=day.closest('.month-panel'),button=panel&&document.getElementById('btn-'+panel.id.replace(/^panel-/,''));if(button)button.click();var week=day.closest('.calendar-week');if(week&&window.BillsOSCalendarList)window.BillsOSCalendarList.setExpanded(week,true,true);var currentMonth=isoDate(new Date()).slice(0,7),currentPanel=document.querySelector('.month-panel[data-year=\"'+currentMonth.slice(0,4)+'\"][data-month=\"'+Number(currentMonth.slice(5))+'\"]'),ahead=currentPanel&&currentPanel.querySelector('.risk-ahead .risk-option')&&currentPanel.querySelector('.risk-ahead'),target=params.get('section')==='suggestions'&&((date.slice(0,7)!==currentMonth&&ahead)||panel&&panel.querySelector('.risk-recommendations'))||day;if(target===ahead&&currentPanel){var aheadButton=document.getElementById('btn-'+currentPanel.id.replace(/^panel-/,''));if(aheadButton)aheadButton.click()}requestAnimationFrame(function(){target.scrollIntoView({behavior:'smooth',block:'center'})})}jump()
+    var attempts=0;function jump(){var day=Array.from(document.querySelectorAll('#mount .calendar-day[data-date]')).find(function(node){return node.dataset.date===date});if(!day){if(++attempts<80)setTimeout(jump,150);return}var panel=day.closest('.month-panel'),button=panel&&document.getElementById('btn-'+panel.id.replace(/^panel-/,''));if(button)button.click();var week=day.closest('.calendar-week');if(week&&window.BillsOSCalendarList)window.BillsOSCalendarList.setExpanded(week,true,true);var currentMonth=isoDate(new Date()).slice(0,7),currentPanel=document.querySelector('.month-panel[data-year=\"'+currentMonth.slice(0,4)+'\"][data-month=\"'+Number(currentMonth.slice(5))+'\"]'),ahead=currentPanel&&currentPanel.querySelector('.risk-ahead .risk-option')&&currentPanel.querySelector('.risk-ahead'),target=params.get('section')==='suggestions'&&((date.slice(0,7)!==currentMonth&&ahead)||panel&&panel.querySelector('.risk-recommendations'))||day;if(target===ahead&&currentPanel){var aheadButton=document.getElementById('btn-'+currentPanel.id.replace(/^panel-/,''));if(aheadButton)aheadButton.click()}
+      // The deep link is a one-time jump. Later reloads use the selected month.
+      var url = new URL(location.href);
+      url.searchParams.delete('focus');
+      if (url.searchParams.get('section') === 'suggestions') url.searchParams.delete('section');
+      history.replaceState(history.state, '', url);
+      requestAnimationFrame(function(){target.scrollIntoView({behavior:'smooth',block:'center'})})
+    }jump()
   }
   function installDetailDrawer(){
     if(document.getElementById('boDetailDrawer'))return;

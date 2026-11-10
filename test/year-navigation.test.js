@@ -110,3 +110,28 @@ test('picker arrow keys move focus within the displayed year', () => {
   h.picker.dispatch('keydown', { target: el('btn-oct'), key: 'ArrowRight', preventDefault() {} });
   assert.equal(h.document.focused.id, 'btn-nov');
 });
+
+test('a December deep link is consumed so an edit reload restores March', () => {
+  const h = harness();
+  const source = fs.readFileSync(path.join(__dirname, '..', 'html-hotfix-loader.js'), 'utf8');
+  const jump = source.slice(source.indexOf('  function focusCalendarDate(){'), source.indexOf('  function installDetailDrawer(){'));
+  let url = new URL('https://example.test/?view=calendar&focus=2026-12-08&section=suggestions&other=keep#calendar');
+  let scrolls = 0;
+  const panel = { id: 'panel-dec', querySelector: () => null };
+  const day = { dataset: {date:'2026-12-08'}, closest: selector => selector === '.month-panel' ? panel : null,
+    scrollIntoView: () => { scrolls++; } };
+  const location = { get search(){ return url.search; }, get href(){ return url.href; } };
+  const document = { querySelectorAll: () => [day], querySelector: () => null, getElementById: h.document.getElementById };
+  const history = { state: null, replaceState(_state, _title, next){ url = new URL(next); } };
+  const focus = new Function('location','document','history','requestAnimationFrame','isoDate',
+    jump + '\nreturn focusCalendarDate;')(location, document, history, cb => cb(), () => '2026-11-10');
+  focus();
+  assert.equal(h.api.startMonth(), 'dec');
+  assert.equal(url.search, '?view=calendar&other=keep');
+  assert.equal(url.hash, '#calendar');
+  h.api.showMonth('mar-2027');
+  h.api.showMonth(h.api.startMonth());
+  focus();
+  assert.equal(h.elements.get('monthNavLabel').textContent, 'March 2027');
+  assert.equal(scrolls, 1);
+});
