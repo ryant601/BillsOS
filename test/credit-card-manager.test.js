@@ -70,7 +70,7 @@ test('payment checks future low days instead of only payment day and accepts exp
 test('commit rechecks latest cash flow, saves once, preserves calendar, and rejects stale card edits',()=>{
  const routes={};const app={get:(p,f)=>routes['GET '+p]=f,post:(p,f)=>routes['POST '+p]=f};
  let data=fixture(),store={revision:1,cards:[card]},writes=0;
- register(app,{readStore:()=>structuredClone(store),writeStore:s=>{store=s;},readBills:()=>structuredClone(data),writeBills:d=>{data=d;writes++;return d;}});
+ register(app,{currentDate:()=> '2026-11-03',readStore:()=>structuredClone(store),writeStore:s=>{store=s;},readBills:()=>structuredClone(data),writeBills:d=>{data=d;writes++;return d;}});
  function call(path,body){const response={statusCode:200,status(s){this.statusCode=s;return this;},json(v){this.body=v;return this;}};routes['POST '+path]({body},response);return response;}
  const payload={cardId:'card',date:'2026-11-05',amount:200,buffer:950,planId:'abcdefghijklmnop123'};
  assert.equal(call('/api/credit-cards/payments',payload).body.saved,true);assert.equal(data.oneTimeEvents.length,2);assert.equal(data.oneTimeEvents[1].amount,-200);

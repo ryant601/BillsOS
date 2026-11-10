@@ -12,21 +12,20 @@ const estimate = c => (store.estimates||[]).find(e=>e.cardId===c.id&&e.available
 const today = () => new Date().toLocaleDateString('en-CA', {timeZone:'America/New_York'});
 async function api(path, body) { const r = await fetch('/api/credit-cards' + path, { method:body ? 'POST':'GET', credentials:'same-origin', cache:'no-store', headers:{'Content-Type':'application/json'}, ...(body ? {body:JSON.stringify(body)} : {}) }); const data = await r.json(); if (!r.ok) throw new Error(data.error || 'Could not save'); return data; }
 const cards = () => store.cards.filter(c => !c.archived);
-const flexibleCards = () => cards();
 function notice(text, error) { const el = root.querySelector('#ccNotice'); el.textContent = text; el.className = 'cc-notice' + (error ? ' cc-error' : ''); }
 function dueDateLabel(card) { const d=Number(card.dueDay);if(!d)return 'Not linked';const suffix=d%100>=11&&d%100<=13?'th':({1:'st',2:'nd',3:'rd'}[d%10]||'th');return d+suffix+(d>28?' (or month-end)':''); }
 function table(list) { return '<div class="cc-table-wrap"><table class="cc-table"><thead><tr><th>Card</th><th>Due each month</th><th>Recorded balance</th><th>Estimated today</th><th>APR</th><th>Monthly payment</th><th>Utilization</th><th></th></tr></thead><tbody>' + list.map(c => '<tr><td><strong>'+esc(c.name)+'</strong><div class="cc-small">'+(c.balanceAsOf?'Updated '+esc(c.balanceAsOf):'Balance needed')+'</div></td><td>'+esc(dueDateLabel(c))+'</td><td>'+money(c.balance)+'</td><td>'+money(estimate(c)?.current)+'</td><td>'+(c.apr == null?'—':c.apr+'%')+'</td><td>'+money(c.payment)+'</td><td>'+(c.limit>0&&c.balance!=null?(100*c.balance/c.limit).toFixed(1)+'%':'—')+'</td><td><button data-edit="'+esc(c.id)+'">'+(owner?'Update':'View')+'</button>'+(owner?' <button data-remove="'+esc(c.id)+'">Remove</button>':'')+'</td></tr>').join('')+'</tbody></table></div>'; }
 function render() {
  const active=cards(), known=active.filter(c=>c.balance!=null), total=known.reduce((s,c)=>s+c.balance,0), initial=known.reduce((s,c)=>s+(c.history?.[0]?.balance??c.balance),0), interest=known.filter(c=>c.apr!=null).reduce((s,c)=>s+c.balance*c.apr/1200,0), missing=active.length-known.length;
- root.innerHTML='<header class="cc-top"><div><div class="cc-eyebrow">YOUR PATH TO DEBT FREE</div><h1>Credit Cards</h1><p>Know what you owe. Choose your next move.</p></div>'+(owner?'<button id="ccAdd" class="cc-primary">＋ Add card</button>':'')+'</header><div id="ccNotice" class="cc-notice" role="status">Recorded balances stay as entered. Estimates account for interest and payments marked paid, assuming no new spending.</div><section class="cc-stats">'+[['Recorded debt',known.length?money(total):'—'],['Reduction since first entries',known.length?money(initial-total):'—'],['Monthly payments',money(active.reduce((s,c)=>s+(c.payment||0),0))],['Estimated monthly interest',known.some(c=>c.apr!=null)?money(interest):'—']].map(x=>'<article class="cc-stat"><span>'+x[0]+'</span><strong>'+x[1]+'</strong></article>').join('')+'</section><p class="cc-small">'+known.length+' of '+active.length+' balances entered'+(missing?' · Totals are incomplete until all balances are entered.':'.')+' Fixed payment plans are tracked in Liabilities. Interest estimate covers cards with an APR entered.</p><details class="cc-panel cc-collapse" id="ccCardDetails" '+(expanded('billsos-card-details-open',false)?'open':'')+'><summary>Card details <span>Balances, APRs &amp; monthly updates</span></summary><p>Due dates come from the Bills control center and refresh when this page loads. Calendar moves can differ. Monthly payments here are budgets for payoff estimates; scheduled bills remain managed in Bills.</p>'+table(active.filter(c=>!c.paymentPlan))+(store.cards.some(c=>c.archived)?'<details class="cc-archive"><summary>Archived cards</summary>'+table(store.cards.filter(c=>c.archived))+'</details>':'')+'</details>'+'<details class="cc-panel cc-collapse cc-monthly" id="ccEstimateDetails" '+(expanded('billsos-card-estimates-open',false)?'open':'')+'><summary>Monthly balance estimates <span>No new spending assumed</span></summary><div id="ccEstimates"></div></details><div class="cc-grid"><section class="cc-panel"><h2>Payoff strategy</h2><p>Compare paying the highest interest rate first with clearing the smallest balances first. Fixed payment plans are managed in Liabilities.</p><form id="ccScenario" class="cc-form"><label>Strategy<select name="strategy"><option value="avalanche">Avalanche · highest APR first</option><option value="snowball">Snowball · smallest balance first</option></select></label><label>Extra each month<input name="extra" type="number" min="0" step=".01" value="0"></label><label>One-time lump sum<input name="lump" type="number" min="0" step=".01" value="0"></label><div class="cc-actions"><button type="submit">Compare payoff</button></div></form><div id="ccPayoff" class="cc-note"></div></section><section class="cc-panel"><h2>Find room for an extra payment</h2><p>Check a payment against every daily ending balance from its date through December 2027, including payments already planned.</p><form id="ccPayment" class="cc-form"><label class="cc-wide">Card<select name="cardId">'+active.filter(c=>!c.paymentPlan&&c.balance>0).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select></label><label>Extra payment<input name="amount" type="number" min=".01" step=".01" required placeholder="100.00"></label><label>Keep at least<input name="buffer" type="number" min="0" step=".01" value="950" required></label><label>Earliest date<input name="start" type="date" min="'+today()+'" max="2027-12-31" value="'+today()+'" required></label><label>Latest date<input name="end" type="date" min="'+today()+'" max="2027-12-31" value="'+new Date(Date.now()+30*864e5).toISOString().slice(0,10)+'" required></label><button type="submit" class="cc-primary cc-wide" '+(!owner?'disabled':'')+'>Find payment dates</button></form><div id="ccOptions" aria-live="polite"></div></section></div><section class="cc-panel"><h2>Additional payments on your calendar</h2><p>These are scheduled expenses, not confirmed payments. Edit or remove them on the calendar, and update balances after payments post.</p><div id="ccPlanned"></div></section>'+removedAccounts()+'<dialog id="ccDialog"><form id="ccEdit" class="cc-form"></form></dialog>';
+ root.innerHTML='<header class="cc-top"><div><div class="cc-eyebrow">YOUR PATH TO DEBT FREE</div><h1>Credit Cards</h1><p>Know what you owe. Choose your next move.</p></div>'+(owner?'<button id="ccAdd" class="cc-primary">＋ Add card</button>':'')+'</header><div id="ccNotice" class="cc-notice" role="status">Recorded balances stay as entered. Estimates account for interest and payments marked paid, assuming no new spending.</div><section class="cc-stats">'+[['Recorded debt',known.length?money(total):'—'],['Reduction since first entries',known.length?money(initial-total):'—'],['Monthly payments',money(active.reduce((s,c)=>s+(c.payment||0),0))],['Estimated monthly interest',known.some(c=>c.apr!=null)?money(interest):'—']].map(x=>'<article class="cc-stat"><span>'+x[0]+'</span><strong>'+x[1]+'</strong></article>').join('')+'</section><p class="cc-small">'+known.length+' of '+active.length+' balances entered'+(missing?' · Totals are incomplete until all balances are entered.':'.')+' Fixed payment plans are tracked in Liabilities. Interest estimate covers cards with an APR entered.</p><details class="cc-panel cc-collapse" id="ccCardDetails" '+(expanded('billsos-card-details-open',false)?'open':'')+'><summary>Card details <span>Balances, APRs &amp; monthly updates</span></summary><p>Due dates come from the Bills control center and refresh when this page loads. Calendar moves can differ. Monthly payments here are budgets for payoff estimates; scheduled bills remain managed in Bills.</p>'+table(active.filter(c=>!c.paymentPlan))+(store.cards.some(c=>c.archived)?'<details class="cc-archive"><summary>Archived cards</summary>'+table(store.cards.filter(c=>c.archived))+'</details>':'')+'</details>'+'<details class="cc-panel cc-collapse cc-monthly" id="ccEstimateDetails" '+(expanded('billsos-card-estimates-open',false)?'open':'')+'><summary>Monthly balance estimates <span>No new spending assumed</span></summary><div id="ccEstimates"></div></details>'+debtPlannerHtml()+'<section class="cc-panel"><h2>Find room for an extra payment</h2><p>Check a payment against every daily ending balance from its date through December 2027, including payments already planned.</p><form id="ccPayment" class="cc-form"><label class="cc-wide">Card<select name="cardId">'+active.filter(c=>!c.paymentPlan&&c.balance>0).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select></label><label>Extra payment<input name="amount" type="number" min=".01" step=".01" required placeholder="100.00"></label><label>Keep at least<input name="buffer" type="number" min="0" step=".01" value="950" required></label><label>Earliest date<input name="start" type="date" min="'+today()+'" max="2027-12-31" value="'+today()+'" required></label><label>Latest date<input name="end" type="date" min="'+today()+'" max="2027-12-31" value="'+new Date(Date.now()+30*864e5).toISOString().slice(0,10)+'" required></label><button type="submit" class="cc-primary cc-wide" '+(!owner?'disabled':'')+'>Find payment dates</button></form><div id="ccOptions" aria-live="polite"></div></section><section class="cc-panel"><h2>Additional payments on your calendar</h2><p>These are scheduled expenses, not confirmed payments. Edit or remove them on the calendar, and update balances after payments post.</p><div id="ccPlanned"></div></section>'+removedAccounts()+'<dialog id="ccDialog"><form id="ccEdit" class="cc-form"></form></dialog>';
  root.querySelector('#ccAdd')?.addEventListener('click',()=>edit(null));
  bindRemoval();
  root.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(store.cards.find(c=>c.id===b.dataset.edit)));
- root.querySelector('#ccScenario').onsubmit=e=>{e.preventDefault();try{payoff();}catch(err){notice(err.message,true);}};
+ bindDebtPlanner();
  root.querySelector('#ccPayment').onsubmit=async e=>{ e.preventDefault(); if(busy)return; busy=true; const button=e.submitter;button.disabled=true;try { const input=Object.fromEntries(new FormData(e.target)); preview={input, result:await api('/preview',input)}; options(); } catch(err){notice(err.message,true);} finally{busy=false;button.disabled=false;} };
  root.querySelector('#ccPayment').oninput=()=>{preview=null;root.querySelector('#ccOptions').innerHTML='';};
  root.querySelectorAll('.cc-collapse').forEach(el=>el.addEventListener('toggle',()=>{try{localStorage.setItem(el.id==='ccCardDetails'?'billsos-card-details-open':'billsos-card-estimates-open',el.open?'1':'0');}catch(_){}}));
- monthlyEstimates(); payoff(); planned();
+ monthlyEstimates(); planned();
 }
 function removedAccounts(){return (store.removed||[]).length?'<details class="cc-panel cc-monthly"><summary>Removed accounts ('+store.removed.length+')</summary><p>Removed from tracking only. Bills and calendar payments are unchanged.</p>'+store.removed.map(c=>'<p>'+esc(c.name)+(owner?' <button data-restore="'+esc(c.id)+'">Restore</button>':'')+'</p>').join('')+'</details>':'';}
 function bindRemoval(){for(const action of ['remove','restore'])root.querySelectorAll('[data-'+action+']').forEach(b=>b.onclick=async()=>{if(busy)return;if(action==='remove'&&!confirm('Remove this card from tracking? Its bills and calendar payments will remain. You can restore it from Removed accounts.'))return;busy=true;b.disabled=true;try{store=await api('/'+action,{id:b.dataset[action],revision:store.revision});preview=null;render();notice(action==='remove'?'Card removed from tracking. Calendar payments are unchanged.':'Card restored.');}catch(err){notice(err.message,true);}finally{busy=false;b.disabled=false;}});}
@@ -50,15 +49,135 @@ function edit(card) {
  f.querySelector('[name=balance]').addEventListener('input',()=>{const date=f.querySelector('[name=balanceAsOf]');if(date.value===c.balanceAsOf)date.value=today();});
  root.querySelector('#ccDialog').showModal();
 }
-function payoff() {
- const box=root.querySelector('#ccPayoff'), form=root.querySelector('#ccScenario'), values=Object.fromEntries(new FormData(form)), active=flexibleCards().filter(c=>c.balance>0), ready=active.filter(c=>c.apr!=null&&c.payment>0);
- if(!ready.length){box.innerHTML='<p>Enter balances, APRs, and monthly payment budgets to see your payoff timeline.</p>';return;}
- const modeled=ready.map(c=>({...c,balance:estimate(c)?.current??c.balance})).filter(c=>c.balance>0);
- if(!modeled.length){box.innerHTML='<p>Estimated flexible-card balances are paid off. Fixed payment plans remain separate; confirm balances with your cards.</p>';return;}
- const plan=window.BillsOSReports.debtPlan(modeled,Number(values.extra),Number(values.lump),values.strategy), base=window.BillsOSReports.debtPlan(modeled,0,0,values.strategy);
- if(!plan.paidOff){box.innerHTML='<p class="cc-error">This payment budget does not pay off the entered balances within 50 years. Increase the monthly budget.</p>';return;}
- const path=plan.path, max=Math.max(...path.map(p=>p.balance),1), points=path.map((p,i)=>(10+i/Math.max(path.length-1,1)*480)+','+(150-p.balance/max*135)).join(' ');
- box.innerHTML='<h3 style="margin-top:22px">'+plan.months+' months to clear flexible cards</h3><p>'+money(plan.interest)+' estimated interest'+(base.paidOff?' · '+Math.max(0,base.months-plan.months)+' months and '+money(Math.max(0,base.interest-plan.interest))+' saved':'')+'</p><svg class="cc-chart" viewBox="0 0 500 170" role="img" aria-label="Projected flexible-card balance declining to zero"><line x1="10" y1="150" x2="490" y2="150" stroke="currentColor" opacity=".2"/><polyline points="'+points+'" fill="none" stroke="currentColor" stroke-width="3"/></svg><p class="cc-small">'+ready.length+' cards modeled'+(ready.length<flexibleCards().filter(c=>c.balance!==0).length?' · Some cards excluded because balance, APR, or payment is missing':'')+'. Starts from today’s estimated balances where available. Fixed APR, monthly interest, no new charges or fees, and the full payment budget rolls to remaining cards. This is a comparison; recurring extras are not checked against cash flow.</p><details><summary>Payoff order</summary>'+plan.debts.slice().sort((a,b)=>a.paidMonth-b.paidMonth).map(c=>'<p>'+esc(c.name)+' · month '+c.paidMonth+'</p>').join('')+'</details>';
+function debtPlannerHtml() {
+ const floor = document.getElementById('recommendationFloor')?.value || 950;
+ return `<section class="cc-panel cc-debt-planner">
+   <div class="cc-eyebrow">DEBT PLANNER</div>
+   <h2>Compare your payoff options</h2>
+   <p>Compare interest savings, quick payoffs, and the monthly bills you could free up by clearing balances.</p>
+   <form id="ccScenario" class="cc-debt-fields">
+     <label>Extra each month<input name="extra" type="number" min="0" max="1000000" step=".01" value="0" required></label>
+     <label>Net bonus to add to forecast<input name="bonus" type="number" min="0" max="1000000" step=".01" value="0" required></label>
+     <label>One-time extra toward debt<input name="lump" type="number" min="0" max="1000000" step=".01" value="0" required></label>
+     <label>First payment date<input name="start" type="date" min="${today()}" value="${today()}" required></label>
+     <label>Months of extras<input name="months" type="number" min="1" max="24" value="3" required></label>
+     <label>Cash floor<input name="buffer" type="number" min="0" max="1000000" step=".01" value="${esc(floor)}" required></label>
+     <button type="submit" class="cc-primary">Compare scenarios</button>
+   </form>
+   <p class="cc-small">Enter a net bonus only if it is missing from the calendar. The bonus arrives on the first payment date. Choose how much goes to debt in One-time extra. Later payments use the same day of each month, or month-end if needed.</p>
+   <div id="ccDebtStatus" role="status"></div>
+   <div id="ccDebtResults"></div>
+ </section>`;
+}
+
+const strategyLabels = {baseline:'Current calendar', avalanche:'Avalanche', snowball:'Snowball', relief:'Monthly relief'};
+function scenarioChart(result, cash = false) {
+ const colors = ['#8a9ba6', '#55b99a', '#e59a7c', '#a99bdc'];
+ const series = result.scenarios.map(plan => cash ? plan.monthly.map(row => row.ending)
+   : [result.starting, ...plan.monthly.map(row => row.debt)]);
+ const values = series.flat();
+ const low = cash ? Math.min(result.buffer, ...values) : 0;
+ const high = Math.max(low + 1, ...values);
+ const y = value => 128 - 113 * (value - low) / (high - low);
+ const lines = series.map((balances, i) => {
+   const points = balances.map((balance, index) => `${12 + 576 * index / Math.max(1, balances.length - 1)},${y(balance)}`).join(' ');
+   return `<polyline points="${points}" fill="none" stroke="${colors[i]}" stroke-width="3" vector-effect="non-scaling-stroke"/>`;
+ });
+ const floor = cash ? `<path d="M12 ${y(result.buffer)}H588" stroke="currentColor" stroke-dasharray="5 5" opacity=".65"/>` : '';
+ const title = cash ? 'Month-end cash' : 'Estimated card debt';
+ const legend = result.scenarios.map((plan, i) => `<span><i style="background:${colors[i]}"></i>${strategyLabels[plan.strategy]}</span>`);
+ if (cash) legend.push(`<span>Dashed line · ${money(result.buffer)} cash floor</span>`);
+ return `<figure class="cc-debt-chart">
+   <figcaption>${title}</figcaption>
+   <svg viewBox="0 0 600 140" role="img" aria-label="${title} by scenario. Exact values are in the monthly table.">
+     <path d="M12 15H588 M12 72H588 M12 128H588" stroke="currentColor" opacity=".15"/>${floor}${lines.join('')}
+   </svg>
+   <div class="cc-debt-chart-range"><span>${money(low)}–${money(high)}</span><span>Through ${result.through}</span></div>
+   <div class="cc-debt-legend">${legend.join('')}</div>
+ </figure>`;
+}
+
+function debtPlanDetails(plan, baseline, result) {
+ const months = plan.monthly.map((row, index) => {
+   const before = baseline.monthly[index];
+   return `<tr><td>${row.month}</td><td>${money(row.debt)}</td><td>${money(before.ending)}</td>
+     <td>${money(row.ending)}</td><td>${money(row.ending - before.ending)}</td><td>${money(row.low)}</td><td>${money(row.possibleRelief)}</td><td>${money(row.cashIfBillsStop)}</td></tr>`;
+ }).join('');
+ const payments = plan.payments.map(payment => `<tr><td>${payment.date}</td><td>${esc(payment.name)}</td><td>${money(payment.amount)}</td></tr>`).join('');
+ return `<h3>${strategyLabels[plan.strategy]} details</h3>
+   ${plan.firstBelow ? `<p class="cc-error">Cash falls below ${money(result.buffer)} on ${plan.firstBelow}. Adjust the amount or timing to save this plan.</p>` : ''}
+   ${payments ? `<details open><summary>Calendar payments · ${plan.payments.length} · ${money(plan.payments.reduce((sum, payment) => sum + payment.amount, 0))}</summary>
+     <div class="cc-table-wrap"><table class="cc-table"><thead><tr><th>Date</th><th>Card</th><th>Extra</th></tr></thead><tbody>${payments}</tbody></table></div>
+   </details>` : ''}
+   <details open><summary>Monthly debt and cash flow</summary><div class="cc-table-wrap">
+     <table class="cc-table"><thead><tr><th>Month</th><th>Debt left</th><th>Current cash ending</th><th>Scenario cash ending</th><th>Change</th><th>Lowest cash</th><th>Potential bill relief</th><th>Cash if cleared bills stop</th></tr></thead><tbody>${months}</tbody></table>
+   </div></details>
+   <details><summary>Payoff by card</summary><ul>${plan.accounts.map(card => `<li>${esc(card.name)} · ${card.paidOn || money(card.remaining) + ' left at forecast end'}</li>`).join('')}</ul></details>
+   ${owner && plan.safe && payments ? '<button type="button" class="cc-primary" id="ccSaveDebtPlan">' + (result.bonus ? 'Add bonus and payments to calendar' : 'Add these payments to calendar') + '</button>' : ''}`;
+}
+
+function bindDebtPlanner() {
+ const form = root.querySelector('#ccScenario'), box = root.querySelector('#ccDebtResults');
+ const status = root.querySelector('#ccDebtStatus');
+ let version = 0;
+ form.oninput = () => { version++; box.replaceChildren(); status.textContent = ''; };
+ form.onsubmit = async event => {
+   event.preventDefault();
+   const request = ++version, planId = crypto.randomUUID();
+   const input = { ...Object.fromEntries(new FormData(form)), planId };
+   const button = event.submitter;
+   button.disabled = true;
+   box.replaceChildren();
+   status.textContent = 'Comparing against your calendar…';
+   try {
+     const result = await api('/debt-scenarios', input);
+     if (request !== version) return;
+     status.textContent = result.modeled ? '' : 'Add a current balance, balance date, and APR in Card details to begin.';
+     if (!result.modeled) return;
+     const [baseline] = result.scenarios;
+     box.innerHTML = `<p class="cc-small">${result.modeled} cards modeled through ${result.through}.${result.excluded.length ? ' Needs a balance, date, or APR: ' + result.excluded.map(esc).join(', ') + '.' : ''}${result.unlinked.length ? ' No linked bill: ' + result.unlinked.map(esc).join(', ') + '.' : ''} ${result.bonus ? ' Includes ' + money(result.bonus) + ' in expected income on ' + result.start + ' across all scenarios.' : ''}${result.reliefApproximate ? ' Monthly relief uses a ranked estimate for large card sets.' : ''} Estimates assume fixed APR and no new charges. Existing bills and scheduled payments stay in the cash forecast after a projected payoff. Potential bill relief shows scheduled payments after a projected payoff that you could remove once the issuer confirms the balance is cleared. Cash floor checks every day from the first added payment through the forecast end.</p>
+       <div class="cc-debt-choices">${result.scenarios.map(plan => `<button type="button" class="cc-stat" data-strategy="${plan.strategy}" aria-pressed="false">
+       <strong>${strategyLabels[plan.strategy]}</strong><span>${plan.payoffDate ? 'Paid off ' + plan.payoffDate : money(plan.remaining) + ' left at forecast end'}</span>
+       <span>${money(plan.interest)} interest through forecast${plan.strategy !== 'baseline' ? ' · ' + money(baseline.interest - plan.interest) + ' saved' : ''}</span>
+       <span>${plan.monthlyRelief > 0 ? money(plan.monthlyRelief) + '/mo potential relief from cards cleared by extras' : '—'}</span>
+       <span>Low cash ${money(plan.lowest)} on ${plan.lowestDate}</span>
+       <span>${plan.safe ? 'Within cash floor' : 'Below cash floor'}</span></button>`).join('')}</div>
+       <div class="cc-debt-charts">${scenarioChart(result)}${scenarioChart(result, true)}</div><div id="ccDebtDetail"></div>`;
+     const choices = [...box.querySelectorAll('[data-strategy]')];
+     function show(strategy) {
+       const plan = result.scenarios.find(item => item.strategy === strategy);
+       choices.forEach(choice => choice.setAttribute('aria-pressed', String(choice.dataset.strategy === strategy)));
+       const detail = box.querySelector('#ccDebtDetail');
+       detail.innerHTML = debtPlanDetails(plan, baseline, result);
+       const save = detail.querySelector('#ccSaveDebtPlan');
+       if (save) save.onclick = async () => {
+         if (busy || request !== version) return;
+         busy = true;
+         choices.forEach(choice => { choice.disabled = true; });
+         save.disabled = true;
+         try {
+           const saved = await api('/debt-scenarios/save', {input, strategy, fingerprint:result.fingerprint, planId});
+           version++;
+           box.replaceChildren();
+           status.textContent = saved.saved + ' payments' + (saved.bonusAdded ? ' and the expected bonus' : '') + ' added to your calendar.';
+           await refreshPlanned();
+         } catch (error) {
+           status.textContent = error.message;
+           save.disabled = false;
+         } finally {
+           choices.forEach(choice => { choice.disabled = false; });
+           busy = false;
+         }
+       };
+     }
+     choices.forEach(choice => { choice.onclick = () => show(choice.dataset.strategy); });
+     show(result.bonus || Number(input.lump) > 0 ? 'relief' : 'avalanche');
+   } catch (error) {
+     if (request === version) status.textContent = error.message;
+   } finally {
+     button.disabled = false;
+   }
+ };
 }
 function options() {
  const result=preview.result, box=root.querySelector('#ccOptions');
@@ -67,7 +186,7 @@ function options() {
  box.querySelectorAll('[data-plan]').forEach(b=>b.onclick=async()=>{if(busy)return;busy=true;b.disabled=true;try{const o=result.options[Number(b.dataset.plan)];await api('/payments',{...preview.input,...o,planId:preview.planIds[Number(b.dataset.plan)]});preview=null;box.innerHTML='<p>Payment added. Your balance is unchanged until you update it after posting.</p>';notice('Extra payment saved to the calendar.');await refreshPlanned();}catch(err){notice(err.message,true);}finally{busy=false;b.disabled=false;}});
 }
 function planned(){const box=root.querySelector('#ccPlanned');if(!box)return;const events=(snapshot?.data?.oneTimeEvents||[]).filter(e=>e.creditCardId&&store.cards.some(c=>c.id===e.creditCardId)).sort((a,b)=>a.date.localeCompare(b.date));box.innerHTML=events.length?events.map(e=>'<p><strong>'+esc(e.date)+' · '+esc(e.name)+'</strong> · '+money(Math.abs(e.amount))+' <a href="/?view=calendar">Open calendar</a></p>').join(''):'<p class="cc-small">No additional payments planned yet.</p>';}
-async function refreshPlanned(){const r=await fetch('/api/bills',{cache:'no-store',credentials:'same-origin'});if(r.ok){snapshot={data:await r.json()};planned();store=await api('');monthlyEstimates();payoff();}}
+async function refreshPlanned(){const r=await fetch('/api/bills',{cache:'no-store',credentials:'same-origin'});if(r.ok){snapshot={data:await r.json()};planned();store=await api('');monthlyEstimates();}}
 window.addEventListener('billsos:calendar-ready',e=>{snapshot=e.detail;planned();});
 root.innerHTML='<p>Loading your credit cards…</p>';
 api('').then(s=>{store=s;snapshot=window.BillsOSReportsSnapshot;render();}).catch(e=>{root.textContent=e.message;});
