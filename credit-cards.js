@@ -17,11 +17,11 @@ function dueDateLabel(card) { const d=Number(card.dueDay);if(!d)return 'Not link
 function table(list) { return '<div class="cc-table-wrap"><table class="cc-table"><thead><tr><th>Card</th><th>Due each month</th><th>Recorded balance</th><th>Estimated today</th><th>APR</th><th>Monthly payment</th><th>Utilization</th><th></th></tr></thead><tbody>' + list.map(c => '<tr><td><strong>'+esc(c.name)+'</strong><div class="cc-small">'+(c.balanceAsOf?'Updated '+esc(c.balanceAsOf):'Balance needed')+'</div></td><td>'+esc(dueDateLabel(c))+'</td><td>'+money(c.balance)+'</td><td>'+money(estimate(c)?.current)+'</td><td>'+(c.apr == null?'—':c.apr+'%')+'</td><td>'+money(c.payment)+'</td><td>'+(c.limit>0&&c.balance!=null?(100*c.balance/c.limit).toFixed(1)+'%':'—')+'</td><td><button data-edit="'+esc(c.id)+'">'+(owner?'Update':'View')+'</button>'+(owner?' <button data-remove="'+esc(c.id)+'">Remove</button>':'')+'</td></tr>').join('')+'</tbody></table></div>'; }
 function render() {
  const active=cards(), known=active.filter(c=>c.balance!=null), total=known.reduce((s,c)=>s+c.balance,0), initial=known.reduce((s,c)=>s+(c.history?.[0]?.balance??c.balance),0), interest=known.filter(c=>c.apr!=null).reduce((s,c)=>s+c.balance*c.apr/1200,0), missing=active.length-known.length;
- root.innerHTML='<header class="cc-top"><div><div class="cc-eyebrow">YOUR PATH TO DEBT FREE</div><h1>Credit Cards</h1><p>Know what you owe. Choose your next move.</p></div>'+(owner?'<button id="ccAdd" class="cc-primary">＋ Add card</button>':'')+'</header><div id="ccNotice" class="cc-notice" role="status">Recorded balances stay as entered. Estimates account for interest and payments marked paid, assuming no new spending.</div><section class="cc-stats">'+[['Recorded debt',known.length?money(total):'—'],['Reduction since first entries',known.length?money(initial-total):'—'],['Monthly payments',money(active.reduce((s,c)=>s+(c.payment||0),0))],['Estimated monthly interest',known.some(c=>c.apr!=null)?money(interest):'—']].map(x=>'<article class="cc-stat"><span>'+x[0]+'</span><strong>'+x[1]+'</strong></article>').join('')+'</section><p class="cc-small">'+known.length+' of '+active.length+' balances entered'+(missing?' · Totals are incomplete until all balances are entered.':'.')+' Fixed payment plans are tracked in Liabilities. Interest estimate covers cards with an APR entered.</p><details class="cc-panel cc-collapse" id="ccCardDetails" '+(expanded('billsos-card-details-open',false)?'open':'')+'><summary>Card details <span>Balances, APRs &amp; monthly updates</span></summary><p>Due dates come from the Bills control center and refresh when this page loads. Calendar moves can differ. Monthly payments here are budgets for payoff estimates; scheduled bills remain managed in Bills.</p>'+table(active.filter(c=>!c.paymentPlan))+(store.cards.some(c=>c.archived)?'<details class="cc-archive"><summary>Archived cards</summary>'+table(store.cards.filter(c=>c.archived))+'</details>':'')+'</details>'+'<details class="cc-panel cc-collapse cc-monthly" id="ccEstimateDetails" '+(expanded('billsos-card-estimates-open',false)?'open':'')+'><summary>Monthly balance estimates <span>No new spending assumed</span></summary><div id="ccEstimates"></div></details>'+debtPlannerHtml()+'<section class="cc-panel"><h2>Find room for an extra payment</h2><p>Check a payment against every daily ending balance from its date through December 2027, including payments already planned.</p><form id="ccPayment" class="cc-form"><label class="cc-wide">Card<select name="cardId">'+active.filter(c=>!c.paymentPlan&&c.balance>0).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select></label><label>Extra payment<input name="amount" type="number" min=".01" step=".01" required placeholder="100.00"></label><label>Keep at least<input name="buffer" type="number" min="0" step=".01" value="950" required></label><label>Earliest date<input name="start" type="date" min="'+today()+'" max="2027-12-31" value="'+today()+'" required></label><label>Latest date<input name="end" type="date" min="'+today()+'" max="2027-12-31" value="'+new Date(Date.now()+30*864e5).toISOString().slice(0,10)+'" required></label><button type="submit" class="cc-primary cc-wide" '+(!owner?'disabled':'')+'>Find payment dates</button></form><div id="ccOptions" aria-live="polite"></div></section><section class="cc-panel"><h2>Additional payments on your calendar</h2><p>These are scheduled expenses, not confirmed payments. Edit or remove them on the calendar, and update balances after payments post.</p><div id="ccPlanned"></div></section>'+removedAccounts()+'<dialog id="ccDialog"><form id="ccEdit" class="cc-form"></form></dialog>';
+ root.innerHTML='<header class="cc-top"><div><div class="cc-eyebrow">YOUR PATH TO DEBT FREE</div><h1>Credit Cards</h1><p>Know what you owe. Choose your next move.</p></div>'+(owner?'<button id="ccAdd" class="cc-primary">＋ Add card</button>':'')+'</header><div id="ccNotice" class="cc-notice" role="status">Recorded balances stay as entered. Estimates account for interest and payments marked paid, assuming no new spending.</div><section class="cc-stats">'+[['Recorded debt',known.length?money(total):'—'],['Reduction since first entries',known.length?money(initial-total):'—'],['Monthly payments',money(active.reduce((s,c)=>s+(c.payment||0),0))],['Estimated monthly interest',known.some(c=>c.apr!=null)?money(interest):'—']].map(x=>'<article class="cc-stat"><span>'+x[0]+'</span><strong>'+x[1]+'</strong></article>').join('')+'</section><p class="cc-small">'+known.length+' of '+active.length+' balances entered'+(missing?' · Totals are incomplete until all balances are entered.':'.')+' Fixed payment plans are tracked in Liabilities. Interest estimate covers cards with an APR entered.</p><details class="cc-panel cc-collapse" id="ccCardDetails" '+(expanded('billsos-card-details-open',false)?'open':'')+'><summary>Card details <span>Balances, APRs &amp; monthly updates</span></summary><p>Due dates come from the Bills control center and refresh when this page loads. Calendar moves can differ. Monthly payments here are budgets for payoff estimates; scheduled bills remain managed in Bills.</p>'+table(active.filter(c=>!c.paymentPlan))+(store.cards.some(c=>c.archived)?'<details class="cc-archive"><summary>Archived cards</summary>'+table(store.cards.filter(c=>c.archived))+'</details>':'')+'</details>'+'<details class="cc-panel cc-collapse cc-monthly" id="ccEstimateDetails" '+(expanded('billsos-card-estimates-open',false)?'open':'')+'><summary>Monthly balance estimates <span>No new spending assumed</span></summary><div id="ccEstimates"></div></details>'+debtPlannerHtml()+bonusPlannerHtml()+'<section class="cc-panel"><h2>Find room for an extra payment</h2><p>Check a payment against every daily ending balance from its date through December 2027, including payments already planned.</p><form id="ccPayment" class="cc-form"><label class="cc-wide">Card<select name="cardId">'+active.filter(c=>!c.paymentPlan&&c.balance>0).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select></label><label>Extra payment<input name="amount" type="number" min=".01" step=".01" required placeholder="100.00"></label><label>Keep at least<input name="buffer" type="number" min="0" step=".01" value="950" required></label><label>Earliest date<input name="start" type="date" min="'+today()+'" max="2027-12-31" value="'+today()+'" required></label><label>Latest date<input name="end" type="date" min="'+today()+'" max="2027-12-31" value="'+new Date(Date.now()+30*864e5).toISOString().slice(0,10)+'" required></label><button type="submit" class="cc-primary cc-wide" '+(!owner?'disabled':'')+'>Find payment dates</button></form><div id="ccOptions" aria-live="polite"></div></section><section class="cc-panel"><h2>Additional payments on your calendar</h2><p>These are scheduled expenses, not confirmed payments. Edit or remove them on the calendar, and update balances after payments post.</p><div id="ccPlanned"></div></section>'+removedAccounts()+'<dialog id="ccDialog"><form id="ccEdit" class="cc-form"></form></dialog>';
  root.querySelector('#ccAdd')?.addEventListener('click',()=>edit(null));
  bindRemoval();
  root.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(store.cards.find(c=>c.id===b.dataset.edit)));
- bindDebtPlanner();
+ root.querySelectorAll('[data-debt-planner]').forEach(bindDebtPlanner);
  root.querySelector('#ccPayment').onsubmit=async e=>{ e.preventDefault(); if(busy)return; busy=true; const button=e.submitter;button.disabled=true;try { const input=Object.fromEntries(new FormData(e.target)); preview={input, result:await api('/preview',input)}; options(); } catch(err){notice(err.message,true);} finally{busy=false;button.disabled=false;} };
  root.querySelector('#ccPayment').oninput=()=>{preview=null;root.querySelector('#ccOptions').innerHTML='';};
  root.querySelectorAll('.cc-collapse').forEach(el=>el.addEventListener('toggle',()=>{try{localStorage.setItem(el.id==='ccCardDetails'?'billsos-card-details-open':'billsos-card-estimates-open',el.open?'1':'0');}catch(_){}}));
@@ -51,22 +51,44 @@ function edit(card) {
 }
 function debtPlannerHtml() {
  const floor = document.getElementById('recommendationFloor')?.value || 950;
- return `<section class="cc-panel cc-debt-planner">
+ return `<section class="cc-panel cc-debt-planner" data-debt-planner="regular">
    <div class="cc-eyebrow">DEBT PLANNER</div>
    <h2>Compare your payoff options</h2>
    <p>Compare interest savings, quick payoffs, and the monthly bills you could free up by clearing balances.</p>
-   <form id="ccScenario" class="cc-debt-fields">
+   <form class="cc-debt-fields">
      <label>Extra each month<input name="extra" type="number" min="0" max="1000000" step=".01" value="0" required></label>
-     <label>Net bonus to add to forecast<input name="bonus" type="number" min="0" max="1000000" step=".01" value="0" required></label>
      <label>One-time extra toward debt<input name="lump" type="number" min="0" max="1000000" step=".01" value="0" required></label>
      <label>First payment date<input name="start" type="date" min="${today()}" value="${today()}" required></label>
      <label>Months of extras<input name="months" type="number" min="1" max="24" value="3" required></label>
      <label>Cash floor<input name="buffer" type="number" min="0" max="1000000" step=".01" value="${esc(floor)}" required></label>
      <button type="submit" class="cc-primary">Compare scenarios</button>
    </form>
-   <p class="cc-small">Enter a net bonus only if it is missing from the calendar. The bonus arrives on the first payment date. Choose how much goes to debt in One-time extra. Later payments use the same day of each month, or month-end if needed.</p>
-   <div id="ccDebtStatus" role="status"></div>
-   <div id="ccDebtResults"></div>
+   <p class="cc-small">Later payments use the same day of each month, or month-end if needed.</p>
+   <div class="cc-debt-status" role="status"></div>
+   <div class="cc-debt-results"></div>
+ </section>`;
+}
+
+function bonusPlannerHtml() {
+ const floor = document.getElementById('recommendationFloor')?.value || 950;
+ const march = '2027-03-01';
+ const date = today() < march ? march : today();
+ return `<section class="cc-panel cc-debt-planner" data-debt-planner="bonus">
+   <div class="cc-eyebrow">BONUS PLANNER</div>
+   <h2>Plan your bonus</h2>
+   <p>Compare how a one-time payment could reduce debt, interest, and monthly bills.</p>
+   <form class="cc-debt-fields">
+     <label>Expected deposit date<input name="start" type="date" min="${today()}" max="2027-12-31" value="${date}" required></label>
+     <label>Net bonus to add to forecast<input name="bonus" type="number" min="0" max="1000000" step=".01" value="0" required></label>
+     <label>Amount to put toward debt<input name="lump" type="number" min=".01" max="1000000" step=".01" required></label>
+     <label>Cash floor<input name="buffer" type="number" min="0" max="1000000" step=".01" value="${esc(floor)}" required></label>
+     <input name="extra" type="hidden" value="0">
+     <input name="months" type="hidden" value="1">
+     <button type="submit" class="cc-primary">Compare bonus scenarios</button>
+   </form>
+   <p class="cc-small">March 1, 2027 is a placeholder. Use your expected deposit date. Leave the bonus amount at zero if the income is already on the calendar. The scenario schedules the extra payments on the deposit date.</p>
+   <div class="cc-debt-status" role="status"></div>
+   <div class="cc-debt-results"></div>
  </section>`;
 }
 
@@ -113,12 +135,12 @@ function debtPlanDetails(plan, baseline, result) {
      <table class="cc-table"><thead><tr><th>Month</th><th>Debt left</th><th>Current cash ending</th><th>Scenario cash ending</th><th>Change</th><th>Lowest cash</th><th>Potential bill relief</th><th>Cash if cleared bills stop</th></tr></thead><tbody>${months}</tbody></table>
    </div></details>
    <details><summary>Payoff by card</summary><ul>${plan.accounts.map(card => `<li>${esc(card.name)} · ${card.paidOn || money(card.remaining) + ' left at forecast end'}</li>`).join('')}</ul></details>
-   ${owner && plan.safe && payments ? '<button type="button" class="cc-primary" id="ccSaveDebtPlan">' + (result.bonus ? 'Add bonus and payments to calendar' : 'Add these payments to calendar') + '</button>' : ''}`;
+   ${owner && plan.safe && payments ? '<button type="button" class="cc-primary" data-save-debt-plan>' + (result.bonus ? 'Add bonus and payments to calendar' : 'Add these payments to calendar') + '</button>' : ''}`;
 }
 
-function bindDebtPlanner() {
- const form = root.querySelector('#ccScenario'), box = root.querySelector('#ccDebtResults');
- const status = root.querySelector('#ccDebtStatus');
+function bindDebtPlanner(section) {
+ const form = section.querySelector('form'), box = section.querySelector('.cc-debt-results');
+ const status = section.querySelector('.cc-debt-status');
  let version = 0;
  form.oninput = () => { version++; box.replaceChildren(); status.textContent = ''; };
  form.onsubmit = async event => {
@@ -142,14 +164,14 @@ function bindDebtPlanner() {
        <span>${plan.monthlyRelief > 0 ? money(plan.monthlyRelief) + '/mo potential relief from cards cleared by extras' : '—'}</span>
        <span>Low cash ${money(plan.lowest)} on ${plan.lowestDate}</span>
        <span>${plan.safe ? 'Within cash floor' : 'Below cash floor'}</span></button>`).join('')}</div>
-       <div class="cc-debt-charts">${scenarioChart(result)}${scenarioChart(result, true)}</div><div id="ccDebtDetail"></div>`;
+       <div class="cc-debt-charts">${scenarioChart(result)}${scenarioChart(result, true)}</div><div class="cc-debt-detail"></div>`;
      const choices = [...box.querySelectorAll('[data-strategy]')];
      function show(strategy) {
        const plan = result.scenarios.find(item => item.strategy === strategy);
        choices.forEach(choice => choice.setAttribute('aria-pressed', String(choice.dataset.strategy === strategy)));
-       const detail = box.querySelector('#ccDebtDetail');
+       const detail = box.querySelector('.cc-debt-detail');
        detail.innerHTML = debtPlanDetails(plan, baseline, result);
-       const save = detail.querySelector('#ccSaveDebtPlan');
+       const save = detail.querySelector('[data-save-debt-plan]');
        if (save) save.onclick = async () => {
          if (busy || request !== version) return;
          busy = true;
@@ -171,7 +193,7 @@ function bindDebtPlanner() {
        };
      }
      choices.forEach(choice => { choice.onclick = () => show(choice.dataset.strategy); });
-     show(result.bonus || Number(input.lump) > 0 ? 'relief' : 'avalanche');
+     show(section.dataset.debtPlanner === 'bonus' ? 'relief' : 'avalanche');
    } catch (error) {
      if (request === version) status.textContent = error.message;
    } finally {
