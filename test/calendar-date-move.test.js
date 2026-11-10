@@ -81,3 +81,28 @@ test('an in-month Discover move keeps the month starting balance and later endin
   assert.equal(after[9].end, before[9].end);
   assert.equal(after[10].end, before[10].end);
 });
+
+test('the calendar projects a funding edit from the saved API snapshot with a stale browser cache', async () => {
+  const { applyCalendarStatePatch } = require('../bills-data-integrity');
+  const key = '2027-03-19|Fund Spending Account|-2250';
+  const transfer = {id:'fund',name:'Fund Spending Account',date:'2027-03-19',amount:-2250,type:'transfer'};
+  const stamp = '2026-11-10T14:00:00Z';
+  const data = applyCalendarStatePatch({oneTimeEvents:[transfer]}, {baseRevision:-1,calendarState:{
+    amountAdjustments:{[key]:{amount:2000,updatedAt:stamp}},
+    dateAdjustments:{[key]:{date:'2027-04-02',originalDate:transfer.date,updatedAt:stamp}}
+  }}, stamp);
+  const html = require('node:fs').readFileSync(require('node:path').join(__dirname,'..','generated-v5.html'),'utf8');
+  const script = html.match(/<script>\s*([\s\S]*?)<\/script>/)[1]
+    .replace('bindRiskFloor();\nload();','window.testProjection={loadBillsData,applyCardEdits};');
+  const window = {};
+  const localStorage = {getItem:() => JSON.stringify({[key]:{amount:2250,date:transfer.date,updatedAt:'2026-11-09T14:00:00Z'}})};
+  const sessionStorage = {getItem:() => null};
+  new Function('window','document','localStorage','sessionStorage','fetch',script)(
+    window,{getElementById:()=>null},localStorage,sessionStorage,async()=>({ok:true,json:async()=>data}));
+  await window.testProjection.loadBillsData();
+  const rows = [{...transfer,iso:transfer.date}];
+  assert.equal(window.testProjection.applyCardEdits(rows,3,2027).length,0);
+  const [funding] = window.testProjection.applyCardEdits(rows,4,2027);
+  assert.equal(funding.iso,'2027-04-02');
+  assert.equal(funding.amount,-2000);
+});
