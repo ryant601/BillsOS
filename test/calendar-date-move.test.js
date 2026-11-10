@@ -106,3 +106,18 @@ test('the calendar projects a funding edit from the saved API snapshot with a st
   assert.equal(funding.iso,'2027-04-02');
   assert.equal(funding.amount,-2000);
 });
+
+test('calendar cards and their editor retain the projected amount despite stale local edits', () => {
+  const fs = require('node:fs'), path = require('node:path');
+  const editor = fs.readFileSync(path.join(__dirname,'..','billsos-card-editor.js'),'utf8');
+  const template = fs.readFileSync(path.join(__dirname,'..','generated-v5.html'),'utf8');
+  const renderAmount = new Function('amountFromKey','read','AMOUNT_KEY',
+    editor.slice(editor.indexOf('  function signedAmountFor('), editor.indexOf('  function renderedDate(')) +
+    '\nreturn signedAmountFor;')(() => -2250, () => ({transfer:{amount:2250}}), 'amount');
+  assert.match(template, /data-projected-amount="'\+r.amount/);
+  assert.match(editor, /signed=signedAmountFor\(key,row\)/);
+  assert.match(editor, /amount=amountFor\(key,row\)/);
+  assert.equal(renderAmount('transfer',{dataset:{projectedAmount:'-2000'}}), -2000);
+  assert.equal(renderAmount('transfer',{dataset:{projectedAmount:'0'}}), 0);
+  assert.equal(renderAmount('transfer',{dataset:{}}), -2250);
+});

@@ -32,10 +32,15 @@
   function originalDate(key){var d=keyParts(key).date;return validDate(d)?d:''}
   function nameFromKey(key){return String(keyParts(key).name||'Item').replace(/\s+/g,' ').trim()}
   function rowKey(row){return row.dataset.billsosKey||row.dataset.id||row.dataset.key||((row.querySelector('input[data-id]')||{}).dataset||{}).id||''}
-  function amountFor(key){var edit=read(AMOUNT_KEY)[key],base=Math.abs(amountFromKey(key));return edit&&isFinite(Number(edit.amount))?Math.abs(Number(edit.amount)):base}
-  function signedAmountFor(key){return amountFromKey(key)<0?-amountFor(key):amountFor(key)}
+  function signedAmountFor(key,row){
+    var projected=row?.dataset.projectedAmount;
+    if(projected!=null&&projected!==''&&Number.isFinite(Number(projected)))return Number(projected);
+    var base=amountFromKey(key),edit=read(AMOUNT_KEY)[key];
+    return edit&&Number.isFinite(Number(edit.amount))?(base<0?-1:1)*Math.abs(Number(edit.amount)):base;
+  }
+  function amountFor(key,row){return Math.abs(signedAmountFor(key,row))}
   function renderedDate(row,key){var day=row.closest('.calendar-day,.day'),explicit=day&&day.dataset.date;if(validDate(explicit))return explicit;var panel=row.closest('.month-panel'),n=Number(day&&day.dataset.day),id=String(panel&&panel.id||'').replace(/^panel-/,'').toLowerCase(),months={june:'06',jul:'07',july:'07',aug:'08',august:'08',sep:'09',september:'09',oct:'10',october:'10',nov:'11',november:'11',dec:'12',december:'12','jan-2027':'01','feb-2027':'02','mar-2027':'03','apr-2027':'04','may-2027':'05','jun-2027':'06','jul-2027':'07','aug-2027':'08','sep-2027':'09','oct-2027':'10','nov-2027':'11','dec-2027':'12'},mm=months[id],year=Number(panel&&panel.dataset.year)||Number(String(originalDate(key)).slice(0,4))||2026;return mm&&n?year+'-'+mm+'-'+String(n).padStart(2,'0'):originalDate(key)}
-  function dateFor(key,row){var edit=read(DATE_KEY)[key];return edit&&validDate(edit.date)?edit.date:renderedDate(row,key)}
+  function dateFor(key,row){if(row?.dataset.projectedAmount!=null)return renderedDate(row,key);var edit=read(DATE_KEY)[key];return edit&&validDate(edit.date)?edit.date:renderedDate(row,key)}
   function formatDate(v){return validDate(v)?new Date(v+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):''}
   function addDays(v,n){var d=new Date(v+'T12:00:00');d.setDate(d.getDate()+Number(n||0));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
   function saveAmount(key,value){var n=Math.round(Math.abs(Number(value||0))*100)/100,map=read(AMOUNT_KEY),base=Math.abs(amountFromKey(key));if(!isFinite(n))return false;map[key]={amount:n,updatedAt:new Date().toISOString()};return write(AMOUNT_KEY,map)}
@@ -87,7 +92,7 @@
   }
   function openEditor(row,key,anchor){
     closeEditor(true);
-    var base=Math.abs(amountFromKey(key)),amount=amountFor(key),date=dateFor(key,row),orig=originalDate(key),isIncome=amountFromKey(key)>0,pop=document.createElement('div'),dateMeta='';
+    var base=Math.abs(amountFromKey(key)),amount=amountFor(key,row),date=dateFor(key,row),orig=originalDate(key),isIncome=amountFromKey(key)>0,pop=document.createElement('div'),dateMeta='';
     if(validDate(orig)&&validDate(date))dateMeta='<div class="billsosCardDateMeta">Original date: <b>'+formatDate(orig)+'</b><br>Currently scheduled: <b>'+formatDate(date)+'</b></div>';
     pop.className='billsosCardEditPopover';
     pop.dataset.dirty='0';
@@ -152,7 +157,7 @@
     return ok;
   }
   function renderSplitEditor(pop,row,key,anchor){
-    var total=amountFor(key),first=Math.floor(total*100/2)/100,second=Math.round((total-first)*100)/100,date=dateFor(key,row),mortgage=/mortgage/i.test(nameFromKey(key));
+    var total=amountFor(key,row),first=Math.floor(total*100/2)/100,second=Math.round((total-first)*100)/100,date=dateFor(key,row),mortgage=/mortgage/i.test(nameFromKey(key));
     pop.dataset.dirty='1';pop.dataset.splitTotal=String(total);pop.setAttribute('aria-label',mortgage?'Split mortgage payment':'Split payment');
     pop.innerHTML='<div style="font-size:14px;font-weight:900;color:#14202c">'+(mortgage?'Split mortgage payment':'Split payment')+'</div><div style="font-size:11px;line-height:1.4;color:#5f6b7a">Choose two dates and amounts. Both payments stay visible on the Calendar, and the total must remain '+money(total)+'. Use dates you actually expect to pay; this changes planning only.</div><div class="billsosSplitRows"><div class="billsosSplitRow"><b>Payment 1</b><label>Date<input data-split-date type="date" min="2026-06-01" max="2027-12-31" value="'+date+'"></label><label>Amount<input data-split-amount inputmode="decimal" value="'+first.toFixed(2)+'"></label></div><div class="billsosSplitRow"><b>Payment 2</b><label>Date<input data-split-date type="date" min="2026-06-01" max="2027-12-31" value="'+addDays(date,14)+'"></label><label>Amount<input data-split-amount inputmode="decimal" value="'+second.toFixed(2)+'"></label></div></div><div class="billsosSplitTotal"></div><div class="billsosCardEditActions"><button class="primary" data-action="save-split">Save split</button><button data-action="back-from-split">Back</button></div><div class="billsosCardEditError" role="status" aria-live="polite" style="min-height:14px;font-size:11px;color:#5f6b7a"></div>';
     pop.querySelectorAll('[data-split-amount]').forEach(function(input){input.addEventListener('input',function(){updateSplitTotal(pop,total)})});
@@ -202,7 +207,7 @@
 
   function normalizeCard(row,done){
     var key=rowKey(row);if(!key)return;
-    var name=nameFromKey(key),signed=signedAmountFor(key),checked=!!done[key];
+    var name=nameFromKey(key),signed=signedAmountFor(key,row),checked=!!done[key];
     row.dataset.billsosKey=key;row.dataset.billsosName=name;row.classList.add('billsosCard');row.classList.toggle('done',checked);row.replaceChildren();
     var cb=document.createElement('input');cb.type='checkbox';cb.className='billsosDoneCheck';cb.dataset.id=key;cb.checked=checked;cb.setAttribute('aria-label','Mark '+name+' complete');
     var body=document.createElement('div');body.className='billsosCardBody';
