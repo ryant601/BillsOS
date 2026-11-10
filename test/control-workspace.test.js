@@ -26,3 +26,21 @@ test('one-time income is not duplicated in the one-time expense list',()=>{
  const context={state:{oneTimeEvents:[{id:'expense',name:'Repair',amount:-100,type:'adjustment'},{id:'income',name:'Bonus',amount:200,type:'income'}]},highlightedOneTimeId:'',document:{getElementById:id=>nodes[id]},esc:String,money:String,normalizedSignedAmount:r=>r.amount,adjustmentDirection:()=>({className:'outflow'})};
  vm.createContext(context);vm.runInContext(source,context);context.renderOne();assert.match(nodes.oneTable.innerHTML,/Repair/);assert.doesNotMatch(nodes.oneTable.innerHTML,/Bonus/);assert.equal(nodes.oneCount.textContent,'1 item');
 });
+
+test('funding view includes recurring and one-time transfers with calendar edits', () => {
+ const engine = require('../cashflow-engine');
+ const { fundingRows } = require('../control-workspace');
+ const data = {
+   bills: [{id:'monthly',name:'Spending Account Funding',amount:1000,dueDay:8,startMonth:'2027-03',endMonth:'2027-03'}],
+   oneTimeEvents: [
+     {id:'transfer',name:'Fund Spending Account',amount:-2250,date:'2027-03-19',type:'transfer'},
+     {id:'other',name:'Savings transfer',amount:-400,date:'2027-03-19',type:'transfer'}
+   ], income:[]
+ };
+ const key = '2027-03-19|Fund Spending Account|-2250';
+ const rows = fundingRows(engine, data, {
+   dateAdjustments:{[key]:{date:'2027-04-02'}}, amountAdjustments:{[key]:{amount:2000}}
+ });
+ assert.deepEqual(rows.map(row => [row.date,row.amount]), [['2027-03-08',1000],['2027-04-02',2000]]);
+ assert.equal(rows[1].key,key);
+});

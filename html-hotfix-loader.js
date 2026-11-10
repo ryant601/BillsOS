@@ -83,7 +83,7 @@ const appUi = String.raw`<script id="billsosAppUi">
     return '<svg data-bo-icon="'+name+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">'+(shapes[name]||'')+'</svg>';
   }
   function link(icon,label,href,active,section){return '<a href="'+href+'" target="_self"'+(active?' class="is-active"':'')+(section?' data-bo-section="'+section+'"':'')+'><span class="bo-icon" aria-hidden="true">'+navigationIcon(icon)+'</span><span>'+label+'</span></a>'}
-  function controlSection(){var section=location.hash.slice(1)||'bills';return ['bills','oneTime','income'].indexOf(section)>=0?section:'bills'}
+  function controlSection(){var section=location.hash.slice(1)||'bills';return ['bills','oneTime','income','funding'].indexOf(section)>=0?section:'bills'}
   function syncSidebarActive(section){document.querySelectorAll('.bo-nav [data-bo-section]').forEach(function(item){item.classList.toggle('is-active',item.getAttribute('data-bo-section')==='control')})}
   window.BillsOSSyncSidebarActive=syncSidebarActive;
   function installSidebar(){
