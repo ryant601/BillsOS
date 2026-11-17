@@ -457,10 +457,24 @@ function register(app, deps) {
       const s = get();
       if (req.body.revision !== s.revision) return res.status(409).json({error:'The tracker changed. Reload before saving the draft.'});
       const input = req.body.input || {};
-      bonusBudget(input.sandbox || {});
-      if (!validDate(input.start) || input.start > '2027-12-31') throw new Error('Choose a deposit date within the calendar.');
+      // Drafts may be incomplete or overallocated while the owner is editing.
+      // Financial validation still runs independently when comparing or saving a plan.
+      const sandbox = {};
+      for (const key of ['gross','net','withholding','reno','reserve','cushion']) {
+        const value = input.sandbox?.[key] ?? '';
+        if (String(value).length > 30 || (value !== '' && (!Number.isFinite(Number(value)) || Math.abs(Number(value)) > 1000000))) throw new Error('Invalid draft amount.');
+        sandbox[key] = value;
+      }
+      sandbox.netMode = input.sandbox?.netMode === 'estimate' ? 'estimate' : 'actual';
+      if (input.start && (!validDate(input.start) || input.start > '2027-12-31')) throw new Error('Choose a deposit date within the calendar.');
+      if (input.buffer !== '' && (!Number.isFinite(Number(input.buffer)) || Number(input.buffer) < 0 || Number(input.buffer) > 1000000)) throw new Error('Invalid draft cash floor.');
+      const allocations = input.allocations || {};
+      if (typeof allocations !== 'object' || Array.isArray(allocations) || Object.keys(allocations).length > 200 || Object.entries(allocations).some(([key,value]) => key.length > 150 || String(value).length > 30 || (value !== '' && (!Number.isFinite(Number(value)) || Math.abs(Number(value)) > 1000000)))) throw new Error('Invalid draft allocation.');
+      const edited = Date.parse(input.updatedAt);
+      const updatedAt = Number.isFinite(edited) && edited <= Date.now() + 300000 ? new Date(edited).toISOString() : new Date().toISOString();
+      if (Date.parse(s.bonusDraft?.updatedAt) > Date.parse(updatedAt)) return res.json({revision:s.revision});
       s.bonusDraft = {start:input.start, buffer:input.buffer, includeLmcc:!!input.includeLmcc, alreadyScheduled:!!input.alreadyScheduled,
-        sandbox:input.sandbox, allocations:input.allocations || {}};
+        sandbox, allocations, updatedAt};
       s.revision++; writeStore(s); res.json({revision:s.revision});
     } catch(e) { res.status(400).json({error:e.message}); }
   });

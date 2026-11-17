@@ -187,12 +187,15 @@ function bindDebtPlanner(section) {
  };
 }
 function renderBonusSandbox() {
- const draft = store.bonusDraft || {}, saved = draft.sandbox || {};
+ const draftKey = 'billsos-bonus-last-inputs-v1-' + (owner ? 'owner' : 'viewer');
+ let draft = store.bonusDraft || {}, localDraftNewer = false;
+ try { const cached = JSON.parse(localStorage.getItem(draftKey) || 'null'); if (cached?.sandbox && Date.parse(cached.updatedAt) > (Date.parse(draft.updatedAt) || 0)) { draft = cached; localDraftNewer = true; } } catch (_) {}
+ const saved = draft.sandbox || {};
  const field = (name, label, value = '', extra = '') => `<label>${label}<input name="${name}" type="number" min="0" max="${name === 'withholding' ? 100 : 1000000}" step=".01" value="${esc(value)}" ${extra}></label>`;
  root.innerHTML = `<header class="cc-top"><div><div class="cc-eyebrow">MAKE ROOM FOR WHAT’S NEXT</div><h1>Bonus Sandbox</h1><p>Give every dollar a job. See which payoffs make everyday life easier.</p></div><div class="cc-actions"><a href="/?view=credit-cards">Card balances →</a><a href="/?view=liabilities">Liabilities →</a></div></header>
  <form id="bonusForm"><details id="bonusSetup" open><summary>Bonus amount &amp; savings earmarks</summary>
  <div class="bonus-setup"><section class="cc-panel"><div class="cc-eyebrow">01 · YOUR BONUS</div><h2>Start with take-home pay</h2><div class="cc-form">
- <label>Expected deposit date<input name="start" type="date" min="${today()}" max="2027-12-31" required value="${esc(draft.start || (today() < '2027-03-01' ? '2027-03-01' : today()))}"></label>
+ <label>Expected deposit date<input name="start" type="date" min="${today()}" max="2027-12-31" required value="${esc(draft.start ?? (today() < '2027-03-01' ? '2027-03-01' : today()))}"></label>
  <label>Net amount method<select name="netMode"><option value="actual">Enter expected / actual net</option><option value="estimate" ${saved.netMode === 'estimate' ? 'selected' : ''}>Estimate from gross</option></select></label>
  ${field('gross','Gross bonus (optional with known net)',saved.gross)}
  ${field('withholding','All-in deductions (%)',saved.withholding ?? '', 'placeholder="Your payroll estimate"')}
@@ -209,16 +212,38 @@ function renderBonusSandbox() {
  <label class="bonus-check"><input type="checkbox" name="alreadyScheduled" ${draft.alreadyScheduled ? 'checked' : ''}> Debt budget + bills cushion already on calendar</label>
  <p class="cc-small">If a full net bonus is already on the calendar, record the savings transfers there first. This checkbox assumes only the debt budget and bills cushion remain available.</p>
  </section></div>
- <section class="cc-panel bonus-envelope" aria-label="Bonus allocation"><div class="cc-eyebrow">YOUR BONUS, ASSIGNED</div><div id="bonusEnvelope" aria-live="polite"></div><div class="cc-actions"><button class="cc-primary" type="submit">Compare deployment plans</button><button type="button" id="bonusDraft">Save sandbox draft</button></div><p class="cc-small">Comparisons and drafts leave the calendar unchanged. Review a plan below before adding payments.</p></section>
- </details></form><div id="bonusStatus" class="cc-notice" role="status">${store.bonusDraft ? 'Your saved sandbox is ready to explore.' : 'Enter your bonus to start. Your current cards and eligible liabilities will be included.'}</div><div id="bonusResults"></div>`;
+ <section class="cc-panel bonus-envelope" aria-label="Bonus allocation"><div class="cc-eyebrow">YOUR BONUS, ASSIGNED</div><div id="bonusEnvelope" aria-live="polite"></div><div class="cc-actions"><button class="cc-primary" type="submit">Compare deployment plans</button><button type="button" id="bonusDraft">Save sandbox draft</button></div><p class="cc-small">Inputs are remembered automatically. The calendar changes only when you add a plan. Review a plan below before adding payments.</p></section>
+ </details></form><div id="bonusStatus" class="cc-notice" role="status">${draft.sandbox ? 'Your last inputs have been restored.' : 'Enter your bonus to start. Your current cards and eligible liabilities will be included.'}</div><div id="bonusResults"></div>`;
  const form = root.querySelector('#bonusForm'), status = root.querySelector('#bonusStatus'), box = root.querySelector('#bonusResults');
  let version = 0, allocations = draft.allocations || {};
  const read = () => {
    const f = Object.fromEntries(new FormData(form));
    return {start:f.start, buffer:f.buffer, includeLmcc:!!f.includeLmcc, alreadyScheduled:!!f.alreadyScheduled,
      extra:0, months:1, lump:0, allocations,
-     sandbox:Object.fromEntries(['gross','netMode','withholding','net','reno','reserve','cushion'].map(key => [key,f[key]]))};
+     sandbox:Object.fromEntries(['gross','netMode','withholding','net','reno','reserve','cushion'].map(key => [key,form.elements[key].value]))};
  };
+ let draftTimer, draftQueue = Promise.resolve();
+ function rememberInputs(immediate = false) {
+   const input = {...read(), updatedAt:new Date().toISOString()};
+   try { localStorage.setItem(draftKey, JSON.stringify(input)); } catch (_) {}
+   clearTimeout(draftTimer);
+   const save = () => {
+     if (!owner) return;
+     draftQueue = draftQueue.catch(() => {}).then(async () => {
+       const send = () => api('/bonus-draft',{revision:store.revision,input});
+       let result;
+       try { result = await send(); }
+       catch (error) {
+         if (!/tracker changed/i.test(error.message)) throw error;
+         store.revision = (await api('')).revision;
+         result = await send();
+       }
+       store.revision = result.revision;
+     }).catch(() => { status.textContent = 'Inputs kept on this device. Could not sync the draft; edit again to retry.'; });
+   };
+   if (immediate) save(); else draftTimer = setTimeout(save,650);
+   return draftQueue;
+ }
  function envelope() {
    const f = read().sandbox, estimateNet = f.netMode === 'estimate';
    form.elements.withholding.disabled = !estimateNet;
@@ -230,17 +255,17 @@ function renderBonusSandbox() {
    const slices = [['Renovations',reno,'#d6aa81'],['Emergency savings',reserve,'#a99bdc'],['Bills cushion',cushion,'#68c5d4'],['Debt budget',Math.max(0,debt),'#6ee3b4']];
    root.querySelector('#bonusEnvelope').innerHTML = `<div class="bonus-totals">${f.gross ? `<span>Deductions <strong>${money(Number(f.gross)-net)}</strong></span>` : ''}<span>Take-home <strong>${money(net)}</strong></span><span>Available for debt <strong>${money(debt)}</strong></span></div><div class="bonus-bar" role="img" aria-label="Net bonus divided between savings, bills cushion and debt">${slices.map(([label,value,color]) => `<span title="${label}: ${money(value)}" style="width:${net > 0 ? 100 * value / Math.max(net,reno+reserve+cushion) : 0}%;background:${color}"></span>`).join('')}</div><div class="cc-debt-legend">${slices.map(([label,value,color]) => `<span><i style="background:${color}"></i>${label} · ${money(value)}</span>`).join('')}</div>${debt < 0 ? '<p class="cc-error">Earmarks exceed take-home pay. Reduce an earmark to compare.</p>' : ''}`;
  }
- form.oninput = () => { version++; allocations = {}; box.replaceChildren(); status.textContent = 'Inputs changed. Compare again to refresh the plans.'; envelope(); };
+ form.oninput = () => { version++; allocations = {}; box.replaceChildren(); status.textContent = 'Inputs changed. Compare again to refresh the plans.'; envelope(); rememberInputs(); };
  envelope();
+ if (localDraftNewer) rememberInputs(true);
  root.querySelector('#bonusDraft').onclick = async event => {
-   if (!form.reportValidity() || busy) return;
-   busy = true; event.target.disabled = true;
-   try { const result = await api('/bonus-draft',{revision:store.revision,input:read()}); store.revision = result.revision; status.textContent = 'Sandbox draft saved. It will be available on your other devices.'; }
-   catch(error) { status.textContent = error.message; }
-   finally { busy = false; event.target.disabled = false; }
+   event.target.disabled = true;
+   await rememberInputs(true);
+   event.target.disabled = false;
  };
  const labels = {baseline:'Hold budget in cash',relief:'Cash flow first',avalanche:'Interest first',snowball:'Smallest balances first',lmcc:'LMCC first',custom:'Your allocation'};
  async function compare() {
+   rememberInputs(true);
    const request = ++version, input = {...read(),planId:crypto.randomUUID()};
    const button = form.querySelector('[type=submit]'); button.disabled = true;
    status.textContent = 'Comparing debt, interest, and every projected cash day…'; box.replaceChildren();
@@ -294,7 +319,7 @@ function renderBonusSandbox() {
          busy = true; event.target.disabled = true;
          try {
            const savedPlan = await api('/debt-scenarios/save',{input,strategy,fingerprint:result.fingerprint,planId:input.planId});
-           version++; form.elements.alreadyScheduled.checked = true; choices.forEach(b => b.disabled = true);
+           version++; form.elements.alreadyScheduled.checked = true; rememberInputs(true); choices.forEach(b => b.disabled = true);
            status.textContent = `${savedPlan.saved} debt payments${savedPlan.bonusAdded ? ' and the expected debt/cushion deposit' : ''} added to the calendar. Confirm payoffs before changing recurring bills.`;
            event.target.textContent = 'Plan added';
          } catch(error) {status.textContent = error.message;event.target.disabled = false;}
@@ -305,8 +330,8 @@ function renderBonusSandbox() {
      show(Object.values(allocations).some(v => Number(v) > 0) ? 'custom' : recommendation.strategy);
      box.scrollIntoView({behavior:'smooth',block:'start'});
      function customTotal() { const total = Object.values(allocations).reduce((sum,v) => sum + Math.round(Number(v || 0)*100),0)/100; box.querySelector('#bonusCustomTotal').textContent = `${money(total)} assigned of ${money(result.budget.debt)} · ${money(result.budget.debt-total)} unassigned stays in bills cash`; }
-     box.querySelectorAll('[data-allocation]').forEach(el => el.oninput = () => { allocations = {...allocations,[el.dataset.allocation]:el.value}; version++; choices.forEach(b => b.disabled=true); box.querySelector('[data-save-bonus]')?.remove(); status.textContent='Allocation changed. Compare your allocation to refresh the results.'; customTotal(); });
-     box.querySelector('[data-copy-relief]').onclick = () => { allocations = Object.fromEntries(relief.payments.map(p => [p.cardId || p.debtAccountId || 'liability:'+p.liabilityId,p.amount])); box.querySelectorAll('[data-allocation]').forEach(el => {el.value = allocations[el.dataset.allocation] || 0;}); version++;choices.forEach(b => b.disabled=true);box.querySelector('[data-save-bonus]')?.remove();status.textContent='Cash-flow-first amounts copied. Adjust them and compare your allocation.';customTotal(); };
+     box.querySelectorAll('[data-allocation]').forEach(el => el.oninput = () => { allocations = {...allocations,[el.dataset.allocation]:el.value}; version++; choices.forEach(b => b.disabled=true); box.querySelector('[data-save-bonus]')?.remove(); status.textContent='Allocation changed. Compare your allocation to refresh the results.'; customTotal(); rememberInputs(); });
+     box.querySelector('[data-copy-relief]').onclick = () => { allocations = Object.fromEntries(relief.payments.map(p => [p.cardId || p.debtAccountId || 'liability:'+p.liabilityId,p.amount])); box.querySelectorAll('[data-allocation]').forEach(el => {el.value = allocations[el.dataset.allocation] || 0;}); version++;choices.forEach(b => b.disabled=true);box.querySelector('[data-save-bonus]')?.remove();status.textContent='Cash-flow-first amounts copied. Adjust them and compare your allocation.';customTotal(); rememberInputs(); };
      box.querySelector('[data-compare-custom]').onclick = () => { const inputs=[...box.querySelectorAll('[data-allocation]')]; if(inputs.every(el => el.reportValidity()))compare(); };
      customTotal();
    } catch(error) { if(request === version)status.textContent = error.message; }

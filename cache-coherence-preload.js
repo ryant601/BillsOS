@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const originalReadFileSync = fs.readFileSync;
-const BUILD = '20261117bonusimpact3';
+const BUILD = '20261117bonusremember4';
 const CRITICAL_ASSETS = [
   'midnight.css',
   'control-workspace.js',

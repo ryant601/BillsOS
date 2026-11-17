@@ -154,7 +154,7 @@ test('sandbox includes eligible liabilities, saves typed events, revalidates ear
   assert.equal(custom.monthlyRelief,150);
   assert.equal(custom.atDeployment.find(a=>a.id==='liability:deck-liability').balance,650);
   assert.equal(post('bonus-draft',{revision:0,input:request}).code,200);
-  assert.deepEqual(tracker.bonusDraft.sandbox,sandbox);
+  assert.deepEqual(tracker.bonusDraft.sandbox,{...sandbox,withholding:''});
   assert.equal(post('bonus-draft',{revision:0,input:request}).code,409);
   const payload={input:request,strategy:'custom',fingerprint:result.fingerprint,planId};
   assert.equal(post('debt-scenarios/save',{...payload,input:{...request,sandbox:{...sandbox,reno:201}}}).code,409);
