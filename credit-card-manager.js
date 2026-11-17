@@ -473,7 +473,7 @@ function register(app, deps) {
       const edited = Date.parse(input.updatedAt);
       const updatedAt = Number.isFinite(edited) && edited <= Date.now() + 300000 ? new Date(edited).toISOString() : new Date().toISOString();
       if (Date.parse(s.bonusDraft?.updatedAt) > Date.parse(updatedAt)) return res.json({revision:s.revision});
-      s.bonusDraft = {start:input.start, buffer:input.buffer, includeLmcc:!!input.includeLmcc, alreadyScheduled:!!input.alreadyScheduled,
+      s.bonusDraft = {payoutDateVersion:input.payoutDateVersion === '2027-03-10' ? '2027-03-10' : null,start:input.start, buffer:input.buffer, includeLmcc:!!input.includeLmcc, alreadyScheduled:!!input.alreadyScheduled,
         sandbox, allocations, updatedAt};
       s.revision++; writeStore(s); res.json({revision:s.revision});
     } catch(e) { res.status(400).json({error:e.message}); }
