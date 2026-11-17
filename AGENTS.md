@@ -33,6 +33,7 @@ These rules exist so future ChatGPT sessions handle this repository consistently
 ## UI / copy preferences
 
 - Keep the BillsOS dashboard concise.
+- Assign every new navigation section a distinct, relevant SVG icon in `navigationIcon`; keep the shared fallback icon so sections never render an empty icon.
 - Avoid debug/build/generated wording in the visible UI.
 - Prefer simple labels such as:
   - `Bills Dashboard`

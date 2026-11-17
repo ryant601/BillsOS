@@ -74,13 +74,15 @@ const appUi = String.raw`<script id="billsosAppUi">
       home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/>',
       calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18m-14 4h2m6 0h2m-10 3h2"/>',
       cards:'<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20m-15 5h4m5 0h1"/>',
+      bonus:'<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9M12 8v13m0-13H8a3 3 0 1 1 3-3Zm0 0h4a3 3 0 1 0-3-3Z"/>',
+      section:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
       liabilities:'<path d="M12 3v18m-6 0h12M4 7h16M6 7l-4 7h8Zm12 0-4 7h8Z"/>',
       reports:'<path d="M4 3v18h17M9 16v-5m5 5V6m5 10V9"/>',
       control:'<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
       bills:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2Zm3 4h6m-6 4h6m-6 4h3"/>',
       income:'<path d="M12 3v12m-4-4 4 4 4-4M4 14v6a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-6"/>'
     };
-    return '<svg data-bo-icon="'+name+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">'+(shapes[name]||'')+'</svg>';
+    return '<svg data-bo-icon="'+name+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">'+(shapes[name]||shapes.section)+'</svg>';
   }
   function link(icon,label,href,active,section){return '<a href="'+href+'" target="_self"'+(active?' class="is-active"':'')+(section?' data-bo-section="'+section+'"':'')+'><span class="bo-icon" aria-hidden="true">'+navigationIcon(icon)+'</span><span>'+label+'</span></a>'}
   function controlSection(){var section=location.hash.slice(1)||'bills';return ['bills','oneTime','income','funding'].indexOf(section)>=0?section:'bills'}
