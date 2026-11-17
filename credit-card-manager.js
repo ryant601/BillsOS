@@ -94,7 +94,8 @@ function estimateBalances(data, cards, legacyDone = {}, asOf = today(), days = p
     const ids = cardBillIds(data, card);
     const hasLinkedBill = card.sourceBillId && (data.bills || []).some(bill => bill.id === card.sourceBillId);
     const payments = allRows.filter(row => row.amount < 0 && row.iso > card.balanceAsOf &&
-      (sources.get(row.sourceId)?.creditCardId === card.id || ids.has(row.sourceId) ||
+      (sources.get(row.sourceId)?.creditCardId === (card.originCardId || card.id) ||
+       (card.liabilitySourceId && sources.get(row.sourceId)?.liabilityId === card.liabilitySourceId) || ids.has(row.sourceId) ||
        (!hasLinkedBill && String(row.name || '').trim().toLowerCase() === card.name.trim().toLowerCase())))
       .map(row => ({ date: row.iso, amount: cents(-row.amount), paid: !!done[row.originalKey] }));
     const byDate = new Map(); payments.forEach(p => { const a = byDate.get(p.date) || []; a.push(p); byDate.set(p.date, a); });
@@ -134,8 +135,34 @@ function quote(data, card, input, date = today()) {
   const safe = options.filter(o => o.safe);
   return { options: (safe.length ? safe : options).slice(0, 5), safe: safe.length > 0, checkedThrough: days.at(-1).date };
 }
+// All earmarks are reconciled in cents before a bonus enters a forecast.
+function bonusBudget(input) {
+  const value = (key, optional = false) => {
+    if (optional && (input[key] == null || input[key] === '')) return null;
+    const n = Number(input[key]);
+    if (!Number.isFinite(n) || n < 0 || n > 1000000) throw new Error('Enter a valid ' + key + ' amount.');
+    return cents(n);
+  };
+  const gross = value('gross', true), mode = input.netMode === 'estimate' ? 'estimate' : 'actual';
+  const rate = Number(input.withholding);
+  if (mode === 'estimate' && (!(gross > 0) || input.withholding == null || input.withholding === '' || !Number.isFinite(rate) || rate < 0 || rate > 100)) {
+    throw new Error('Enter gross bonus and an all-in deduction estimate from 0–100%.');
+  }
+  const net = mode === 'estimate' ? Math.round(gross * (1 - rate / 100)) : value('net');
+  if (!(net > 0) || (gross != null && net > gross)) throw new Error('Net bonus must be positive and cannot exceed gross.');
+  const reno = value('reno'), reserve = value('reserve'), cushion = value('cushion');
+  const debt = net - reno - reserve - cushion;
+  if (debt < 0) throw new Error('Your earmarks exceed the net bonus. Reduce an earmark before comparing.');
+  return { gross: gross == null ? null : gross / 100, net: net / 100, netMode: mode,
+    deductions: gross == null ? null : (gross - net) / 100, withholding: mode === 'estimate' ? rate : null,
+    reno: reno / 100, reserve: reserve / 100, cushion: cushion / 100, debt: debt / 100,
+    funding: (debt + cushion) / 100 };
+}
+
 // Run payoff and cash projections on the same dated calendar rows.
 function debtScenarios(data, cards, input, completed = {}, date = today()) {
+  const budget = input.sandbox ? bonusBudget(input.sandbox) : null;
+  if (budget) input = { ...input, extra: 0, months: 1, lump: budget.debt, bonus: input.alreadyScheduled ? 0 : budget.funding };
   const lmccId = 'lmcc-dues-2027';
   const includeLmcc = input.includeLmcc === 'on' || input.includeLmcc === true;
   const lmccName = name => /\blmcc\b|lake mohawk.*dues/i.test(name || '') && !/\b2026\b|arrears|past due/i.test(name || '');
@@ -157,6 +184,9 @@ function debtScenarios(data, cards, input, completed = {}, date = today()) {
   const currentDays = lmccAssumed ? projection(data) : actualDays, through = currentDays.at(-1).date;
   const start = String(input.start || date), months = Number(input.months);
   const planId = String(input.planId || 'preview');
+  if (budget && !input.alreadyScheduled && (data.oneTimeEvents || []).some(event => event.debtPlanId && event.type === 'income' && event.date === start)) {
+    throw new Error('Bonus funding is already on this date. Check the funding-already-on-calendar box to avoid another deposit.');
+  }
   const extra = Number(input.extra), lump = Number(input.lump), buffer = Number(input.buffer);
   const bonus = cents(input.bonus || 0) / 100;
   if (!validDate(start) || start < date || start < currentDays[0].date || start > through ||
@@ -166,7 +196,7 @@ function debtScenarios(data, cards, input, completed = {}, date = today()) {
   }
   const bonusEvent = bonus ? {
     id: 'cc-debt-' + planId + '-bonus', debtPlanId: planId, name: 'Expected bonus — debt plan ' + planId.slice(0, 8),
-    date: start, amount: bonus, type: 'income', category: 'Income', notes: 'Expected net bonus from Debt Planner.'
+    date: start, amount: bonus, type: 'income', category: 'Income', notes: 'Expected net bonus from Debt Planner.', ...(budget ? {bonusBudget:budget} : {})
   } : null;
   const scenarioData = bonusEvent ? { ...data, oneTimeEvents: [...(data.oneTimeEvents || []), bonusEvent] } : data;
   const days = bonusEvent ? projection(scenarioData) : currentDays;
@@ -190,6 +220,9 @@ function debtScenarios(data, cards, input, completed = {}, date = today()) {
   const unlinked = [];
   for (const card of modeled) {
     const ids = cardBillIds(data, card);
+    if (card.liabilitySourceId) for (const event of data.oneTimeEvents || []) {
+      if (event.liabilityId === card.liabilitySourceId || (card.originCardId && event.creditCardId === card.originCardId)) ids.add(event.id);
+    }
     if (!ids.size) unlinked.push(card.name);
     for (const id of ids) {
       if (linked.has(id)) throw new Error('Multiple cards match one scheduled bill. Update the card details before comparing.');
@@ -211,7 +244,7 @@ function debtScenarios(data, cards, input, completed = {}, date = today()) {
   const debtId = (row, day) => {
     const source = sources.get(row.sourceId);
     if (includeLmcc && isDuesDay(day) && (scheduledIds.has(row.sourceId) || source?.debtAccountId === lmccId)) return lmccId;
-    return source?.creditCardId || linked.get(row.sourceId);
+    return linked.get(row.sourceId) || source?.creditCardId;
   };
   const future = days.filter(day => day.date >= date);
   const starting = modeled.reduce((sum, card) => sum + cents(estimates.get(card.id)), 0);
@@ -228,6 +261,20 @@ function debtScenarios(data, cards, input, completed = {}, date = today()) {
 
   if (includeLmcc && future.some(day => day.date > start && isDuesDay(day) &&
       day.items.some(row => row.amount < 0 && scheduledIds.has(row.sourceId)))) monthlyBill.set(lmccId, 250);
+
+  const installmentIds = new Set();
+  const installmentsByMonth = new Map();
+  for (const day of future.filter(day => day.date > start)) for (const row of day.items) {
+    const source = sources.get(row.sourceId), id = linked.get(row.sourceId);
+    if (!id || !source?.liabilityId || source.debtPlanId || row.amount >= 0) continue;
+    installmentIds.add(row.sourceId);
+    const key = id + '|' + day.date.slice(0,7);
+    installmentsByMonth.set(key, (installmentsByMonth.get(key) || 0) + cents(-row.amount));
+  }
+  for (const debt of modeled) if (!monthlyBill.has(debt.id)) {
+    const amounts = [...installmentsByMonth].filter(([key]) => key.startsWith(debt.id + '|')).map(([,value]) => value);
+    if (amounts.length) monthlyBill.set(debt.id, Math.max(...amounts) / 100);
+  }
 
   function reliefTargets(debts, budget) {
     const candidates = debts.filter(debt => debt.remaining > 0 && monthlyBill.get(debt.id) && Math.ceil(debt.remaining) <= budget)
@@ -263,6 +310,12 @@ function debtScenarios(data, cards, input, completed = {}, date = today()) {
     const debts = modeled.map(card => ({ ...card, remaining: cents(estimates.get(card.id)), paidOn: null }));
     const byId = new Map(debts.map(debt => [debt.id, debt]));
     const payments = [], monthEnds = new Map();
+    let atDeployment = [];
+    const custom = input.allocations || {};
+    if (strategy === 'custom') {
+      if (typeof custom !== 'object' || Array.isArray(custom) || Object.entries(custom).some(([id, amount]) => !byId.has(id) || !Number.isFinite(Number(amount)) || Number(amount) < 0) ||
+          Object.values(custom).reduce((sum, amount) => sum + cents(amount), 0) > cents(lump)) throw new Error('Custom allocations must fit the debt budget and use the listed accounts.');
+    }
     let interest = 0, payoffDate = null;
     for (const day of future) {
       for (const debt of debts) {
@@ -277,6 +330,7 @@ function debtScenarios(data, cards, input, completed = {}, date = today()) {
         if (debt) debt.remaining = Math.max(0, debt.remaining - cents(-item.amount));
       }
 
+      if (day.date === start) atDeployment = debts.map(debt => ({id:debt.id, name:debt.name, balance:Math.ceil(debt.remaining)/100, apr:debt.apr, payment:monthlyBill.get(debt.id) || 0, temporary:!!debt.liability}));
       let budget = strategy === 'baseline' ? 0 : paymentDates.get(day.date) || 0;
       const ranked = debts.filter(debt => debt.remaining > 0).sort((a, b) =>
         (strategy === 'snowball' ? a.remaining - b.remaining || b.apr - a.apr : b.apr - a.apr || a.remaining - b.remaining) ||
@@ -286,11 +340,11 @@ function debtScenarios(data, cards, input, completed = {}, date = today()) {
       if (strategy === 'lmcc' && lmcc?.remaining > 0 && Math.ceil(lmcc.remaining) <= budget) targets.push(lmcc);
       const priority = [...targets, ...ranked.filter(debt => !targets.includes(debt))];
       for (const debt of priority) {
-        const amount = Math.min(budget, Math.ceil(debt.remaining));
-        if (amount <= 0) break;
+        const amount = Math.min(budget, Math.ceil(debt.remaining), strategy === 'custom' ? cents(custom[debt.id] || 0) : Infinity);
+        if (amount <= 0) continue;
         debt.remaining = Math.max(0, debt.remaining - amount);
         budget -= amount;
-        payments.push({ ...(debt.liability ? {debtAccountId:debt.id} : {cardId:debt.id}), name: debt.name, date: day.date, amount: amount / 100 });
+        payments.push({ ...(debt.liability ? {debtAccountId:debt.id} : debt.liabilitySourceId ? {liabilityId:debt.liabilitySourceId} : {cardId:debt.id}), name: debt.name, date: day.date, amount: amount / 100 });
       }
       for (const debt of debts) {
         if (!debt.remaining && !debt.paidOn) debt.paidOn = day.date;
@@ -319,7 +373,7 @@ function debtScenarios(data, cards, input, completed = {}, date = today()) {
       const month = day.date.slice(0, 7);
       for (const row of day.items) {
         const debt = byId.get(debtId(row, day));
-        if (row.amount < 0 && (recurring.has(row.sourceId) || (includeLmcc && isDuesDay(day) && scheduledIds.has(row.sourceId))) && debt?.paidOn && day.date > debt.paidOn) {
+        if (row.amount < 0 && (recurring.has(row.sourceId) || installmentIds.has(row.sourceId) || (includeLmcc && isDuesDay(day) && scheduledIds.has(row.sourceId))) && debt?.paidOn && day.date > debt.paidOn) {
           const released = cents(-row.amount);
           releases.set(month, (releases.get(month) || 0) + released);
           releasedCash += released;
@@ -330,17 +384,20 @@ function debtScenarios(data, cards, input, completed = {}, date = today()) {
     const monthly = [...monthEnds.values()].map(row => ({
       ...row, ...cash.get(row.month), cashIfBillsStop: cashIfBillsStop.get(row.month), possibleRelief: (releases.get(row.month) || 0) / 100
     }));
-    const clearedByExtras = debts.filter(debt => debt.paidOn && payments.some(payment => (payment.cardId || payment.debtAccountId) === debt.id && payment.date === debt.paidOn));
+    const clearedByExtras = debts.filter(debt => debt.paidOn && payments.some(payment => (payment.cardId || payment.debtAccountId || (payment.liabilityId && 'liability:' + payment.liabilityId)) === debt.id && payment.date === debt.paidOn));
     const monthlyRelief = clearedByExtras.reduce((sum, debt) => sum + cents(monthlyBill.get(debt.id) || 0), 0) / 100;
-    return { strategy, payments, monthly, monthlyRelief, payoffDate, interest: Math.round(interest) / 100,
+    return { strategy, payments, monthly, monthlyRelief, atDeployment,
+      deployed: payments.reduce((sum, payment) => sum + cents(payment.amount), 0) / 100,
+      unusedBudget: Math.max(0, cents(lump) - payments.reduce((sum, payment) => sum + cents(payment.amount), 0)) / 100,
+      temporaryRelief: clearedByExtras.filter(debt => debt.liability).reduce((sum, debt) => sum + (monthlyBill.get(debt.id) || 0), 0), payoffDate, interest: Math.round(interest) / 100,
       remaining: monthly.at(-1)?.debt || 0, lowest: lowest.ending, lowestDate: lowest.date,
       firstBelow: projected.find(day => cents(day.ending) < cents(buffer))?.date || null,
       safe: cents(lowest.ending) >= cents(buffer),
       accounts: debts.map(debt => ({ name: debt.name, paidOn: debt.paidOn, remaining: Math.round(debt.remaining) / 100 })) };
   }
 
-  return { through, start, buffer, bonus, bonusEvent, lmccAssumed, reliefApproximate: monthlyBill.size > 18, starting: starting / 100, excluded, unlinked, modeled: modeled.length,
-    scenarios: ['baseline', 'avalanche', 'snowball', 'relief', ...(modeled.some(debt => debt.liability) ? ['lmcc'] : [])]
+  return { budget, through, start, buffer, bonus, bonusEvent, lmccAssumed, reliefApproximate: monthlyBill.size > 18, starting: starting / 100, excluded, unlinked, modeled: modeled.length,
+    scenarios: ['baseline', 'avalanche', 'snowball', 'relief', ...(modeled.some(debt => debt.liability) ? ['lmcc'] : []), ...(budget ? ['custom'] : [])]
       .map(simulate).filter(plan => plan.strategy !== 'lmcc' || (plan.payments[0]?.debtAccountId === lmccId && plan.accounts.some(account => account.name === '2027 LMCC dues' && account.paidOn === start))) };
 }
 
@@ -348,8 +405,8 @@ function scenarioEvent(payment, planId, index) {
   return {
     id: 'cc-debt-' + planId + '-' + index, debtPlanId: planId,
     name: payment.name + ' — debt plan ' + planId.slice(0, 8), date: payment.date, amount: -payment.amount,
-    type: 'adjustment', category: payment.debtAccountId ? 'Housing' : 'Credit Cards', payMethod: 'manual',
-    ...(payment.debtAccountId ? {debtAccountId:payment.debtAccountId} : {creditCardId:payment.cardId}),
+    type: 'adjustment', category: payment.debtAccountId ? 'Housing' : payment.liabilityId ? 'Debt' : 'Credit Cards', payMethod: 'manual',
+    ...(payment.debtAccountId ? {debtAccountId:payment.debtAccountId} : payment.liabilityId ? {liabilityId:payment.liabilityId} : {creditCardId:payment.cardId}),
     notes: 'Additional payment from Debt Planner. Confirm the remaining balance after it posts.'
   };
 }
@@ -361,7 +418,7 @@ function scenarioFingerprint(result) {
 function register(app, deps) {
   const { readStore, writeStore, readBills, writeBills, currentDate = today } = deps;
   const get = () => { const s = readStore(); return { ...s, revision: s.revision || 0, cards: discover(readBills(), s) }; };
-  const withEstimates = s => {const cards=s.cards.filter(c=>!c.removed&&!c.paymentPlan);return {revision:s.revision,cards,removed:s.cards.filter(c=>c.removed&&!c.paymentPlan).map(c=>({id:c.id,name:c.name})),estimates:estimateBalances(readBills(),cards,deps.readCompleted?deps.readCompleted():{})};};
+  const withEstimates = s => {const cards=s.cards.filter(c=>!c.removed&&!c.paymentPlan);return {revision:s.revision,bonusDraft:s.bonusDraft || null,cards,removed:s.cards.filter(c=>c.removed&&!c.paymentPlan).map(c=>({id:c.id,name:c.name})),estimates:estimateBalances(readBills(),cards,deps.readCompleted?deps.readCompleted():{})};};
   app.get('/api/credit-cards', (_req, res) => { res.setHeader('Cache-Control', 'no-store'); res.json(withEstimates(get())); });
   app.post('/api/credit-cards', (req, res) => {
     try {
@@ -383,9 +440,30 @@ function register(app, deps) {
   }catch(e){res.status(400).json({error:e.message});}});
   function compare(data, input) {
     const date = currentDate();
-    const result = debtScenarios(data, discover(data, readStore(), date), input, deps.readCompleted?.() || {}, date);
+    let portfolio = discover(data, readStore(), date);
+    const omitted = [];
+    if (input.sandbox) for (const item of deps.readLiabilities?.().items || []) {
+      if (item.removed || item.archived) continue;
+      if (Number(item.monthlyCharge) > 0 || (input.includeLmcc && /\blmcc\b|lake mohawk.*dues/i.test(item.name) && !/\b2026\b|arrears|past due/i.test(item.name))) { omitted.push(item.name); continue; }
+      if (portfolio.some(card => card.id === item.originCardId || (item.linkedBillId && card.sourceBillId === item.linkedBillId))) continue;
+      portfolio.push({...item, id:'liability:' + item.id, liabilitySourceId:item.id, sourceBillId:item.linkedBillId || undefined, paymentPlan:false});
+    }
+    const result = debtScenarios(data, portfolio, input, deps.readCompleted?.() || {}, date);
+    result.omitted = omitted;
     return { ...result, fingerprint: scenarioFingerprint(result) };
   }
+  app.post('/api/credit-cards/bonus-draft', (req, res) => {
+    try {
+      const s = get();
+      if (req.body.revision !== s.revision) return res.status(409).json({error:'The tracker changed. Reload before saving the draft.'});
+      const input = req.body.input || {};
+      bonusBudget(input.sandbox || {});
+      if (!validDate(input.start) || input.start > '2027-12-31') throw new Error('Choose a deposit date within the calendar.');
+      s.bonusDraft = {start:input.start, buffer:input.buffer, includeLmcc:!!input.includeLmcc, alreadyScheduled:!!input.alreadyScheduled,
+        sandbox:input.sandbox, allocations:input.allocations || {}};
+      s.revision++; writeStore(s); res.json({revision:s.revision});
+    } catch(e) { res.status(400).json({error:e.message}); }
+  });
   app.post('/api/credit-cards/debt-scenarios', (req, res) => {
     try {
       if (!/^[a-zA-Z0-9-]{16,80}$/.test(String(req.body.planId || ''))) throw new Error('Refresh and compare a new plan.');
@@ -396,12 +474,12 @@ function register(app, deps) {
   app.post('/api/credit-cards/debt-scenarios/save', (req, res) => {
     try {
       const { input, strategy, fingerprint, planId } = req.body;
-      if (!['avalanche', 'snowball', 'relief', 'lmcc'].includes(strategy) || !/^[a-zA-Z0-9-]{16,80}$/.test(String(planId || ''))) {
+      if (!['avalanche', 'snowball', 'relief', 'lmcc', 'custom'].includes(strategy) || !/^[a-zA-Z0-9-]{16,80}$/.test(String(planId || ''))) {
         throw new Error('Preview a valid plan before saving.');
       }
       const data = readBills(), events = data.oneTimeEvents || [];
       const existing = events.filter(event => event.debtPlanId === planId);
-      if (existing.length) return res.json({ saved: existing.filter(event => event.creditCardId || event.debtAccountId).length, bonusAdded: existing.some(event => event.type === 'income'), duplicate: true });
+      if (existing.length) return res.json({ saved: existing.filter(event => event.creditCardId || event.debtAccountId || event.liabilityId).length, bonusAdded: existing.some(event => event.type === 'income'), duplicate: true });
       const result = compare(data, { ...input, planId }), plan = result.scenarios.find(item => item.strategy === strategy);
       if (result.fingerprint !== fingerprint || !plan?.safe || !plan.payments.length) {
         return res.status(409).json({ error: 'The plan no longer matches the latest calendar or cash floor. Compare again before saving.' });
@@ -431,4 +509,4 @@ function register(app, deps) {
     } catch (e) { res.status(400).json({ error: e.message }); }
   });
 }
-module.exports = { register, projection, discover, validateCard, quote, matching, estimateBalances, isPaymentPlan, debtScenarios };
+module.exports = { register, projection, discover, validateCard, quote, matching, estimateBalances, isPaymentPlan, debtScenarios, bonusBudget };

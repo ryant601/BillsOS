@@ -347,6 +347,7 @@ function syncFixedPaymentPlans() {
 }
 try { syncFixedPaymentPlans(); } catch (_err) { console.error('Payment plan migration could not complete; original tracker data is retained.'); }
 require('./credit-card-manager').register(app, {
+  readLiabilities:()=>readTrackerStore('liabilities','items'),
   readStore:()=>{syncFixedPaymentPlans();return readTrackerStore('credit-cards','cards');},
   writeStore:data=>writeJsonFile(path.join(DATA_DIR,'credit-cards.json'),data),
   readBills:readBillsData,

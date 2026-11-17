@@ -1,6 +1,7 @@
 (function () {
 'use strict';
-if (new URLSearchParams(location.search).get('view') !== 'credit-cards') return;
+const bonusView = new URLSearchParams(location.search).get('view') === 'bonus';
+if (!bonusView && new URLSearchParams(location.search).get('view') !== 'credit-cards') return;
 document.documentElement.classList.add('credit-cards-active');
 const root = document.createElement('main'); root.id = 'creditCards'; document.body.append(root);
 let store, snapshot, selected, preview, busy = false;
@@ -16,6 +17,7 @@ function notice(text, error) { const el = root.querySelector('#ccNotice'); el.te
 function dueDateLabel(card) { const d=Number(card.dueDay);if(!d)return 'Not linked';const suffix=d%100>=11&&d%100<=13?'th':({1:'st',2:'nd',3:'rd'}[d%10]||'th');return d+suffix+(d>28?' (or month-end)':''); }
 function table(list) { return '<div class="cc-table-wrap"><table class="cc-table"><thead><tr><th>Card</th><th>Due each month</th><th>Recorded balance</th><th>Estimated today</th><th>APR</th><th>Monthly payment</th><th>Utilization</th><th></th></tr></thead><tbody>' + list.map(c => '<tr><td><strong>'+esc(c.name)+'</strong><div class="cc-small">'+(c.balanceAsOf?'Updated '+esc(c.balanceAsOf):'Balance needed')+'</div></td><td>'+esc(dueDateLabel(c))+'</td><td>'+money(c.balance)+'</td><td>'+money(estimate(c)?.current)+'</td><td>'+(c.apr == null?'—':c.apr+'%')+'</td><td>'+money(c.payment)+'</td><td>'+(c.limit>0&&c.balance!=null?(100*c.balance/c.limit).toFixed(1)+'%':'—')+'</td><td><button data-edit="'+esc(c.id)+'">'+(owner?'Update':'View')+'</button>'+(owner?' <button data-remove="'+esc(c.id)+'">Remove</button>':'')+'</td></tr>').join('')+'</tbody></table></div>'; }
 function render() {
+ if (bonusView) { renderBonusSandbox(); return; }
  const active=cards(), known=active.filter(c=>c.balance!=null), total=known.reduce((s,c)=>s+c.balance,0), initial=known.reduce((s,c)=>s+(c.history?.[0]?.balance??c.balance),0), interest=known.filter(c=>c.apr!=null).reduce((s,c)=>s+c.balance*c.apr/1200,0), missing=active.length-known.length;
  root.innerHTML='<header class="cc-top"><div><div class="cc-eyebrow">YOUR PATH TO DEBT FREE</div><h1>Credit Cards</h1><p>Know what you owe. Choose your next move.</p></div>'+(owner?'<button id="ccAdd" class="cc-primary">＋ Add card</button>':'')+'</header><div id="ccNotice" class="cc-notice" role="status">Recorded balances stay as entered. Estimates account for interest and payments marked paid, assuming no new spending.</div><section class="cc-stats">'+[['Recorded debt',known.length?money(total):'—'],['Reduction since first entries',known.length?money(initial-total):'—'],['Monthly payments',money(active.reduce((s,c)=>s+(c.payment||0),0))],['Estimated monthly interest',known.some(c=>c.apr!=null)?money(interest):'—']].map(x=>'<article class="cc-stat"><span>'+x[0]+'</span><strong>'+x[1]+'</strong></article>').join('')+'</section><p class="cc-small">'+known.length+' of '+active.length+' balances entered'+(missing?' · Totals are incomplete until all balances are entered.':'.')+' Fixed payment plans are tracked in Liabilities. Interest estimate covers cards with an APR entered.</p><details class="cc-panel cc-collapse" id="ccCardDetails" '+(expanded('billsos-card-details-open',false)?'open':'')+'><summary>Card details <span>Balances, APRs &amp; monthly updates</span></summary><p>Due dates come from the Bills control center and refresh when this page loads. Calendar moves can differ. Monthly payments here are budgets for payoff estimates; scheduled bills remain managed in Bills.</p>'+table(active.filter(c=>!c.paymentPlan))+(store.cards.some(c=>c.archived)?'<details class="cc-archive"><summary>Archived cards</summary>'+table(store.cards.filter(c=>c.archived))+'</details>':'')+'</details>'+'<details class="cc-panel cc-collapse cc-monthly" id="ccEstimateDetails" '+(expanded('billsos-card-estimates-open',false)?'open':'')+'><summary>Monthly balance estimates <span>No new spending assumed</span></summary><div id="ccEstimates"></div></details>'+debtPlannerHtml()+bonusPlannerHtml()+'<section class="cc-panel"><h2>Find room for an extra payment</h2><p>Check a payment against every daily ending balance from its date through December 2027, including payments already planned.</p><form id="ccPayment" class="cc-form"><label class="cc-wide">Card<select name="cardId">'+active.filter(c=>!c.paymentPlan&&c.balance>0).map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select></label><label>Extra payment<input name="amount" type="number" min=".01" step=".01" required placeholder="100.00"></label><label>Keep at least<input name="buffer" type="number" min="0" step=".01" value="950" required></label><label>Earliest date<input name="start" type="date" min="'+today()+'" max="2027-12-31" value="'+today()+'" required></label><label>Latest date<input name="end" type="date" min="'+today()+'" max="2027-12-31" value="'+new Date(Date.now()+30*864e5).toISOString().slice(0,10)+'" required></label><button type="submit" class="cc-primary cc-wide" '+(!owner?'disabled':'')+'>Find payment dates</button></form><div id="ccOptions" aria-live="polite"></div></section><section class="cc-panel"><h2>Additional payments on your calendar</h2><p>These are scheduled expenses, not confirmed payments. Edit or remove them on the calendar, and update balances after payments post.</p><div id="ccPlanned"></div></section>'+removedAccounts()+'<dialog id="ccDialog"><form id="ccEdit" class="cc-form"></form></dialog>';
  root.querySelector('#ccAdd')?.addEventListener('click',()=>edit(null));
@@ -70,33 +72,13 @@ function debtPlannerHtml() {
 }
 
 function bonusPlannerHtml() {
- const floor = document.getElementById('recommendationFloor')?.value || 950;
- const march = '2027-03-01';
- const date = today() < march ? march : today();
- return `<section class="cc-panel cc-debt-planner" data-debt-planner="bonus">
-   <div class="cc-eyebrow">BONUS PLANNER</div>
-   <h2>Plan your bonus</h2>
-   <p>Compare how a one-time payment could reduce debt, interest, and monthly bills.</p>
-   <form class="cc-debt-fields">
-     <label>Expected deposit date<input name="start" type="date" min="${today()}" max="2027-12-31" value="${date}" required></label>
-     <label>Bonus amount for debt<input name="lump" type="number" min=".01" max="1000000" step=".01" required></label>
-     <label>Cash floor<input name="buffer" type="number" min="0" max="1000000" step=".01" value="${esc(floor)}" required></label>
-     <label><span><input type="checkbox" name="alreadyScheduled" style="width:auto"> Debt portion already on the calendar</span></label>
-     <label><span><input type="checkbox" name="includeLmcc" style="width:auto" checked> Consider 2027 LMCC dues</span></label>
-     <input name="extra" type="hidden" value="0">
-     <input name="months" type="hidden" value="1">
-     <button type="submit" class="cc-primary">Compare bonus scenarios</button>
-   </form>
-   <p class="cc-small">March 1, 2027 is a placeholder. Use your expected deposit date. Enter only the amount you’re setting aside for debt. BillsOS uses that amount as both the expected deposit and the payment budget on that date. Check the box if the debt portion is already on your calendar.</p>
-   <div class="cc-debt-status" role="status"></div>
-   <div class="cc-debt-results"></div>
- </section>`;
+ return '<section class="cc-panel cc-debt-planner"><div class="cc-eyebrow">BONUS SANDBOX</div><h2>Turn your bonus into breathing room</h2><p>Plan gross and net pay, protect renovation money, and compare how to reduce monthly bills.</p><a href="/?view=bonus">Open bonus sandbox →</a></section>';
 }
 
-const strategyLabels = {baseline:'Current calendar', avalanche:'Avalanche', snowball:'Snowball', relief:'Monthly relief',lmcc:'LMCC first'};
-function scenarioChart(result, cash = false) {
- const colors = ['#8a9ba6', '#55b99a', '#e59a7c', '#a99bdc', '#e4c478'];
- const series = result.scenarios.map(plan => cash ? plan.monthly.map(row => row.ending)
+const strategyLabels = {baseline:'Current calendar', avalanche:'Avalanche', snowball:'Snowball', relief:'Monthly relief',lmcc:'LMCC first',custom:'Your allocation'};
+function scenarioChart(result, cash = false, released = false) {
+ const colors = ['#8a9ba6', '#55b99a', '#e59a7c', '#a99bdc', '#e4c478', '#69cde0'];
+ const series = result.scenarios.map(plan => cash ? plan.monthly.map(row => released ? row.cashIfBillsStop : row.ending)
    : [result.starting, ...plan.monthly.map(row => row.debt)]);
  const values = series.flat();
  const low = cash ? Math.min(result.buffer, ...values) : 0;
@@ -107,8 +89,8 @@ function scenarioChart(result, cash = false) {
    return `<polyline points="${points}" fill="none" stroke="${colors[i]}" stroke-width="3" vector-effect="non-scaling-stroke"/>`;
  });
  const floor = cash ? `<path d="M12 ${y(result.buffer)}H588" stroke="currentColor" stroke-dasharray="5 5" opacity=".65"/>` : '';
- const title = cash ? 'Month-end cash' : 'Estimated remaining debt';
- const legend = result.scenarios.map((plan, i) => `<span><i style="background:${colors[i]}"></i>${strategyLabels[plan.strategy]}</span>`);
+ const title = cash ? (released ? 'Cash after confirmed payoffs stop bills' : 'Month-end cash') : 'Estimated remaining debt';
+ const legend = result.scenarios.map((plan, i) => `<span><i style="background:${colors[i]}"></i>${(result.labels || strategyLabels)[plan.strategy]}</span>`);
  if (cash) legend.push(`<span>Dashed line · ${money(result.buffer)} cash floor</span>`);
  return `<figure class="cc-debt-chart">
    <figcaption>${title}</figcaption>
@@ -204,6 +186,120 @@ function bindDebtPlanner(section) {
    }
  };
 }
+function renderBonusSandbox() {
+ const draft = store.bonusDraft || {}, saved = draft.sandbox || {};
+ const field = (name, label, value = '', extra = '') => `<label>${label}<input name="${name}" type="number" min="0" max="${name === 'withholding' ? 100 : 1000000}" step=".01" value="${esc(value)}" ${extra}></label>`;
+ root.innerHTML = `<header class="cc-top"><div><div class="cc-eyebrow">MAKE ROOM FOR WHAT’S NEXT</div><h1>Bonus Sandbox</h1><p>Give every dollar a job. See which payoffs make everyday life easier.</p></div><div class="cc-actions"><a href="/?view=credit-cards">Card balances →</a><a href="/?view=liabilities">Liabilities →</a></div></header>
+ <form id="bonusForm">
+ <div class="bonus-setup"><section class="cc-panel"><div class="cc-eyebrow">01 · YOUR BONUS</div><h2>Start with take-home pay</h2><div class="cc-form">
+ <label>Expected deposit date<input name="start" type="date" min="${today()}" max="2027-12-31" required value="${esc(draft.start || (today() < '2027-03-01' ? '2027-03-01' : today()))}"></label>
+ <label>Net amount method<select name="netMode"><option value="actual">Enter expected / actual net</option><option value="estimate" ${saved.netMode === 'estimate' ? 'selected' : ''}>Estimate from gross</option></select></label>
+ ${field('gross','Gross bonus (optional with known net)',saved.gross)}
+ ${field('withholding','All-in deductions (%)',saved.withholding ?? '', 'placeholder="Your payroll estimate"')}
+ ${field('net','Net bonus',saved.net, 'required')}
+ </div><p class="cc-small">For an estimate, use your total expected deductions: federal, NJ, payroll taxes, retirement and benefits. Withholding is not your final tax rate. Replace the estimate with payroll’s net amount when available. <a href="https://www.irs.gov/publications/p15" target="_blank" rel="noopener">IRS withholding guide</a></p>
+ <p class="cc-small">March 1 is a planning placeholder. Move it when your deposit date is known.</p></section>
+ <section class="cc-panel"><div class="cc-eyebrow">02 · PROTECT YOUR PRIORITIES</div><h2>Decide what’s available</h2><div class="cc-form">
+ ${field('reno','Home renovation savings',saved.reno ?? 0,'required')}
+ ${field('reserve','Emergency savings',saved.reserve ?? 0,'required')}
+ ${field('cushion','Keep in bills account',saved.cushion ?? 0,'required')}
+ ${field('buffer','Minimum daily cash floor',draft.buffer ?? (document.getElementById('recommendationFloor')?.value || 950),'required')}
+ </div><p class="cc-small">Renovation and emergency savings stay outside the bills forecast. The bills-account cushion stays available for future bills. Everything else becomes your debt budget.</p>
+ <label class="bonus-check"><input type="checkbox" name="includeLmcc" ${draft.includeLmcc === false ? '' : 'checked'}> Compare 2027 LMCC dues</label>
+ <label class="bonus-check"><input type="checkbox" name="alreadyScheduled" ${draft.alreadyScheduled ? 'checked' : ''}> Debt budget + bills cushion already on calendar</label>
+ <p class="cc-small">If a full net bonus is already on the calendar, record the savings transfers there first. This checkbox assumes only the debt budget and bills cushion remain available.</p>
+ </section></div>
+ <section class="cc-panel bonus-envelope" aria-label="Bonus allocation"><div class="cc-eyebrow">YOUR BONUS, ASSIGNED</div><div id="bonusEnvelope" aria-live="polite"></div><div class="cc-actions"><button class="cc-primary" type="submit">Compare deployment plans</button><button type="button" id="bonusDraft">Save sandbox draft</button></div><p class="cc-small">Comparisons and drafts leave the calendar unchanged. Review a plan below before adding payments.</p></section>
+ </form><div id="bonusStatus" class="cc-notice" role="status">${store.bonusDraft ? 'Your saved sandbox is ready to explore.' : 'Enter your bonus to start. Your current cards and eligible liabilities will be included.'}</div><div id="bonusResults"></div>`;
+ const form = root.querySelector('#bonusForm'), status = root.querySelector('#bonusStatus'), box = root.querySelector('#bonusResults');
+ let version = 0, allocations = draft.allocations || {};
+ const read = () => {
+   const f = Object.fromEntries(new FormData(form));
+   return {start:f.start, buffer:f.buffer, includeLmcc:!!f.includeLmcc, alreadyScheduled:!!f.alreadyScheduled,
+     extra:0, months:1, lump:0, allocations,
+     sandbox:Object.fromEntries(['gross','netMode','withholding','net','reno','reserve','cushion'].map(key => [key,f[key]]))};
+ };
+ function envelope() {
+   const f = read().sandbox, estimateNet = f.netMode === 'estimate';
+   form.elements.withholding.disabled = !estimateNet;
+   form.elements.withholding.required = estimateNet;
+   form.elements.gross.required = estimateNet;
+   form.elements.net.readOnly = estimateNet;
+   if (estimateNet) form.elements.net.value = f.gross && f.withholding !== '' ? Math.max(0, Math.round(Number(f.gross) * (1 - Number(f.withholding) / 100) * 100) / 100) : '';
+   const net = Number(form.elements.net.value), reno = Number(f.reno), reserve = Number(f.reserve), cushion = Number(f.cushion), debt = Math.round((net - reno - reserve - cushion) * 100) / 100;
+   const slices = [['Renovations',reno,'#d6aa81'],['Emergency savings',reserve,'#a99bdc'],['Bills cushion',cushion,'#68c5d4'],['Debt budget',Math.max(0,debt),'#6ee3b4']];
+   root.querySelector('#bonusEnvelope').innerHTML = `<div class="bonus-totals">${f.gross ? `<span>Deductions <strong>${money(Number(f.gross)-net)}</strong></span>` : ''}<span>Take-home <strong>${money(net)}</strong></span><span>Available for debt <strong>${money(debt)}</strong></span></div><div class="bonus-bar" role="img" aria-label="Net bonus divided between savings, bills cushion and debt">${slices.map(([label,value,color]) => `<span title="${label}: ${money(value)}" style="width:${net > 0 ? 100 * value / Math.max(net,reno+reserve+cushion) : 0}%;background:${color}"></span>`).join('')}</div><div class="cc-debt-legend">${slices.map(([label,value,color]) => `<span><i style="background:${color}"></i>${label} · ${money(value)}</span>`).join('')}</div>${debt < 0 ? '<p class="cc-error">Earmarks exceed take-home pay. Reduce an earmark to compare.</p>' : ''}`;
+ }
+ form.oninput = () => { version++; allocations = {}; box.replaceChildren(); status.textContent = 'Inputs changed. Compare again to refresh the plans.'; envelope(); };
+ envelope();
+ root.querySelector('#bonusDraft').onclick = async event => {
+   if (!form.reportValidity() || busy) return;
+   busy = true; event.target.disabled = true;
+   try { const result = await api('/bonus-draft',{revision:store.revision,input:read()}); store.revision = result.revision; status.textContent = 'Sandbox draft saved. It will be available on your other devices.'; }
+   catch(error) { status.textContent = error.message; }
+   finally { busy = false; event.target.disabled = false; }
+ };
+ const labels = {baseline:'Hold budget in cash',relief:'Cash flow first',avalanche:'Interest first',snowball:'Smallest balances first',lmcc:'LMCC first',custom:'Your allocation'};
+ async function compare() {
+   const request = ++version, input = {...read(),planId:crypto.randomUUID()};
+   const button = form.querySelector('[type=submit]'); button.disabled = true;
+   status.textContent = 'Comparing debt, interest, and every projected cash day…'; box.replaceChildren();
+   try {
+     const result = await api('/debt-scenarios', input);
+     if (request !== version) return;
+
+     const baseline = result.scenarios[0], plans = result.scenarios.filter(p => p.strategy !== 'custom' || Object.values(allocations).some(v => Number(v) > 0));
+     const planOrder = ['relief','avalanche','snowball','lmcc','custom','baseline']; plans.sort((a,b) => planOrder.indexOf(a.strategy) - planOrder.indexOf(b.strategy));
+     const relief = result.scenarios.find(p => p.strategy === 'relief'), avalanche = result.scenarios.find(p => p.strategy === 'avalanche');
+     const afterStart = plan => plan.monthly.filter(row => row.month >= result.start.slice(0,7));
+     const gain = plan => afterStart(plan).reduce((sum,row) => sum + row.possibleRelief - (baseline.monthly.find(m => m.month === row.month)?.possibleRelief || 0),0);
+     const lift = plan => { const rows = afterStart(plan).filter(row => row.month > result.start.slice(0,7)); return Math.max(0,...rows.map(row => row.possibleRelief - (baseline.monthly.find(m => m.month === row.month)?.possibleRelief || 0))); };
+     const recommendation = relief?.monthlyRelief > 0 ? relief : avalanche;
+     status.textContent = 'Comparison ready. Choose a plan to review its allocations and calendar impact.';
+     box.innerHTML = `<section class="cc-panel bonus-insight"><div class="cc-eyebrow">03 · FIND YOUR BREATHING ROOM</div><h2>${recommendation?.monthlyRelief > 0 ? 'Start with cash flow first' : 'Review interest savings and keep a cushion'}</h2><p>${recommendation?.monthlyRelief > 0 ? `Cash flow first clears accounts with ${money(relief.monthlyRelief)} in scheduled monthly payments. Compared with holding the debt budget in cash, it could avoid ${money(gain(relief))} in bills through ${result.through}.` : 'This budget may not clear a linked recurring payment. Partial payments can save interest, but the scheduled bill stays the same until you update it.'} ${relief && avalanche ? `Interest-first saves ${money(baseline.interest - avalanche.interest)} in modeled interest; cash-flow-first saves ${money(baseline.interest - relief.interest)}.` : ''}</p><p class="cc-small">Payment relief assumes the account is paid in full and its scheduled payments are stopped after confirmation. Released cash stays available for bills; it is not automatically rolled into more debt.</p></section>
+     <div class="cc-debt-choices bonus-choices">${plans.map(plan => `<button type="button" class="cc-stat" data-bonus-strategy="${plan.strategy}" aria-pressed="false"><div class="cc-eyebrow">${plan.strategy === 'relief' ? 'MONTHLY BREATHING ROOM' : plan.strategy === 'avalanche' ? 'COST OF DEBT' : 'ALTERNATIVE'}</div><strong>${labels[plan.strategy]}</strong><span>${money(plan.deployed)} to debt · ${plan.accounts.filter(a => a.paidOn === result.start).length} accounts clear at deposit</span><span class="bonus-lift">Up to ${money(lift(plan))}/mo sooner</span><span>${money(gain(plan))} earlier bill relief through forecast</span><span>${money(baseline.interest - plan.interest)} interest saved</span><span>${money(plan.remaining)} debt at forecast end</span><span>${plan.safe ? 'Within cash floor' : 'Below cash floor'} · low ${money(plan.lowest)}</span></button>`).join('')}</div>
+     <div class="cc-debt-charts">${scenarioChart({...result,scenarios:plans,labels})}${scenarioChart({...result,scenarios:plans,labels},true,true)}</div>
+     <section class="cc-panel" id="bonusDetail"></section>
+     <section class="cc-panel bonus-custom"><h2>Build your own allocation</h2><p>Choose amounts by account and compare your mix with the suggested plans. A partial payoff saves interest; no lower monthly payment is assumed.</p><div class="cc-table-wrap"><table class="cc-table"><thead><tr><th>Account</th><th>Estimated at deposit</th><th>APR</th><th>Scheduled monthly</th><th>Your extra</th></tr></thead><tbody>${(baseline.atDeployment || []).map(account => `<tr><td>${esc(account.name)}${account.temporary ? '<div class="cc-small">2027 dues only</div>' : ''}</td><td>${money(account.balance)}</td><td>${account.apr}%</td><td>${money(account.payment)}</td><td><input aria-label="Extra for ${esc(account.name)}" data-allocation="${esc(account.id)}" type="number" min="0" max="${account.balance}" step=".01" value="${esc(allocations[account.id] || 0)}"></td></tr>`).join('')}</tbody></table></div><p id="bonusCustomTotal" class="cc-small"></p><div class="cc-actions"><button type="button" data-copy-relief>Start from cash flow first</button><button type="button" class="cc-primary" data-compare-custom>Compare my allocation</button></div></section>
+     <details class="cc-panel bonus-assumptions"><summary>Coverage and assumptions</summary><p>${result.modeled} accounts modeled. ${result.excluded.length ? 'Needs a verified balance, date or APR: ' + result.excluded.map(esc).join(', ') + '. ' : ''}${result.omitted?.length ? 'Excluded ongoing-charge liabilities or represented by the LMCC estimate: ' + result.omitted.map(esc).join(', ') + '. ' : ''}${result.unlinked.length ? 'No linked schedule; no bill relief assumed: ' + result.unlinked.map(esc).join(', ') + '. ' : ''}${result.lmccAssumed ? 'LMCC is previewed at $3,000 in January less $250 monthly installments. These assumed installment rows are not saved. ' : ''}LMCC relief ends December 2027; next year’s dues return. Fixed APRs, no new spending or fees, no automatic minimum-payment reductions on partial payoffs. Liability schedules use existing calendar payments only. ${result.reliefApproximate ? 'Large portfolios use an approximate relief ranking. ' : ''}Interest and relief are estimates through ${result.through}, not lifetime savings. Before paying, get current payoff amounts and check fees or promotional terms.</p><p><a href="https://www.consumerfinance.gov/archive/blog/how-reduce-your-debt/" target="_blank" rel="noopener">CFPB: debt reduction strategies</a> · <a href="https://www.consumerfinance.gov/an-essential-guide-to-building-an-emergency-fund/" target="_blank" rel="noopener">CFPB: protecting a cash reserve</a></p></details>`;
+     const choices = [...box.querySelectorAll('[data-bonus-strategy]')];
+     function show(strategy) {
+       const plan = result.scenarios.find(p => p.strategy === strategy);
+       choices.forEach(b => b.setAttribute('aria-pressed',String(b.dataset.bonusStrategy === strategy)));
+       const detail = box.querySelector('#bonusDetail');
+       const months = afterStart(plan).map(row => { const before = baseline.monthly.find(m => m.month === row.month); return `<tr><td>${row.month}</td><td>${money(row.debt)}</td><td>${money(row.ending)}</td><td>${money(row.low)}</td><td>${money(row.possibleRelief)}</td><td>${money(row.cashIfBillsStop)}</td><td>${money(row.cashIfBillsStop - before.cashIfBillsStop)}</td></tr>`; }).join('');
+       detail.innerHTML = `<div class="cc-eyebrow">YOUR SELECTED PLAN</div><h2>${labels[strategy]}</h2><p>${money(plan.deployed)} deployed · ${money(plan.unusedBudget)} of debt budget stays in bills cash.${plan.temporaryRelief ? ` Includes ${money(plan.temporaryRelief)}/mo LMCC relief for the rest of 2027.` : ''}</p>
+       <h3>Review what will be added</h3><p>${result.bonus ? `${money(result.bonus)} expected deposit on ${result.start}: debt budget plus bills cushion only.` : 'No bonus deposit will be added; you marked the funding as already on the calendar.'} Renovation ${money(result.budget.reno)} and emergency savings ${money(result.budget.reserve)} remain earmarked outside this forecast.</p>
+       <div class="cc-table-wrap"><table class="cc-table"><thead><tr><th>Date</th><th>Pay account</th><th>Extra payment</th></tr></thead><tbody>${plan.payments.map(p => `<tr><td>${p.date}</td><td>${esc(p.name)}</td><td>${money(p.amount)}</td></tr>`).join('') || '<tr><td colspan="3">No additional debt payments in this plan.</td></tr>'}</tbody></table></div>
+       <p class="cc-small">Adding a plan schedules the deposit and extra payments. Existing recurring bills stay in the calendar until you confirm payoff and update them in <a href="/control#bills">Control Center</a>. This keeps estimated payoff relief separate from available cash.</p>
+       ${plan.firstBelow ? `<p class="cc-error">The calendar falls below ${money(result.buffer)} on ${plan.firstBelow} while existing bills remain. Increase the bills cushion or revise the plan before adding it.</p>` : ''}
+       ${owner && plan.safe && plan.payments.length ? '<button type="button" class="cc-primary" data-save-bonus>Add selected plan to calendar</button>' : ''}
+       <details open><summary>Month-by-month debt and breathing room</summary><div class="cc-table-wrap"><table class="cc-table"><thead><tr><th>Month</th><th>Debt left</th><th>Cash: existing bills kept</th><th>Low cash: bills kept</th><th>Payments after payoff</th><th>Cash if payoffs confirmed</th><th>Change vs holding cash*</th></tr></thead><tbody>${months}</tbody></table></div><p class="cc-small">*Both plans include the same bonus funding and assume confirmed paid-off bills stop. Negative change shows cash used to repay debt. Payments after payoff include natural payoffs; scenario cards show only the earlier relief versus holding cash.</p></details>`;
+       detail.querySelector('[data-save-bonus]')?.addEventListener('click',async event => {
+         if (busy || request !== version) return;
+         busy = true; event.target.disabled = true;
+         try {
+           const savedPlan = await api('/debt-scenarios/save',{input,strategy,fingerprint:result.fingerprint,planId:input.planId});
+           version++; form.elements.alreadyScheduled.checked = true; choices.forEach(b => b.disabled = true);
+           status.textContent = `${savedPlan.saved} debt payments${savedPlan.bonusAdded ? ' and the expected debt/cushion deposit' : ''} added to the calendar. Confirm payoffs before changing recurring bills.`;
+           event.target.textContent = 'Plan added';
+         } catch(error) {status.textContent = error.message;event.target.disabled = false;}
+         finally {busy = false;}
+       });
+     }
+     choices.forEach(b => b.onclick = () => show(b.dataset.bonusStrategy));
+     show(Object.values(allocations).some(v => Number(v) > 0) ? 'custom' : recommendation.strategy);
+     function customTotal() { const total = Object.values(allocations).reduce((sum,v) => sum + Math.round(Number(v || 0)*100),0)/100; box.querySelector('#bonusCustomTotal').textContent = `${money(total)} assigned of ${money(result.budget.debt)} · ${money(result.budget.debt-total)} unassigned stays in bills cash`; }
+     box.querySelectorAll('[data-allocation]').forEach(el => el.oninput = () => { allocations = {...allocations,[el.dataset.allocation]:el.value}; version++; choices.forEach(b => b.disabled=true); box.querySelector('[data-save-bonus]')?.remove(); status.textContent='Allocation changed. Compare your allocation to refresh the results.'; customTotal(); });
+     box.querySelector('[data-copy-relief]').onclick = () => { allocations = Object.fromEntries(relief.payments.map(p => [p.cardId || p.debtAccountId || 'liability:'+p.liabilityId,p.amount])); box.querySelectorAll('[data-allocation]').forEach(el => {el.value = allocations[el.dataset.allocation] || 0;}); version++;choices.forEach(b => b.disabled=true);box.querySelector('[data-save-bonus]')?.remove();status.textContent='Cash-flow-first amounts copied. Adjust them and compare your allocation.';customTotal(); };
+     box.querySelector('[data-compare-custom]').onclick = () => { const inputs=[...box.querySelectorAll('[data-allocation]')]; if(inputs.every(el => el.reportValidity()))compare(); };
+     customTotal();
+   } catch(error) { if(request === version)status.textContent = error.message; }
+   finally {button.disabled=false;}
+ }
+ form.onsubmit = event => { event.preventDefault(); compare(); };
+}
+
 function options() {
  const result=preview.result, box=root.querySelector('#ccOptions');
  if(!preview.planIds)preview.planIds=result.options.map(()=>crypto.randomUUID());
@@ -211,8 +307,8 @@ function options() {
  box.querySelectorAll('[data-plan]').forEach(b=>b.onclick=async()=>{if(busy)return;busy=true;b.disabled=true;try{const o=result.options[Number(b.dataset.plan)];await api('/payments',{...preview.input,...o,planId:preview.planIds[Number(b.dataset.plan)]});preview=null;box.innerHTML='<p>Payment added. Your balance is unchanged until you update it after posting.</p>';notice('Extra payment saved to the calendar.');await refreshPlanned();}catch(err){notice(err.message,true);}finally{busy=false;b.disabled=false;}});
 }
 function planned(){const box=root.querySelector('#ccPlanned');if(!box)return;const events=(snapshot?.data?.oneTimeEvents||[]).filter(e=>e.debtAccountId==='lmcc-dues-2027'||(e.creditCardId&&store.cards.some(c=>c.id===e.creditCardId))).sort((a,b)=>a.date.localeCompare(b.date));box.innerHTML=events.length?events.map(e=>'<p><strong>'+esc(e.date)+' · '+esc(e.name)+'</strong> · '+money(Math.abs(e.amount))+' <a href="/?view=calendar">Open calendar</a></p>').join(''):'<p class="cc-small">No additional payments planned yet.</p>';}
-async function refreshPlanned(){const r=await fetch('/api/bills',{cache:'no-store',credentials:'same-origin'});if(r.ok){snapshot={data:await r.json()};planned();store=await api('');monthlyEstimates();}}
+async function refreshPlanned(){const r=await fetch('/api/bills',{cache:'no-store',credentials:'same-origin'});if(r.ok){snapshot={data:await r.json()};planned();store=await api('');if (!bonusView) monthlyEstimates();}}
 window.addEventListener('billsos:calendar-ready',e=>{snapshot=e.detail;planned();});
-root.innerHTML='<p>Loading your credit cards…</p>';
+root.innerHTML='<p>Loading your accounts…</p>';
 api('').then(s=>{store=s;snapshot=window.BillsOSReportsSnapshot;render();}).catch(e=>{root.textContent=e.message;});
 })();
